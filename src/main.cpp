@@ -60,6 +60,7 @@ int main()
 
         EndMode3D();
         DrawFPS(10, 10);
+        DrawCircle(GetScreenWidth()/2, GetScreenHeight()/2, 4, WHITE);
         EndDrawing();
     }
 
