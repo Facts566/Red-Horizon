@@ -1,5 +1,5 @@
-#include "raylib.h"
-#include "rlgl.h"
+#include <raylib.h>
+#include <rlgl.h>
 #include <cstdlib>
 #include <math.h>
 
@@ -45,6 +45,40 @@ Model MakePlane(float w, float l, float tu, float tv, Texture2D tex)
     return mod;
 }
 
+Model MakeWall(float w, float h, float tu, float tv, Texture2D tex)
+{
+    Mesh m = { 0 };
+    m.vertexCount = 4;
+    m.triangleCount = 2;
+    m.vertices = (float *)MemAlloc(12 * sizeof(float));
+    m.texcoords = (float *)MemAlloc(8 * sizeof(float));
+    m.normals = (float *)MemAlloc(12 * sizeof(float));
+    m.indices = (unsigned short *)MemAlloc(6 * sizeof(unsigned short));
+
+    float hw = w / 2.0f;
+    m.vertices[0]  = -hw; m.vertices[1]  = 0; m.vertices[2]  = 0;
+    m.vertices[3]  =  hw; m.vertices[4]  = 0; m.vertices[5]  = 0;
+    m.vertices[6]  = -hw; m.vertices[7]  = h; m.vertices[8]  = 0;
+    m.vertices[9]  =  hw; m.vertices[10] = h; m.vertices[11] = 0;
+
+    m.texcoords[0] = 0;  m.texcoords[1] = 0;
+    m.texcoords[2] = tu; m.texcoords[3] = 0;
+    m.texcoords[4] = 0;  m.texcoords[5] = tv;
+    m.texcoords[6] = tu; m.texcoords[7] = tv;
+
+    for (int i = 0; i < 4; i++) {
+        m.normals[i*3] = 0; m.normals[i*3+1] = 0; m.normals[i*3+2] = 1;
+    }
+
+    m.indices[0] = 0; m.indices[1] = 1; m.indices[2] = 2;
+    m.indices[3] = 1; m.indices[4] = 3; m.indices[5] = 2;
+
+    UploadMesh(&m, false);
+    Model mod = LoadModelFromMesh(m);
+    mod.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = tex;
+    return mod;
+}
+
 int main()
 {
     InitWindow(GetScreenWidth(), GetScreenHeight(), "FactsEngine");
@@ -55,6 +89,12 @@ int main()
     rlTextureParameters(texture.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
     rlTextureParameters(texture.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
+    Texture2D wallTex = LoadTexture("tex/bricks.png");
+    SetTextureFilter(wallTex, TEXTURE_FILTER_POINT);
+    SetTextureWrap(wallTex, TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(wallTex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(wallTex.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
+
     float roomW = 150.0f;
     float roomD = 150.0f;
     float roomH = 20.0f;
@@ -62,10 +102,10 @@ int main()
 
     Model fl = MakePlane(roomW, roomD, roomW/tileSize, roomD/tileSize, texture);
     Model cl = MakePlane(roomW, roomD, roomW/tileSize, roomD/tileSize, texture);
-    Model fw = MakePlane(roomW, roomH, roomW/tileSize, roomH/tileSize, texture);
-    Model bw = MakePlane(roomW, roomH, roomW/tileSize, roomH/tileSize, texture);
-    Model lw = MakePlane(roomH, roomD, roomH/tileSize, roomD/tileSize, texture);
-    Model rw = MakePlane(roomH, roomD, roomH/tileSize, roomD/tileSize, texture);
+    Model fw = MakeWall(roomW, roomH, roomW/tileSize, roomH/tileSize, wallTex);
+    Model bw = MakeWall(roomW, roomH, roomW/tileSize, roomH/tileSize, wallTex);
+    Model lw = MakeWall(roomD, roomH, roomD/tileSize, roomH/tileSize, wallTex);
+    Model rw = MakeWall(roomD, roomH, roomD/tileSize, roomH/tileSize, wallTex);
 
     Camera3D camera = { 0 };
     camera.position = (Vector3){0, roomH/2, roomD/4};
@@ -89,10 +129,10 @@ int main()
 
         DrawModel(fl, (Vector3){0, 0, 0}, 1.0f, WHITE);
         DrawModel(cl, (Vector3){0, roomH, 0}, 1.0f, WHITE);
-        DrawModelEx(fw, (Vector3){0, roomH/2, roomD/2}, (Vector3){1,0,0}, -90.0f, (Vector3){1,1,1}, WHITE);
-        DrawModelEx(bw, (Vector3){0, roomH/2, -roomD/2}, (Vector3){1,0,0}, 90.0f, (Vector3){1,1,1}, WHITE);
-        DrawModelEx(lw, (Vector3){-roomW/2, roomH/2, 0}, (Vector3){0,0,1}, 90.0f, (Vector3){1,1,1}, WHITE);
-        DrawModelEx(rw, (Vector3){roomW/2, roomH/2, 0}, (Vector3){0,0,1}, -90.0f, (Vector3){1,1,1}, WHITE);
+        DrawModel(fw, (Vector3){0, 0, roomD/2}, 1.0f, WHITE);
+        DrawModelEx(bw, (Vector3){0, 0, -roomD/2}, (Vector3){0,1,0}, 180.0f, (Vector3){1,1,1}, WHITE);
+        DrawModelEx(lw, (Vector3){-roomW/2, 0, 0}, (Vector3){0,1,0}, -90.0f, (Vector3){1,1,1}, WHITE);
+        DrawModelEx(rw, (Vector3){roomW/2, 0, 0}, (Vector3){0,1,0}, 90.0f, (Vector3){1,1,1}, WHITE);
 
         EndMode3D();
         DrawFPS(10, 10);
@@ -102,6 +142,7 @@ int main()
     rlEnableBackfaceCulling();
     EnableCursor();
     UnloadTexture(texture);
+    UnloadTexture(wallTex);
     CloseWindow();
     return 0;
 }
