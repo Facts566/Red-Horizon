@@ -1,8 +1,8 @@
-CC = gcc
-CFLAGS = -Wall -Wextra
+CC = g++
+CFLAGS = -Wall -Wextra -std=c++17
 LDFLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 
-SRC = main.c
+SRC = main.cpp
 OBJ = $(SRC:.c=.o)
 TARGET = RedHorizon
 
