@@ -2,6 +2,7 @@
 #include <rlgl.h>
 #include "player.h"
 #include "map.h"
+#include "light.h"
 
 int main()
 {
@@ -30,6 +31,16 @@ int main()
     Model bw = MakeWall(roomW, roomH, roomW/tileSize, roomH/tileSize, wallTex);
     Model lw = MakeWall(roomD, roomH, roomD/tileSize, roomH/tileSize, wallTex);
     Model rw = MakeWall(roomD, roomH, roomD/tileSize, roomH/tileSize, wallTex);
+
+    Shader shader = LoadLightShader();
+    SetLightUniforms(shader, {0, roomH - 1.0f, 0}, {1,1,1}, 60.0f, 0.02f);
+
+    fl.materials[0].shader = shader;
+    cl.materials[0].shader = shader;
+    fw.materials[0].shader = shader;
+    bw.materials[0].shader = shader;
+    lw.materials[0].shader = shader;
+    rw.materials[0].shader = shader;
 
     Camera3D camera = { 0 };
     camera.position = (Vector3){0, roomH/2, roomD/4};
@@ -66,6 +77,7 @@ int main()
 
     rlEnableBackfaceCulling();
     EnableCursor();
+    UnloadShader(shader);
     UnloadTexture(texture);
     UnloadTexture(wallTex);
     CloseWindow();
