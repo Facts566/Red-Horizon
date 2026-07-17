@@ -10,6 +10,8 @@ int main()
     camera.fovy = 45.0f;
     camera.projection = CAMERA_PERSPECTIVE;
 
+    DisableCursor();
+
     while (!WindowShouldClose())
     {
         BeginDrawing();
@@ -25,6 +27,7 @@ int main()
         EndDrawing();
         UpdateCamera(&camera, CAMERA_FREE);
     }
+    EnableCursor();
     CloseWindow();
     return 0;
 }
