@@ -33,7 +33,7 @@ int main()
         EndMode3D();
         DrawFPS(10, 10);
         EndDrawing();
-        UpdateCamera(&camera, CAMERA_FREE);
+        UpdateCamera(&camera, CAMERA_FIRST_PERSON);
     }
     EnableCursor();
     UnloadTexture(texture);
