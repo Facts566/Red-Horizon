@@ -61,11 +61,34 @@ int main()
 
     rlDisableBackfaceCulling();
 
+    float shakeTime = 0.0f;
+    const float SHAKE_DURATION = 0.3f;
+    const float SHAKE_AMOUNT = 1.6f;
+
     while (!WindowShouldClose())
     {
         UpdatePlayer(&camera, &yaw, level);
 
         if (IsKeyPressed(KEY_F)) flashlightOn = !flashlightOn;
+
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            shakeTime = SHAKE_DURATION;
+
+        Vector3 shakeOffset = {0};
+        float gunKickY = 0.0f;
+        float gunScale = 5.0f;
+        if (shakeTime > 0.0f)
+        {
+            float t = shakeTime / SHAKE_DURATION;
+            float intensity = SHAKE_AMOUNT * t;
+            shakeOffset.y = intensity;
+            shakeOffset.x = ((float)GetRandomValue(0, 1000) / 500.0f - 1.0f) * intensity * 0.2f;
+            shakeOffset.z = ((float)GetRandomValue(0, 1000) / 500.0f - 1.0f) * intensity * 0.2f;
+            gunKickY = -intensity * 12.0f;
+            gunScale = 5.0f + 0.2f;
+            shakeTime -= GetFrameTime();
+        }
+
         float range = flashlightOn ? 80.0f : 0.0f;
         float ambient = 0.01f;
         SetShaderValue(shader, lightRangeLoc, &range, SHADER_UNIFORM_FLOAT);
@@ -74,12 +97,21 @@ int main()
 
         BeginDrawing();
         ClearBackground(BLACK);
-        BeginMode3D(camera);
+
+        Camera3D shakeCam = camera;
+        shakeCam.position.x += shakeOffset.x;
+        shakeCam.position.y += shakeOffset.y;
+        shakeCam.position.z += shakeOffset.z;
+        shakeCam.target.x += shakeOffset.x;
+        shakeCam.target.y += shakeOffset.y;
+        shakeCam.target.z += shakeOffset.z;
+
+        BeginMode3D(shakeCam);
 
         DrawLevel(level);
 
         EndMode3D();
-        DrawTextureEx(gunTex, (Vector2){(float)GetScreenWidth()/2 - gunTex.width*3/2, (float)GetScreenHeight() - gunTex.height * 3}, 0.0f, 3.0f, WHITE);
+        DrawTextureEx(gunTex, (Vector2){(float)GetScreenWidth()/2 - gunTex.width*gunScale/2, (float)GetScreenHeight() - gunTex.height * gunScale + gunKickY + 50.0f}, 0.0f, gunScale, WHITE);
         DrawFPS(10, 10);
         DrawCircle(GetScreenWidth()/2, GetScreenHeight()/2, 4, WHITE);
         EndDrawing();
