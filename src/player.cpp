@@ -6,6 +6,8 @@ const float PLAYER_SPEED = 20.0f;
 void UpdatePlayer(Camera3D *camera, float *yaw)
 {
     *yaw -= GetMouseDelta().x * 0.003f;
+    if (IsKeyDown(KEY_LEFT))  *yaw += 2.0f * GetFrameTime();
+    if (IsKeyDown(KEY_RIGHT)) *yaw -= 2.0f * GetFrameTime();
 
     float fx = sinf(*yaw);
     float fz = cosf(*yaw);
@@ -15,8 +17,8 @@ void UpdatePlayer(Camera3D *camera, float *yaw)
 
     if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP))    { dx += fx; dz += fz; }
     if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN))   { dx -= fx; dz -= fz; }
-    if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT))   { dx += rx; dz += rz; }
-    if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT))  { dx -= rx; dz -= rz; }
+    if (IsKeyDown(KEY_A))                          { dx += rx; dz += rz; }
+    if (IsKeyDown(KEY_D))                          { dx -= rx; dz -= rz; }
 
     float len = sqrtf(dx * dx + dz * dz);
     if (len > 0) { dx /= len; dz /= len; }

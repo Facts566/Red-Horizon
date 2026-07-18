@@ -3,6 +3,7 @@
 
 struct LevelModels {
     Model floor;
+    Model planks;
     Model wallN, wallS, wallW, wallE;
     Model greenN, greenS, greenW, greenE;
 };
@@ -17,6 +18,6 @@ struct Level {
     LevelModels models;
 };
 
-Level LoadLevel(const char *path, float tileSize, float wallHeight, Texture2D floorTex, Texture2D wallTex, Texture2D greenTex, Shader shader);
+Level LoadLevel(const char *path, float tileSize, float wallHeight, Texture2D floorTex, Texture2D planksTex, Texture2D wallTex, Texture2D greenTex, Shader shader);
 void DrawLevel(Level level);
 void UnloadLevel(Level level);

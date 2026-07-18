@@ -27,6 +27,12 @@ int main()
     rlTextureParameters(greenTex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
     rlTextureParameters(greenTex.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
+    Texture2D planksTex = LoadTexture("tex/planks.png");
+    SetTextureFilter(planksTex, TEXTURE_FILTER_POINT);
+    SetTextureWrap(planksTex, TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(planksTex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(planksTex.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
+
     Texture2D handTex = LoadTexture("tex/hand_with_flashligh.png");
 
     float tileSize = 5.0f;
@@ -34,7 +40,7 @@ int main()
 
     Shader shader = LoadLightShader();
 
-    Level level = LoadLevel("map.txt", tileSize, wallHeight, texture, wallTex, greenTex, shader);
+    Level level = LoadLevel("map/map.txt", tileSize, wallHeight, texture, planksTex, wallTex, greenTex, shader);
 
     Camera3D camera = { 0 };
     camera.position = level.playerStart;
@@ -86,6 +92,7 @@ int main()
     UnloadTexture(texture);
     UnloadTexture(wallTex);
     UnloadTexture(greenTex);
+    UnloadTexture(planksTex);
     UnloadTexture(handTex);
     CloseWindow();
     return 0;

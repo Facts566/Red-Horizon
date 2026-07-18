@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 
-Level LoadLevel(const char *path, float tileSize, float wallHeight, Texture2D floorTex, Texture2D wallTex, Texture2D greenTex, Shader shader)
+Level LoadLevel(const char *path, float tileSize, float wallHeight, Texture2D floorTex, Texture2D planksTex, Texture2D wallTex, Texture2D greenTex, Shader shader)
 {
     Level level = { 0 };
     level.tileSize = tileSize;
@@ -65,6 +65,9 @@ Level LoadLevel(const char *path, float tileSize, float wallHeight, Texture2D fl
     level.models.floor = MakePlane(ts, ts, 1.0f, 1.0f, floorTex);
     level.models.floor.materials[0].shader = shader;
 
+    level.models.planks = MakePlane(ts, ts, 1.0f, 1.0f, planksTex);
+    level.models.planks.materials[0].shader = shader;
+
     level.models.wallN = MakeWall(ts, wh, 1.0f, wh/ts, wallTex);
     level.models.wallN.materials[0].shader = shader;
     level.models.wallS = MakeWall(ts, wh, 1.0f, wh/ts, wallTex);
@@ -108,6 +111,8 @@ void DrawLevel(Level level)
             float cz = row * ts + ts / 2.0f;
 
             DrawModel(m.floor, (Vector3){cx, 0, cz}, 1.0f, WHITE);
+            if (c == '0')
+                DrawModel(m.planks, (Vector3){cx, 0, cz}, 1.0f, WHITE);
 
             if (c == '&' || c == '@') {
                 Model *n = (c == '@') ? &m.greenN : &m.wallN;
@@ -132,6 +137,7 @@ void UnloadLevel(Level level)
 {
     if (level.data) free(level.data);
     UnloadModel(level.models.floor);
+    UnloadModel(level.models.planks);
     UnloadModel(level.models.wallN);
     UnloadModel(level.models.wallS);
     UnloadModel(level.models.wallW);
