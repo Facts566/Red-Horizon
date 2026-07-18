@@ -21,7 +21,8 @@ void UpdatePlayer(Camera3D *camera, float *yaw)
     float len = sqrtf(dx * dx + dz * dz);
     if (len > 0) { dx /= len; dz /= len; }
 
-    float dt = PLAYER_SPEED * GetFrameTime();
+    float speed = IsKeyDown(KEY_LEFT_SHIFT) ? PLAYER_SPEED * 1.5f : PLAYER_SPEED;
+    float dt = speed * GetFrameTime();
     camera->position.x += dx * dt;
     camera->position.z += dz * dt;
     camera->target.x = camera->position.x + fx;
