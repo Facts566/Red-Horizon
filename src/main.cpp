@@ -34,6 +34,7 @@ int main()
     rlTextureParameters(planksTex.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
     Texture2D handTex = LoadTexture("tex/hand_with_flashligh.png");
+    Texture2D gunTex = LoadTexture("tex/gun.png");
 
     float tileSize = 5.0f;
     float wallHeight = 20.0f;
@@ -78,8 +79,7 @@ int main()
         DrawLevel(level);
 
         EndMode3D();
-        if (flashlightOn)
-            DrawTextureEx(handTex, (Vector2){20, (float)GetScreenHeight() - handTex.height * 20 - 20}, 0.0f, 20.0f, WHITE);
+        DrawTextureEx(gunTex, (Vector2){(float)GetScreenWidth()/2 - gunTex.width*3/2, (float)GetScreenHeight() - gunTex.height * 3}, 0.0f, 3.0f, WHITE);
         DrawFPS(10, 10);
         DrawCircle(GetScreenWidth()/2, GetScreenHeight()/2, 4, WHITE);
         EndDrawing();
@@ -94,6 +94,7 @@ int main()
     UnloadTexture(greenTex);
     UnloadTexture(planksTex);
     UnloadTexture(handTex);
+    UnloadTexture(gunTex);
     CloseWindow();
     return 0;
 }
