@@ -32,9 +32,9 @@ int main()
     float tileSize = 5.0f;
     float wallHeight = 20.0f;
 
-    Level level = LoadLevel("map.txt", tileSize, wallHeight);
-
     Shader shader = LoadLightShader();
+
+    Level level = LoadLevel("map.txt", tileSize, wallHeight, texture, wallTex, greenTex, shader);
 
     Camera3D camera = { 0 };
     camera.position = level.playerStart;
@@ -46,6 +46,7 @@ int main()
     SetLightUniforms(shader, camera.position, {1,1,1}, 80.0f, 0.05f);
     int lightRangeLoc = GetShaderLocation(shader, "lightRange");
     int lightAmbLoc = GetShaderLocation(shader, "ambientStrength");
+    int lightPosLoc = GetShaderLocation(shader, "lightPosition");
     bool flashlightOn = true;
 
     DisableCursor();
@@ -62,13 +63,13 @@ int main()
         float ambient = 0.01f;
         SetShaderValue(shader, lightRangeLoc, &range, SHADER_UNIFORM_FLOAT);
         SetShaderValue(shader, lightAmbLoc, &ambient, SHADER_UNIFORM_FLOAT);
-        SetShaderValue(shader, GetShaderLocation(shader, "lightPosition"), &camera.position, SHADER_UNIFORM_VEC3);
+        SetShaderValue(shader, lightPosLoc, &camera.position, SHADER_UNIFORM_VEC3);
 
         BeginDrawing();
         ClearBackground(BLACK);
         BeginMode3D(camera);
 
-        DrawLevel(level, texture, wallTex, greenTex, shader);
+        DrawLevel(level);
 
         EndMode3D();
         if (flashlightOn)

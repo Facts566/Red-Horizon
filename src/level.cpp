@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 
-Level LoadLevel(const char *path, float tileSize, float wallHeight)
+Level LoadLevel(const char *path, float tileSize, float wallHeight, Texture2D floorTex, Texture2D wallTex, Texture2D greenTex, Shader shader)
 {
     Level level = { 0 };
     level.tileSize = tileSize;
@@ -57,8 +57,32 @@ Level LoadLevel(const char *path, float tileSize, float wallHeight)
     }
 
     level.playerStart.y = wallHeight / 2.0f;
-
     free(buf);
+
+    float ts = tileSize;
+    float wh = wallHeight;
+
+    level.models.floor = MakePlane(ts, ts, 1.0f, 1.0f, floorTex);
+    level.models.floor.materials[0].shader = shader;
+
+    level.models.wallN = MakeWall(ts, wh, 1.0f, wh/ts, wallTex);
+    level.models.wallN.materials[0].shader = shader;
+    level.models.wallS = MakeWall(ts, wh, 1.0f, wh/ts, wallTex);
+    level.models.wallS.materials[0].shader = shader;
+    level.models.wallW = MakeWall(ts, wh, 1.0f, wh/ts, wallTex);
+    level.models.wallW.materials[0].shader = shader;
+    level.models.wallE = MakeWall(ts, wh, 1.0f, wh/ts, wallTex);
+    level.models.wallE.materials[0].shader = shader;
+
+    level.models.greenN = MakeWall(ts, wh, 1.0f, wh/ts, greenTex);
+    level.models.greenN.materials[0].shader = shader;
+    level.models.greenS = MakeWall(ts, wh, 1.0f, wh/ts, greenTex);
+    level.models.greenS.materials[0].shader = shader;
+    level.models.greenW = MakeWall(ts, wh, 1.0f, wh/ts, greenTex);
+    level.models.greenW.materials[0].shader = shader;
+    level.models.greenE = MakeWall(ts, wh, 1.0f, wh/ts, greenTex);
+    level.models.greenE.materials[0].shader = shader;
+
     return level;
 }
 
@@ -70,31 +94,10 @@ static bool IsSolid(Level level, int col, int row)
     return c == '&' || c == '@';
 }
 
-void DrawLevel(Level level, Texture2D floorTex, Texture2D wallTex, Texture2D greenTex, Shader shader)
+void DrawLevel(Level level)
 {
     float ts = level.tileSize;
-    float wh = level.wallHeight;
-
-    Model floorModel = MakePlane(ts, ts, 1.0f, 1.0f, floorTex);
-    floorModel.materials[0].shader = shader;
-
-    Model wallN = MakeWall(ts, wh, 1.0f, wh/ts, wallTex);
-    wallN.materials[0].shader = shader;
-    Model wallS = MakeWall(ts, wh, 1.0f, wh/ts, wallTex);
-    wallS.materials[0].shader = shader;
-    Model wallW = MakeWall(ts, wh, 1.0f, wh/ts, wallTex);
-    wallW.materials[0].shader = shader;
-    Model wallE = MakeWall(ts, wh, 1.0f, wh/ts, wallTex);
-    wallE.materials[0].shader = shader;
-
-    Model greenN = MakeWall(ts, wh, 1.0f, wh/ts, greenTex);
-    greenN.materials[0].shader = shader;
-    Model greenS = MakeWall(ts, wh, 1.0f, wh/ts, greenTex);
-    greenS.materials[0].shader = shader;
-    Model greenW = MakeWall(ts, wh, 1.0f, wh/ts, greenTex);
-    greenW.materials[0].shader = shader;
-    Model greenE = MakeWall(ts, wh, 1.0f, wh/ts, greenTex);
-    greenE.materials[0].shader = shader;
+    LevelModels &m = level.models;
 
     for (int row = 0; row < level.height; row++) {
         for (int col = 0; col < level.width; col++) {
@@ -104,13 +107,13 @@ void DrawLevel(Level level, Texture2D floorTex, Texture2D wallTex, Texture2D gre
             float cx = col * ts + ts / 2.0f;
             float cz = row * ts + ts / 2.0f;
 
-            DrawModel(floorModel, (Vector3){cx, 0, cz}, 1.0f, WHITE);
+            DrawModel(m.floor, (Vector3){cx, 0, cz}, 1.0f, WHITE);
 
             if (c == '&' || c == '@') {
-                Model *n = (c == '@') ? &greenN : &wallN;
-                Model *s = (c == '@') ? &greenS : &wallS;
-                Model *w = (c == '@') ? &greenW : &wallW;
-                Model *e = (c == '@') ? &greenE : &wallE;
+                Model *n = (c == '@') ? &m.greenN : &m.wallN;
+                Model *s = (c == '@') ? &m.greenS : &m.wallS;
+                Model *w = (c == '@') ? &m.greenW : &m.wallW;
+                Model *e = (c == '@') ? &m.greenE : &m.wallE;
 
                 if (!IsSolid(level, col, row - 1))
                     DrawModelEx(*n, (Vector3){cx, 0, row * ts}, (Vector3){0,1,0}, 180.0f, (Vector3){1,1,1}, WHITE);
@@ -123,19 +126,18 @@ void DrawLevel(Level level, Texture2D floorTex, Texture2D wallTex, Texture2D gre
             }
         }
     }
-
-    UnloadModel(floorModel);
-    UnloadModel(wallN);
-    UnloadModel(wallS);
-    UnloadModel(wallW);
-    UnloadModel(wallE);
-    UnloadModel(greenN);
-    UnloadModel(greenS);
-    UnloadModel(greenW);
-    UnloadModel(greenE);
 }
 
 void UnloadLevel(Level level)
 {
     if (level.data) free(level.data);
+    UnloadModel(level.models.floor);
+    UnloadModel(level.models.wallN);
+    UnloadModel(level.models.wallS);
+    UnloadModel(level.models.wallW);
+    UnloadModel(level.models.wallE);
+    UnloadModel(level.models.greenN);
+    UnloadModel(level.models.greenS);
+    UnloadModel(level.models.greenW);
+    UnloadModel(level.models.greenE);
 }
