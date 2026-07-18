@@ -32,8 +32,9 @@ int main()
     Model lw = MakeWall(roomD, roomH, roomD/tileSize, roomH/tileSize, wallTex);
     Model rw = MakeWall(roomD, roomH, roomD/tileSize, roomH/tileSize, wallTex);
 
+    Texture2D handTex = LoadTexture("tex/hand_with_flashligh.png");
+
     Shader shader = LoadLightShader();
-    SetLightUniforms(shader, {0, roomH - 1.0f, 0}, {1,1,1}, 60.0f, 0.02f);
 
     fl.materials[0].shader = shader;
     cl.materials[0].shader = shader;
@@ -49,6 +50,11 @@ int main()
     camera.fovy = 60.0f;
     camera.projection = CAMERA_PERSPECTIVE;
 
+    SetLightUniforms(shader, camera.position, {1,1,1}, 80.0f, 0.05f);
+    int lightRangeLoc = GetShaderLocation(shader, "lightRange");
+    int lightAmbLoc = GetShaderLocation(shader, "ambientStrength");
+    bool flashlightOn = true;
+
     DisableCursor();
     float yaw = 0.0f;
 
@@ -57,6 +63,13 @@ int main()
     while (!WindowShouldClose())
     {
         UpdatePlayer(&camera, &yaw);
+
+        if (IsKeyPressed(KEY_F)) flashlightOn = !flashlightOn;
+        float range = flashlightOn ? 80.0f : 0.0f;
+        float ambient = 0.05f;
+        SetShaderValue(shader, lightRangeLoc, &range, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(shader, lightAmbLoc, &ambient, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(shader, GetShaderLocation(shader, "lightPosition"), &camera.position, SHADER_UNIFORM_VEC3);
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -70,16 +83,19 @@ int main()
         DrawModelEx(rw, (Vector3){roomW/2, 0, 0}, (Vector3){0,1,0}, 90.0f, (Vector3){1,1,1}, WHITE);
 
         EndMode3D();
+        if (flashlightOn)
+            DrawTextureEx(handTex, (Vector2){20, (float)GetScreenHeight() - handTex.height * 20 - 20}, 0.0f, 20.0f, WHITE);
         DrawFPS(10, 10);
         DrawCircle(GetScreenWidth()/2, GetScreenHeight()/2, 4, WHITE);
         EndDrawing();
     }
 
-    rlEnableBackfaceCulling();
+    rlDisableBackfaceCulling();
     EnableCursor();
     UnloadShader(shader);
     UnloadTexture(texture);
     UnloadTexture(wallTex);
+    UnloadTexture(handTex);
     CloseWindow();
     return 0;
 }

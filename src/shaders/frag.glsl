@@ -15,6 +15,7 @@ void main() {
     vec3 lightDir = lightPosition - fragPosition;
     float dist = length(lightDir);
     lightDir = normalize(lightDir);
+    if (dot(norm, lightDir) < 0.0) norm = -norm;
     float diff = max(dot(norm, lightDir), 0.0);
     float atten = clamp(1.0 - dist / lightRange, 0.0, 1.0);
     atten = atten * atten;
