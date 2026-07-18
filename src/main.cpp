@@ -62,7 +62,7 @@ int main()
 
     while (!WindowShouldClose())
     {
-        UpdatePlayer(&camera, &yaw);
+        UpdatePlayer(&camera, &yaw, level);
 
         if (IsKeyPressed(KEY_F)) flashlightOn = !flashlightOn;
         float range = flashlightOn ? 80.0f : 0.0f;

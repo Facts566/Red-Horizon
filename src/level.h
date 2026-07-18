@@ -21,3 +21,4 @@ struct Level {
 Level LoadLevel(const char *path, float tileSize, float wallHeight, Texture2D floorTex, Texture2D planksTex, Texture2D wallTex, Texture2D greenTex, Shader shader);
 void DrawLevel(Level level);
 void UnloadLevel(Level level);
+bool CheckWallCollision(Level level, float x, float z, float radius);

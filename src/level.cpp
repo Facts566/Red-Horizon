@@ -97,6 +97,41 @@ static bool IsSolid(Level level, int col, int row)
     return c == '&' || c == '@';
 }
 
+bool CheckWallCollision(Level level, float x, float z, float radius)
+{
+    float ts = level.tileSize;
+
+    if (x - radius < 0 || x + radius > level.width * ts ||
+        z - radius < 0 || z + radius > level.height * ts)
+        return true;
+
+    int minCol = (int)((x - radius) / ts);
+    int maxCol = (int)((x + radius) / ts);
+    int minRow = (int)((z - radius) / ts);
+    int maxRow = (int)((z + radius) / ts);
+
+    for (int row = minRow; row <= maxRow; row++) {
+        for (int col = minCol; col <= maxCol; col++) {
+            if (IsSolid(level, col, row)) {
+                float left = col * ts;
+                float right = left + ts;
+                float top = row * ts;
+                float bottom = top + ts;
+
+                float closestX = (x < left) ? left : (x > right) ? right : x;
+                float closestZ = (z < top) ? top : (z > bottom) ? bottom : z;
+
+                float dx = x - closestX;
+                float dz = z - closestZ;
+
+                if (dx * dx + dz * dz < radius * radius)
+                    return true;
+            }
+        }
+    }
+    return false;
+}
+
 void DrawLevel(Level level)
 {
     float ts = level.tileSize;
