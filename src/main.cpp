@@ -21,6 +21,12 @@ int main()
     rlTextureParameters(wallTex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
     rlTextureParameters(wallTex.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
+    Texture2D greenTex = LoadTexture("tex/green_wall.png");
+    SetTextureFilter(greenTex, TEXTURE_FILTER_POINT);
+    SetTextureWrap(greenTex, TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(greenTex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(greenTex.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
+
     Texture2D handTex = LoadTexture("tex/hand_with_flashligh.png");
 
     float tileSize = 5.0f;
@@ -53,7 +59,7 @@ int main()
 
         if (IsKeyPressed(KEY_F)) flashlightOn = !flashlightOn;
         float range = flashlightOn ? 80.0f : 0.0f;
-        float ambient = 0.05f;
+        float ambient = 0.01f;
         SetShaderValue(shader, lightRangeLoc, &range, SHADER_UNIFORM_FLOAT);
         SetShaderValue(shader, lightAmbLoc, &ambient, SHADER_UNIFORM_FLOAT);
         SetShaderValue(shader, GetShaderLocation(shader, "lightPosition"), &camera.position, SHADER_UNIFORM_VEC3);
@@ -62,7 +68,7 @@ int main()
         ClearBackground(BLACK);
         BeginMode3D(camera);
 
-        DrawLevel(level, texture, wallTex, shader);
+        DrawLevel(level, texture, wallTex, greenTex, shader);
 
         EndMode3D();
         if (flashlightOn)
@@ -78,6 +84,7 @@ int main()
     UnloadShader(shader);
     UnloadTexture(texture);
     UnloadTexture(wallTex);
+    UnloadTexture(greenTex);
     UnloadTexture(handTex);
     CloseWindow();
     return 0;

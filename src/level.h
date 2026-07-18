@@ -11,5 +11,5 @@ struct Level {
 };
 
 Level LoadLevel(const char *path, float tileSize, float wallHeight);
-void DrawLevel(Level level, Texture2D floorTex, Texture2D wallTex, Shader shader);
+void DrawLevel(Level level, Texture2D floorTex, Texture2D wallTex, Texture2D greenTex, Shader shader);
 void UnloadLevel(Level level);

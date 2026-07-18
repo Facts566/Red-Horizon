@@ -62,14 +62,15 @@ Level LoadLevel(const char *path, float tileSize, float wallHeight)
     return level;
 }
 
-static bool IsWall(Level level, int col, int row)
+static bool IsSolid(Level level, int col, int row)
 {
     if (col < 0 || col >= level.width || row < 0 || row >= level.height)
         return false;
-    return level.data[row * level.width + col] == '&';
+    char c = level.data[row * level.width + col];
+    return c == '&' || c == '@';
 }
 
-void DrawLevel(Level level, Texture2D floorTex, Texture2D wallTex, Shader shader)
+void DrawLevel(Level level, Texture2D floorTex, Texture2D wallTex, Texture2D greenTex, Shader shader)
 {
     float ts = level.tileSize;
     float wh = level.wallHeight;
@@ -86,6 +87,15 @@ void DrawLevel(Level level, Texture2D floorTex, Texture2D wallTex, Shader shader
     Model wallE = MakeWall(ts, wh, 1.0f, wh/ts, wallTex);
     wallE.materials[0].shader = shader;
 
+    Model greenN = MakeWall(ts, wh, 1.0f, wh/ts, greenTex);
+    greenN.materials[0].shader = shader;
+    Model greenS = MakeWall(ts, wh, 1.0f, wh/ts, greenTex);
+    greenS.materials[0].shader = shader;
+    Model greenW = MakeWall(ts, wh, 1.0f, wh/ts, greenTex);
+    greenW.materials[0].shader = shader;
+    Model greenE = MakeWall(ts, wh, 1.0f, wh/ts, greenTex);
+    greenE.materials[0].shader = shader;
+
     for (int row = 0; row < level.height; row++) {
         for (int col = 0; col < level.width; col++) {
             char c = level.data[row * level.width + col];
@@ -96,15 +106,20 @@ void DrawLevel(Level level, Texture2D floorTex, Texture2D wallTex, Shader shader
 
             DrawModel(floorModel, (Vector3){cx, 0, cz}, 1.0f, WHITE);
 
-            if (c == '&') {
-                if (!IsWall(level, col, row - 1))
-                    DrawModelEx(wallN, (Vector3){cx, 0, row * ts}, (Vector3){0,1,0}, 180.0f, (Vector3){1,1,1}, WHITE);
-                if (!IsWall(level, col, row + 1))
-                    DrawModel(wallS, (Vector3){cx, 0, (row + 1) * ts}, 1.0f, WHITE);
-                if (!IsWall(level, col - 1, row))
-                    DrawModelEx(wallW, (Vector3){col * ts, 0, cz}, (Vector3){0,1,0}, -90.0f, (Vector3){1,1,1}, WHITE);
-                if (!IsWall(level, col + 1, row))
-                    DrawModelEx(wallE, (Vector3){(col + 1) * ts, 0, cz}, (Vector3){0,1,0}, 90.0f, (Vector3){1,1,1}, WHITE);
+            if (c == '&' || c == '@') {
+                Model *n = (c == '@') ? &greenN : &wallN;
+                Model *s = (c == '@') ? &greenS : &wallS;
+                Model *w = (c == '@') ? &greenW : &wallW;
+                Model *e = (c == '@') ? &greenE : &wallE;
+
+                if (!IsSolid(level, col, row - 1))
+                    DrawModelEx(*n, (Vector3){cx, 0, row * ts}, (Vector3){0,1,0}, 180.0f, (Vector3){1,1,1}, WHITE);
+                if (!IsSolid(level, col, row + 1))
+                    DrawModel(*s, (Vector3){cx, 0, (row + 1) * ts}, 1.0f, WHITE);
+                if (!IsSolid(level, col - 1, row))
+                    DrawModelEx(*w, (Vector3){col * ts, 0, cz}, (Vector3){0,1,0}, -90.0f, (Vector3){1,1,1}, WHITE);
+                if (!IsSolid(level, col + 1, row))
+                    DrawModelEx(*e, (Vector3){(col + 1) * ts, 0, cz}, (Vector3){0,1,0}, 90.0f, (Vector3){1,1,1}, WHITE);
             }
         }
     }
@@ -114,6 +129,10 @@ void DrawLevel(Level level, Texture2D floorTex, Texture2D wallTex, Shader shader
     UnloadModel(wallS);
     UnloadModel(wallW);
     UnloadModel(wallE);
+    UnloadModel(greenN);
+    UnloadModel(greenS);
+    UnloadModel(greenW);
+    UnloadModel(greenE);
 }
 
 void UnloadLevel(Level level)
