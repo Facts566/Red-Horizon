@@ -1,10 +1,76 @@
 #include <raylib.h>
+#include <raymath.h>
 #include <rlgl.h>
+#include <vector>
+#include <cmath>
 #include "player.h"
 #include "map.h"
 #include "light.h"
 #include "level.h"
 #include "door.h"
+
+static bool RaycastWall(Level level, Vector3 origin, Vector3 dir, float maxDist, Vector3 &hitPos, Vector3 &hitNormal)
+{
+    float ts = level.tileSize;
+    float wh = level.wallHeight;
+
+    int col = (int)(origin.x / ts);
+    int row = (int)(origin.z / ts);
+    if (origin.x < 0) col--;
+    if (origin.z < 0) row--;
+
+    int stepX = (dir.x > 0) ? 1 : (dir.x < 0) ? -1 : 0;
+    int stepZ = (dir.z > 0) ? 1 : (dir.z < 0) ? -1 : 0;
+
+    float tMaxX = (dir.x != 0) ? ((col + (stepX > 0 ? 1 : 0)) * ts - origin.x) / dir.x : INFINITY;
+    float tMaxZ = (dir.z != 0) ? ((row + (stepZ > 0 ? 1 : 0)) * ts - origin.z) / dir.z : INFINITY;
+    if (tMaxX < 0) tMaxX = 0;
+    if (tMaxZ < 0) tMaxZ = 0;
+
+    float tDeltaX = (dir.x != 0) ? ts / fabsf(dir.x) : INFINITY;
+    float tDeltaZ = (dir.z != 0) ? ts / fabsf(dir.z) : INFINITY;
+
+    float t = 0;
+    bool steppedX = false;
+
+    for (int i = 0; i < 200; i++)
+    {
+        if (col >= 0 && col < level.width && row >= 0 && row < level.height)
+        {
+            char c = level.data[row * level.width + col];
+            if (c == '&' || c == '@')
+            {
+                hitPos.x = origin.x + dir.x * t;
+                hitPos.y = origin.y + dir.y * t;
+                hitPos.z = origin.z + dir.z * t;
+
+                if (hitPos.y < 0 || hitPos.y > wh)
+                    return false;
+
+                hitNormal = steppedX ? (Vector3){(float)-stepX, 0, 0} : (Vector3){0, 0, (float)-stepZ};
+                return true;
+            }
+        }
+
+        if (tMaxX < tMaxZ)
+        {
+            t = tMaxX;
+            tMaxX += tDeltaX;
+            col += stepX;
+            steppedX = true;
+        }
+        else
+        {
+            t = tMaxZ;
+            tMaxZ += tDeltaZ;
+            row += stepZ;
+            steppedX = false;
+        }
+
+        if (t > maxDist) break;
+    }
+    return false;
+}
 
 int main()
 {
@@ -86,6 +152,9 @@ int main()
     const float FLASH_DURATION = 0.08f;
 
     Texture2D muzzleTex = LoadTexture("tex/Muzzle.png");
+    Texture2D shotholeTex = LoadTexture("tex/shothole.png");
+    Model decalModel = MakeWall(0.6f, 0.6f, 1.0f, 1.0f, shotholeTex);
+    decalModel.materials[0].shader = shader;
 
     float shakeTime = 0.0f;
     float flashTime = 0.0f;
@@ -95,11 +164,17 @@ int main()
     float fireCooldown = 0.0f;
     const float FIRE_RATE = 0.5f;
 
+    int maxHealth = 100;
+    int health = maxHealth;
+
     int maxAmmo = 7;
     int currentAmmo = maxAmmo;
     bool isReloading = false;
     float reloadTimer = 0.0f;
     const float RELOAD_TIME = 5.0f;
+
+    struct BulletHole { Vector3 pos; Vector3 normal; };
+    std::vector<BulletHole> bulletHoles;
 
     while (!WindowShouldClose())
     {
@@ -133,6 +208,17 @@ int main()
             shakeTime = SHAKE_DURATION;
             flashTime = FLASH_DURATION;
             flashRotation = (float)GetRandomValue(0, 3600) / 10.0f;
+
+            Vector3 dir = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
+            Vector3 hitPos, hitNormal;
+            if (RaycastWall(level, camera.position, dir, 100.0f, hitPos, hitNormal))
+            {
+                hitPos.x += hitNormal.x * 0.05f;
+                hitPos.z += hitNormal.z * 0.05f;
+                if (bulletHoles.size() >= 50)
+                    bulletHoles.erase(bulletHoles.begin());
+                bulletHoles.push_back({hitPos, hitNormal});
+            }
         }
 
         Vector3 shakeOffset = {0};
@@ -174,6 +260,20 @@ int main()
 
         DrawLevel(level);
         DrawDoor(door);
+
+        for (auto &bh : bulletHoles)
+        {
+            Vector3 p = bh.pos;
+            p.y -= 0.3f;
+            if (bh.normal.z < 0)
+                DrawModelEx(decalModel, p, (Vector3){0,1,0}, 180.0f, (Vector3){1,1,1}, WHITE);
+            else if (bh.normal.z > 0)
+                DrawModel(decalModel, p, 1.0f, WHITE);
+            else if (bh.normal.x < 0)
+                DrawModelEx(decalModel, p, (Vector3){0,1,0}, -90.0f, (Vector3){1,1,1}, WHITE);
+            else if (bh.normal.x > 0)
+                DrawModelEx(decalModel, p, (Vector3){0,1,0}, 90.0f, (Vector3){1,1,1}, WHITE);
+        }
 
         EndMode3D();
 
@@ -218,6 +318,18 @@ int main()
         }
 
         DrawFPS(10, 10);
+
+        int hpBarWidth = 375;
+        int hpBarHeight = 33;
+        int hpBarX = 20;
+        int hpBarY = GetScreenHeight() - 70;
+        float hpPercent = (float)health / maxHealth;
+        Color hpColor = hpPercent > 0.5f ? GREEN : (hpPercent > 0.25f ? ORANGE : RED);
+        DrawRectangle(hpBarX - 3, hpBarY - 3, hpBarWidth + 6, hpBarHeight + 6, GRAY);
+        DrawRectangle(hpBarX, hpBarY, hpBarWidth, hpBarHeight, ColorAlpha(BLACK, 0.7f));
+        DrawRectangle(hpBarX, hpBarY, (int)(hpBarWidth * hpPercent), hpBarHeight, hpColor);
+        DrawText(TextFormat("HP: %i / %i", health, maxHealth), hpBarX + 15, hpBarY + 4, 27, WHITE);
+
         EndDrawing();
     }
 
@@ -233,6 +345,8 @@ int main()
     UnloadTexture(handTex);
     UnloadTexture(gunTex);
     UnloadTexture(muzzleTex);
+    UnloadTexture(shotholeTex);
+    UnloadModel(decalModel);
     UnloadTexture(doorTexClosed);
     UnloadTexture(doorTexOpen);
     CloseWindow();
