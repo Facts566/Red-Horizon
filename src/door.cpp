@@ -50,14 +50,19 @@ Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Tex
     return door;
 }
 
-void UpdateDoors(Door doors[], int count, Vector3 playerPos)
+void UpdateDoors(Door doors[], int count, Vector3 positions[], int posCount)
 {
     for (int i = 0; i < count; i++)
     {
-        float dx = playerPos.x - doors[i].position.x;
-        float dz = playerPos.z - doors[i].position.z;
-        float dist = sqrtf(dx * dx + dz * dz);
-        doors[i].isOpen = dist < doors[i].triggerRadius;
+        bool open = false;
+        for (int p = 0; p < posCount; p++)
+        {
+            float dx = positions[p].x - doors[i].position.x;
+            float dz = positions[p].z - doors[i].position.z;
+            float dist = sqrtf(dx * dx + dz * dz);
+            if (dist < doors[i].triggerRadius) { open = true; break; }
+        }
+        doors[i].isOpen = open;
     }
 }
 
@@ -156,6 +161,7 @@ bool RayDoorIntersect(Door door, Vector3 origin, Vector3 dir, float maxDist, Vec
         hitPos.x = hx;
         hitPos.y = hy;
         hitPos.z = hz;
+        if (denom > 0) { nx = -nx; nz = -nz; }
         hitNormal = (Vector3){nx, 0, nz};
         return true;
     }

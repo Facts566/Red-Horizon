@@ -2,9 +2,6 @@
 #include "door.h"
 #include <math.h>
 
-const float PLAYER_SPEED = 20.0f;
-const float PLAYER_RADIUS = 1.0f;
-
 void UpdatePlayer(Camera3D *camera, float *yaw, Level level, Door doors[], int doorCount, BoxCollider sofaBox)
 {
     *yaw -= GetMouseDelta().x * 0.003f;
@@ -39,8 +36,6 @@ void UpdatePlayer(Camera3D *camera, float *yaw, Level level, Door doors[], int d
         !CheckAnyDoorCollision(doors, doorCount, camera->position.x, nz, PLAYER_RADIUS) &&
         !CheckBoxCollision(sofaBox, camera->position.x, nz, PLAYER_RADIUS))
         camera->position.z = nz;
-
-    UpdateDoors(doors, doorCount, camera->position);
 
     camera->target.x = camera->position.x + fx;
     camera->target.y = camera->position.y;

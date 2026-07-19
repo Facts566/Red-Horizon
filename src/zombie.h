@@ -1,0 +1,29 @@
+#pragma once
+#include <raylib.h>
+#include "level.h"
+#include "door.h"
+#include "props.h"
+
+#define ZOMBIE_MAX_PATH 256
+
+struct Zombie {
+    Vector3 position;
+    float health;
+    float speed;
+    float radius;
+
+    Vector2 path[ZOMBIE_MAX_PATH];
+    int pathCount;
+    float pathRecalcTimer;
+    int pathIndex;
+
+    Texture2D texture;
+
+    bool active;
+};
+
+void InitZombie(Zombie &zombie, Vector3 pos);
+void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, BoxCollider sofaBox, Vector3 playerPos, float dt);
+void DrawZombie(Zombie &zombie, Camera3D camera);
+void UnloadZombie(Zombie &zombie);
+bool ZombieHitByRay(Zombie &zombie, Vector3 origin, Vector3 dir);

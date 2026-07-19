@@ -9,6 +9,7 @@
 #include "raycast.h"
 #include "scene.h"
 #include "weapon.h"
+#include "zombie.h"
 
 int main()
 {
@@ -94,7 +95,7 @@ int main()
     rlDisableBackfaceCulling();
 
     int maxHealth = 100;
-    int health = maxHealth;
+    float health = (float)maxHealth;
 
     while (!WindowShouldClose())
     {
@@ -103,7 +104,58 @@ int main()
         if (IsKeyPressed(KEY_F)) flashlightOn = !flashlightOn;
 
         UpdateWeapon(weapon);
+
+        bool shotFired = (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_SPACE)) && weapon.fireCooldown <= 0.0f && !weapon.isReloading && weapon.currentAmmo > 0;
         ShootWeapon(weapon, camera, level, doors, doorCount, shader);
+
+        {
+            float dt = GetFrameTime();
+
+            Vector3 doorPositions[SCENE_MAX_ZOMBIES + 1];
+            int doorPosCount = 0;
+            doorPositions[doorPosCount++] = camera.position;
+            for (int i = 0; i < scene.zombieCount; i++) {
+                if (scene.zombies[i].active)
+                    doorPositions[doorPosCount++] = scene.zombies[i].position;
+            }
+            UpdateDoors(doors, doorCount, doorPositions, doorPosCount);
+
+            for (int i = 0; i < scene.zombieCount; i++)
+                UpdateZombie(scene.zombies[i], level, doors, doorCount, scene.sofaBox, camera.position, dt);
+
+            if (shotFired) {
+                Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
+                for (int i = 0; i < scene.zombieCount; i++) {
+                    if (ZombieHitByRay(scene.zombies[i], camera.position, forward)) {
+                        scene.zombies[i].health -= 50.0f;
+                        if (scene.zombies[i].health <= 0.0f)
+                            scene.zombies[i].active = false;
+                    }
+                }
+            }
+
+            {
+                static float touchTimer = 0.0f;
+                bool touching = false;
+                for (int i = 0; i < scene.zombieCount; i++) {
+                    if (!scene.zombies[i].active) continue;
+                    float dx = camera.position.x - scene.zombies[i].position.x;
+                    float dz = camera.position.z - scene.zombies[i].position.z;
+                    if (dx * dx + dz * dz < (PLAYER_RADIUS + scene.zombies[i].radius * 2) * (PLAYER_RADIUS + scene.zombies[i].radius * 2))
+                        touching = true;
+                }
+                if (touching) {
+                    touchTimer += dt;
+                    while (touchTimer >= 1.0f) {
+                        health -= 10.0f;
+                        touchTimer -= 1.0f;
+                    }
+                } else {
+                    touchTimer = 0.0f;
+                }
+            }
+            if (health < 0) health = 0;
+        }
 
         float range = flashlightOn ? 80.0f : 0.0f;
         float ambient = 0.01f;
@@ -137,12 +189,12 @@ int main()
 
         DrawLevel(level);
         DrawDoors(doors, doorCount);
-        DrawScene(scene);
+        DrawScene(scene, shakeCam);
         DrawWeaponDecals(weapon, weapon.decalModel);
 
         EndMode3D();
 
-        DrawWeaponHUD(weapon, health, maxHealth);
+        DrawWeaponHUD(weapon, (int)health, maxHealth);
 
         EndDrawing();
     }
