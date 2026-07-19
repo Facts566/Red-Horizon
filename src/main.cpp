@@ -344,7 +344,13 @@ int main()
 
         DrawLevel(level);
         DrawDoors(doors, doorCount);
-        DrawModel(sofa, (Vector3){12 * tileSize, 0.7f * tileSize, 1.8f * tileSize}, 4.0f, WHITE);
+
+        {
+            Vector3 sofaPos = {12 * tileSize, 0.7f * tileSize, 1.8f * tileSize};
+            Matrix sofaTransform = MatrixMultiply(MatrixScale(4.0f, 4.0f, 4.0f), MatrixTranslate(sofaPos.x, sofaPos.y, sofaPos.z));
+            for (int mi = 0; mi < sofa.meshCount; mi++)
+                DrawMesh(sofa.meshes[mi], sofa.materials[sofa.meshMaterial[mi]], sofaTransform);
+        }
 
         for (auto &bh : bulletHoles)
         {

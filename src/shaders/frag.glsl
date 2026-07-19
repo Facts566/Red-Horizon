@@ -11,6 +11,7 @@ uniform float ambientStrength;
 out vec4 finalColor;
 void main() {
     vec4 texColor = texture(texture0, fragTexCoord);
+    if (texColor.a < 0.1) discard;
     vec3 norm = normalize(fragNormal);
     vec3 lightDir = lightPosition - fragPosition;
     float dist = length(lightDir);
