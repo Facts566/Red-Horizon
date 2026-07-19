@@ -124,7 +124,7 @@ int main()
     Door door = CreateDoor(
         (Vector3){12 * tileSize, 0, 8 * tileSize},
         (Vector3){0,1,0}, 0.0f,
-        doorTexClosed, doorTexOpen, shader
+        doorTexClosed, doorTexOpen, greenTex, shader
     );
 
     Camera3D camera = { 0 };

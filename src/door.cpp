@@ -4,8 +4,9 @@
 
 static Model doorModelClosed = { 0 };
 static Model doorModelOpen = { 0 };
+static Model doorTopCap = { 0 };
 
-Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Texture2D closedTex, Texture2D openTex, Shader shader)
+Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Texture2D closedTex, Texture2D openTex, Texture2D capTex, Shader shader)
 {
     float ts = 5.0f;
 
@@ -14,6 +15,11 @@ Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Tex
 
     doorModelOpen = MakeWall(ts * 2, 3 * ts, 1.0f, -1.0f, openTex);
     doorModelOpen.materials[0].shader = shader;
+
+    Mesh capMesh = GenMeshCube(ts * 2, ts, ts);
+    doorTopCap = LoadModelFromMesh(capMesh);
+    doorTopCap.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = capTex;
+    doorTopCap.materials[0].shader = shader;
 
     Door door = { 0 };
     door.position = position;
@@ -36,8 +42,20 @@ void UpdateDoor(Door *door, Vector3 playerPos)
 
 void DrawDoor(Door door)
 {
-    Model *m = door.isOpen ? &doorModelOpen : &doorModelClosed;
-    DrawModelEx(*m, door.position, door.rotationAxis, door.rotationAngle, (Vector3){1,1,1}, WHITE);
+    if (door.isOpen)
+    {
+        DrawModelEx(doorModelOpen, door.position, door.rotationAxis, door.rotationAngle, (Vector3){1,1,1}, WHITE);
+    }
+    else
+    {
+        DrawModelEx(doorModelClosed, door.position, door.rotationAxis, door.rotationAngle, (Vector3){1,1,1}, WHITE);
+    }
+
+    float ts = 5.0f;
+    Vector3 capPos = door.position;
+    capPos.y = 3.5f * ts;
+    capPos.z += ts / 2.0f;
+    DrawModelEx(doorTopCap, capPos, door.rotationAxis, door.rotationAngle, (Vector3){1,1,1}, WHITE);
 }
 
 bool CheckDoorCollision(Door door, float x, float z, float radius)
@@ -64,4 +82,5 @@ void UnloadDoor()
 {
     UnloadModel(doorModelClosed);
     UnloadModel(doorModelOpen);
+    UnloadModel(doorTopCap);
 }
