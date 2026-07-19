@@ -139,6 +139,12 @@ int main()
         doorTexClosed, doorTexOpen, greenTex, wallTex, shader, shotholeTex
     );
 
+    Model sofa = LoadModel("models/sofa.fbx");
+    Texture2D sofaTex = LoadTexture("tex/sofa.png");
+    SetTextureFilter(sofaTex, TEXTURE_FILTER_POINT);
+    sofa.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = sofaTex;
+    sofa.materials[0].shader = shader;
+
     Camera3D camera = { 0 };
     camera.position = level.playerStart;
     camera.target = (Vector3){camera.position.x, camera.position.y, camera.position.z - 1};
@@ -338,6 +344,7 @@ int main()
 
         DrawLevel(level);
         DrawDoors(doors, doorCount);
+        DrawModel(sofa, (Vector3){5 * tileSize, 0, 5 * tileSize}, 1.0f, WHITE);
 
         for (auto &bh : bulletHoles)
         {
@@ -415,6 +422,8 @@ int main()
     EnableCursor();
     UnloadLevel(level);
     UnloadDoors();
+    UnloadModel(sofa);
+    UnloadTexture(sofaTex);
     UnloadShader(shader);
     UnloadTexture(texture);
     UnloadTexture(wallTex);
