@@ -86,6 +86,9 @@ int main()
     int lightRangeLoc = GetShaderLocation(shader, "lightRange");
     int lightAmbLoc = GetShaderLocation(shader, "ambientStrength");
     int lightPosLoc = GetShaderLocation(shader, "lightPosition");
+    int light2PosLoc = GetShaderLocation(shader, "light2Position");
+    int light2RangeLoc = GetShaderLocation(shader, "light2Range");
+    int light2ColorLoc = GetShaderLocation(shader, "light2Color");
     bool flashlightOn = true;
 
     DisableCursor();
@@ -110,6 +113,14 @@ int main()
         SetShaderValue(shader, lightRangeLoc, &range, SHADER_UNIFORM_FLOAT);
         SetShaderValue(shader, lightAmbLoc, &ambient, SHADER_UNIFORM_FLOAT);
         SetShaderValue(shader, lightPosLoc, &camera.position, SHADER_UNIFORM_VEC3);
+
+        Vector3 lampLightPos = scene.lamp.position;
+        lampLightPos.y -= 5.0f;
+        SetShaderValue(shader, light2PosLoc, &lampLightPos, SHADER_UNIFORM_VEC3);
+        float lampRange = 30.0f;
+        SetShaderValue(shader, light2RangeLoc, &lampRange, SHADER_UNIFORM_FLOAT);
+        Vector3 lampColor = {1.0f, 0.9f, 0.7f};
+        SetShaderValue(shader, light2ColorLoc, &lampColor, SHADER_UNIFORM_VEC3);
 
         BeginDrawing();
         ClearBackground(BLACK);
