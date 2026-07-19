@@ -56,8 +56,8 @@ int main()
     Level level = LoadLevel("map/map.txt", tileSize, wallHeight, texture, planksTex, wallTex, greenTex, shader);
 
     Door door = CreateDoor(
-        (Vector3){10 * tileSize, 0, 8 * tileSize},
-        (Vector3){0,1,0}, 90.0f,
+        (Vector3){12 * tileSize, 0, 8 * tileSize},
+        (Vector3){0,1,0}, 0.0f,
         doorTexClosed, doorTexOpen, shader
     );
 

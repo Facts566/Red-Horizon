@@ -9,10 +9,10 @@ Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Tex
 {
     float ts = 5.0f;
 
-    doorModelClosed = MakeWall(ts * 2, 3 * ts, 1.0f, (3 * ts) / (ts * 2), closedTex);
+    doorModelClosed = MakeWall(ts * 2, 3 * ts, 1.0f, -1.0f, closedTex);
     doorModelClosed.materials[0].shader = shader;
 
-    doorModelOpen = MakeWall(ts * 2, 3 * ts, 1.0f, (3 * ts) / (ts * 2), openTex);
+    doorModelOpen = MakeWall(ts * 2, 3 * ts, 1.0f, -1.0f, openTex);
     doorModelOpen.materials[0].shader = shader;
 
     Door door = { 0 };
