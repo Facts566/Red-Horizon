@@ -4,26 +4,38 @@
 
 static Model doorModelClosed = { 0 };
 static Model doorModelOpen = { 0 };
-static Model doorTopCap = { 0 };
+static Model doorCapLeft = { 0 };
+static Model doorCapRight = { 0 };
 static Model doorDecalModel = { 0 };
+static bool doorModelsLoaded = false;
 
-Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Texture2D closedTex, Texture2D openTex, Texture2D capTex, Shader shader, Texture2D shotholeTex)
+Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Texture2D closedTex, Texture2D openTex, Texture2D capLeftTex, Texture2D capRightTex, Shader shader, Texture2D shotholeTex)
 {
     float ts = 5.0f;
 
-    doorModelClosed = MakeWall(ts * 2, 3 * ts, 1.0f, -1.0f, closedTex);
-    doorModelClosed.materials[0].shader = shader;
+    if (!doorModelsLoaded)
+    {
+        doorModelClosed = MakeWall(ts * 2, 3 * ts, 1.0f, -1.0f, closedTex);
+        doorModelClosed.materials[0].shader = shader;
 
-    doorModelOpen = MakeWall(ts * 2, 3 * ts, 1.0f, -1.0f, openTex);
-    doorModelOpen.materials[0].shader = shader;
+        doorModelOpen = MakeWall(ts * 2, 3 * ts, 1.0f, -1.0f, openTex);
+        doorModelOpen.materials[0].shader = shader;
 
-    Mesh capMesh = GenMeshCube(ts * 2, ts, ts);
-    doorTopCap = LoadModelFromMesh(capMesh);
-    doorTopCap.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = capTex;
-    doorTopCap.materials[0].shader = shader;
+        Mesh capMeshLeft = GenMeshCube(ts * 2, ts, ts);
+        doorCapLeft = LoadModelFromMesh(capMeshLeft);
+        doorCapLeft.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = capLeftTex;
+        doorCapLeft.materials[0].shader = shader;
 
-    doorDecalModel = MakeWall(0.6f, 0.6f, 1.0f, 1.0f, shotholeTex);
-    doorDecalModel.materials[0].shader = shader;
+        Mesh capMeshRight = GenMeshCube(ts * 2, ts, ts);
+        doorCapRight = LoadModelFromMesh(capMeshRight);
+        doorCapRight.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = capRightTex;
+        doorCapRight.materials[0].shader = shader;
+
+        doorDecalModel = MakeWall(0.6f, 0.6f, 1.0f, 1.0f, shotholeTex);
+        doorDecalModel.materials[0].shader = shader;
+
+        doorModelsLoaded = true;
+    }
 
     Door door = { 0 };
     door.position = position;
@@ -33,67 +45,92 @@ Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Tex
     door.triggerRadius = 8.0f;
     door.closedTex = closedTex;
     door.openTex = openTex;
+    door.capLeftTex = capLeftTex;
+    door.capRightTex = capRightTex;
     return door;
 }
 
-void UpdateDoor(Door *door, Vector3 playerPos)
+void UpdateDoors(Door doors[], int count, Vector3 playerPos)
 {
-    float dx = playerPos.x - door->position.x;
-    float dz = playerPos.z - door->position.z;
-    float dist = sqrtf(dx * dx + dz * dz);
-    door->isOpen = dist < door->triggerRadius;
+    for (int i = 0; i < count; i++)
+    {
+        float dx = playerPos.x - doors[i].position.x;
+        float dz = playerPos.z - doors[i].position.z;
+        float dist = sqrtf(dx * dx + dz * dz);
+        doors[i].isOpen = dist < doors[i].triggerRadius;
+    }
 }
 
-void DrawDoor(Door door)
+void DrawDoors(Door doors[], int count)
 {
-    if (door.isOpen)
-    {
-        DrawModelEx(doorModelOpen, door.position, door.rotationAxis, door.rotationAngle, (Vector3){1,1,1}, WHITE);
-    }
-    else
-    {
-        DrawModelEx(doorModelClosed, door.position, door.rotationAxis, door.rotationAngle, (Vector3){1,1,1}, WHITE);
+    float ts = 5.0f;
 
-        for (auto &bh : door.bulletHoles)
+    for (int i = 0; i < count; i++)
+    {
+        if (doors[i].isOpen)
         {
-            Vector3 p = bh.pos;
-            p.y -= 0.3f;
-            if (bh.normal.z < 0)
-                DrawModelEx(doorDecalModel, p, (Vector3){0,1,0}, 180.0f, (Vector3){1,1,1}, WHITE);
-            else if (bh.normal.z > 0)
-                DrawModel(doorDecalModel, p, 1.0f, WHITE);
-            else if (bh.normal.x < 0)
-                DrawModelEx(doorDecalModel, p, (Vector3){0,1,0}, -90.0f, (Vector3){1,1,1}, WHITE);
-            else if (bh.normal.x > 0)
-                DrawModelEx(doorDecalModel, p, (Vector3){0,1,0}, 90.0f, (Vector3){1,1,1}, WHITE);
+            DrawModelEx(doorModelOpen, doors[i].position, doors[i].rotationAxis, doors[i].rotationAngle, (Vector3){1,1,1}, WHITE);
         }
-    }
+        else
+        {
+            DrawModelEx(doorModelClosed, doors[i].position, doors[i].rotationAxis, doors[i].rotationAngle, (Vector3){1,1,1}, WHITE);
 
-    float ts = 5.0f;
-    Vector3 capPos = door.position;
-    capPos.y = 3.5f * ts;
-    capPos.z += ts / 2.0f;
-    DrawModelEx(doorTopCap, capPos, door.rotationAxis, door.rotationAngle, (Vector3){1,1,1}, WHITE);
+            for (auto &bh : doors[i].bulletHoles)
+            {
+                Vector3 p = bh.pos;
+                p.y -= 0.3f;
+                if (bh.normal.z < 0)
+                    DrawModelEx(doorDecalModel, p, (Vector3){0,1,0}, 180.0f, (Vector3){1,1,1}, WHITE);
+                else if (bh.normal.z > 0)
+                    DrawModel(doorDecalModel, p, 1.0f, WHITE);
+                else if (bh.normal.x < 0)
+                    DrawModelEx(doorDecalModel, p, (Vector3){0,1,0}, -90.0f, (Vector3){1,1,1}, WHITE);
+                else if (bh.normal.x > 0)
+                    DrawModelEx(doorDecalModel, p, (Vector3){0,1,0}, 90.0f, (Vector3){1,1,1}, WHITE);
+            }
+        }
+
+        float rad = doors[i].rotationAngle * 3.14159f / 180.0f;
+        float sx = sinf(rad);
+        float sz = cosf(rad);
+
+        Vector3 capLeftPos = doors[i].position;
+        capLeftPos.y = 3.5f * ts;
+        capLeftPos.x -= sx * ts / 2.0f;
+        capLeftPos.z -= sz * ts / 2.0f;
+        DrawModelEx(doorCapLeft, capLeftPos, doors[i].rotationAxis, doors[i].rotationAngle, (Vector3){1,1,1}, WHITE);
+
+        Vector3 capRightPos = doors[i].position;
+        capRightPos.y = 3.5f * ts;
+        capRightPos.x += sx * ts / 2.0f;
+        capRightPos.z += sz * ts / 2.0f;
+        DrawModelEx(doorCapRight, capRightPos, doors[i].rotationAxis, doors[i].rotationAngle, (Vector3){1,1,1}, WHITE);
+    }
 }
 
-bool CheckDoorCollision(Door door, float x, float z, float radius)
+bool CheckAnyDoorCollision(Door doors[], int count, float x, float z, float radius)
 {
-    if (door.isOpen) return false;
+    for (int i = 0; i < count; i++)
+    {
+        if (doors[i].isOpen) continue;
 
-    float ts = 5.0f;
-    float hw = ts;
-    float left = door.position.x - hw;
-    float right = door.position.x + hw;
-    float top = door.position.z - ts / 2.0f;
-    float bottom = door.position.z + ts / 2.0f;
+        float ts = 5.0f;
+        float hw = ts;
+        float left = doors[i].position.x - hw;
+        float right = doors[i].position.x + hw;
+        float top = doors[i].position.z - ts / 2.0f;
+        float bottom = doors[i].position.z + ts / 2.0f;
 
-    float closestX = (x < left) ? left : (x > right) ? right : x;
-    float closestZ = (z < top) ? top : (z > bottom) ? bottom : z;
+        float closestX = (x < left) ? left : (x > right) ? right : x;
+        float closestZ = (z < top) ? top : (z > bottom) ? bottom : z;
 
-    float dx = x - closestX;
-    float dz = z - closestZ;
+        float dx = x - closestX;
+        float dz = z - closestZ;
 
-    return dx * dx + dz * dz < radius * radius;
+        if (dx * dx + dz * dz < radius * radius)
+            return true;
+    }
+    return false;
 }
 
 bool RayDoorIntersect(Door door, Vector3 origin, Vector3 dir, float maxDist, Vector3 &hitPos, Vector3 &hitNormal)
@@ -122,10 +159,11 @@ bool RayDoorIntersect(Door door, Vector3 origin, Vector3 dir, float maxDist, Vec
     return false;
 }
 
-void UnloadDoor()
+void UnloadDoors()
 {
     UnloadModel(doorModelClosed);
     UnloadModel(doorModelOpen);
-    UnloadModel(doorTopCap);
+    UnloadModel(doorCapLeft);
+    UnloadModel(doorCapRight);
     UnloadModel(doorDecalModel);
 }

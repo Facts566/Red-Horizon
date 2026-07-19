@@ -125,10 +125,18 @@ int main()
     Model decalModel = MakeWall(0.6f, 0.6f, 1.0f, 1.0f, shotholeTex);
     decalModel.materials[0].shader = shader;
 
-    Door door = CreateDoor(
-        (Vector3){12 * tileSize, 0, 8 * tileSize},
+    Door doors[MAX_DOORS];
+    int doorCount = 0;
+
+    doors[doorCount++] = CreateDoor(
+        (Vector3){12 * tileSize, 0, 9 * tileSize},
         (Vector3){0,1,0}, 0.0f,
-        doorTexClosed, doorTexOpen, greenTex, shader, shotholeTex
+        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, shotholeTex
+    );
+    doors[doorCount++] = CreateDoor(
+        (Vector3){22 * tileSize, 0, 17 * tileSize},
+        (Vector3){0,1,0}, 270.0f,
+        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, shotholeTex
     );
 
     Camera3D camera = { 0 };
@@ -149,7 +157,6 @@ int main()
 
     rlDisableBackfaceCulling();
 
-    // Muzzle flash configuration
     const float FLASH_OFFSET_X = 170.0f;
     const float FLASH_OFFSET_Y = 70.0f;
     const float FLASH_SCALE = 2.0f;
@@ -178,7 +185,7 @@ int main()
 
     while (!WindowShouldClose())
     {
-        UpdatePlayer(&camera, &yaw, level, &door);
+        UpdatePlayer(&camera, &yaw, level, doors, doorCount);
 
         if (fireCooldown > 0.0f)
             fireCooldown -= GetFrameTime();
@@ -227,7 +234,18 @@ int main()
                 bool wallHit = RaycastWall(level, camera.position, dir, 100.0f, wallPos, wallNorm);
 
                 Vector3 doorPos, doorNorm;
-                bool doorHit = !door.isOpen && RayDoorIntersect(door, camera.position, dir, 100.0f, doorPos, doorNorm);
+                bool doorHit = false;
+                int hitDoorIdx = -1;
+
+                for (int d = 0; d < doorCount; d++)
+                {
+                    if (!doors[d].isOpen && RayDoorIntersect(doors[d], camera.position, dir, 100.0f, doorPos, doorNorm))
+                    {
+                        doorHit = true;
+                        hitDoorIdx = d;
+                        break;
+                    }
+                }
 
                 if (wallHit || doorHit)
                 {
@@ -265,11 +283,11 @@ int main()
                     bestPos.x += bestNorm.x * 0.05f;
                     bestPos.z += bestNorm.z * 0.05f;
 
-                    if (hitDoor)
+                    if (hitDoor && hitDoorIdx >= 0)
                     {
-                        if (door.bulletHoles.size() >= 50)
-                            door.bulletHoles.erase(door.bulletHoles.begin());
-                        door.bulletHoles.push_back({bestPos, bestNorm});
+                        if (doors[hitDoorIdx].bulletHoles.size() >= 50)
+                            doors[hitDoorIdx].bulletHoles.erase(doors[hitDoorIdx].bulletHoles.begin());
+                        doors[hitDoorIdx].bulletHoles.push_back({bestPos, bestNorm});
                     }
                     else
                     {
@@ -319,7 +337,7 @@ int main()
         BeginMode3D(shakeCam);
 
         DrawLevel(level);
-        DrawDoor(door);
+        DrawDoors(doors, doorCount);
 
         for (auto &bh : bulletHoles)
         {
@@ -396,7 +414,7 @@ int main()
     rlDisableBackfaceCulling();
     EnableCursor();
     UnloadLevel(level);
-    UnloadDoor();
+    UnloadDoors();
     UnloadShader(shader);
     UnloadTexture(texture);
     UnloadTexture(wallTex);

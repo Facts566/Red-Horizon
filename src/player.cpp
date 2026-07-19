@@ -5,7 +5,7 @@
 const float PLAYER_SPEED = 20.0f;
 const float PLAYER_RADIUS = 1.0f;
 
-void UpdatePlayer(Camera3D *camera, float *yaw, Level level, Door *door)
+void UpdatePlayer(Camera3D *camera, float *yaw, Level level, Door doors[], int doorCount)
 {
     *yaw -= GetMouseDelta().x * 0.003f;
     if (IsKeyDown(KEY_LEFT))  *yaw += 2.0f * GetFrameTime();
@@ -32,13 +32,13 @@ void UpdatePlayer(Camera3D *camera, float *yaw, Level level, Door *door)
     float nz = camera->position.z + dz * dt;
 
     if (!CheckWallCollision(level, nx, camera->position.z, PLAYER_RADIUS) &&
-        !CheckDoorCollision(*door, nx, camera->position.z, PLAYER_RADIUS))
+        !CheckAnyDoorCollision(doors, doorCount, nx, camera->position.z, PLAYER_RADIUS))
         camera->position.x = nx;
     if (!CheckWallCollision(level, camera->position.x, nz, PLAYER_RADIUS) &&
-        !CheckDoorCollision(*door, camera->position.x, nz, PLAYER_RADIUS))
+        !CheckAnyDoorCollision(doors, doorCount, camera->position.x, nz, PLAYER_RADIUS))
         camera->position.z = nz;
 
-    UpdateDoor(door, camera->position);
+    UpdateDoors(doors, doorCount, camera->position);
 
     camera->target.x = camera->position.x + fx;
     camera->target.y = camera->position.y;
