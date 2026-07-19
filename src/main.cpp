@@ -139,7 +139,7 @@ int main()
         doorTexClosed, doorTexOpen, greenTex, wallTex, shader, shotholeTex
     );
 
-    Model sofa = LoadModel("models/sofa.fbx");
+    Model sofa = LoadModel("models/sofa.obj");
     Texture2D sofaTex = LoadTexture("tex/sofa.png");
     SetTextureFilter(sofaTex, TEXTURE_FILTER_POINT);
     sofa.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = sofaTex;
@@ -344,7 +344,7 @@ int main()
 
         DrawLevel(level);
         DrawDoors(doors, doorCount);
-        DrawModel(sofa, (Vector3){5 * tileSize, 0, 5 * tileSize}, 1.0f, WHITE);
+        DrawModel(sofa, (Vector3){12 * tileSize, 0.7f * tileSize, 1.8f * tileSize}, 4.0f, WHITE);
 
         for (auto &bh : bulletHoles)
         {
