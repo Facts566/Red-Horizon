@@ -5,8 +5,9 @@
 static Model doorModelClosed = { 0 };
 static Model doorModelOpen = { 0 };
 static Model doorTopCap = { 0 };
+static Model doorDecalModel = { 0 };
 
-Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Texture2D closedTex, Texture2D openTex, Texture2D capTex, Shader shader)
+Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Texture2D closedTex, Texture2D openTex, Texture2D capTex, Shader shader, Texture2D shotholeTex)
 {
     float ts = 5.0f;
 
@@ -20,6 +21,9 @@ Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Tex
     doorTopCap = LoadModelFromMesh(capMesh);
     doorTopCap.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = capTex;
     doorTopCap.materials[0].shader = shader;
+
+    doorDecalModel = MakeWall(0.6f, 0.6f, 1.0f, 1.0f, shotholeTex);
+    doorDecalModel.materials[0].shader = shader;
 
     Door door = { 0 };
     door.position = position;
@@ -49,6 +53,20 @@ void DrawDoor(Door door)
     else
     {
         DrawModelEx(doorModelClosed, door.position, door.rotationAxis, door.rotationAngle, (Vector3){1,1,1}, WHITE);
+
+        for (auto &bh : door.bulletHoles)
+        {
+            Vector3 p = bh.pos;
+            p.y -= 0.3f;
+            if (bh.normal.z < 0)
+                DrawModelEx(doorDecalModel, p, (Vector3){0,1,0}, 180.0f, (Vector3){1,1,1}, WHITE);
+            else if (bh.normal.z > 0)
+                DrawModel(doorDecalModel, p, 1.0f, WHITE);
+            else if (bh.normal.x < 0)
+                DrawModelEx(doorDecalModel, p, (Vector3){0,1,0}, -90.0f, (Vector3){1,1,1}, WHITE);
+            else if (bh.normal.x > 0)
+                DrawModelEx(doorDecalModel, p, (Vector3){0,1,0}, 90.0f, (Vector3){1,1,1}, WHITE);
+        }
     }
 
     float ts = 5.0f;
@@ -78,9 +96,36 @@ bool CheckDoorCollision(Door door, float x, float z, float radius)
     return dx * dx + dz * dz < radius * radius;
 }
 
+bool RayDoorIntersect(Door door, Vector3 origin, Vector3 dir, float maxDist, Vector3 &hitPos, Vector3 &hitNormal)
+{
+    if (fabsf(dir.z) < 0.0001f) return false;
+
+    float ts = 5.0f;
+    float doorZ = door.position.z;
+    float t = (doorZ - origin.z) / dir.z;
+    if (t < 0 || t > maxDist) return false;
+
+    float hx = origin.x + dir.x * t;
+    float hy = origin.y + dir.y * t;
+    float hw = ts;
+    float doorHeight = 3.0f * ts;
+
+    if (hx >= door.position.x - hw && hx <= door.position.x + hw &&
+        hy >= 0 && hy <= doorHeight)
+    {
+        hitPos.x = hx;
+        hitPos.y = hy;
+        hitPos.z = doorZ;
+        hitNormal = (Vector3){0, 0, (dir.z > 0) ? -1.0f : 1.0f};
+        return true;
+    }
+    return false;
+}
+
 void UnloadDoor()
 {
     UnloadModel(doorModelClosed);
     UnloadModel(doorModelOpen);
     UnloadModel(doorTopCap);
+    UnloadModel(doorDecalModel);
 }

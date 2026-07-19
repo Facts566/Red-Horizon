@@ -121,10 +121,14 @@ int main()
 
     Level level = LoadLevel("map/map.txt", tileSize, wallHeight, texture, planksTex, wallTex, greenTex, shader);
 
+    Texture2D shotholeTex = LoadTexture("tex/shothole.png");
+    Model decalModel = MakeWall(0.6f, 0.6f, 1.0f, 1.0f, shotholeTex);
+    decalModel.materials[0].shader = shader;
+
     Door door = CreateDoor(
         (Vector3){12 * tileSize, 0, 8 * tileSize},
         (Vector3){0,1,0}, 0.0f,
-        doorTexClosed, doorTexOpen, greenTex, shader
+        doorTexClosed, doorTexOpen, greenTex, shader, shotholeTex
     );
 
     Camera3D camera = { 0 };
@@ -152,9 +156,6 @@ int main()
     const float FLASH_DURATION = 0.08f;
 
     Texture2D muzzleTex = LoadTexture("tex/Muzzle.png");
-    Texture2D shotholeTex = LoadTexture("tex/shothole.png");
-    Model decalModel = MakeWall(0.6f, 0.6f, 1.0f, 1.0f, shotholeTex);
-    decalModel.materials[0].shader = shader;
 
     float shakeTime = 0.0f;
     float flashTime = 0.0f;
@@ -173,7 +174,6 @@ int main()
     float reloadTimer = 0.0f;
     const float RELOAD_TIME = 5.0f;
 
-    struct BulletHole { Vector3 pos; Vector3 normal; };
     std::vector<BulletHole> bulletHoles;
 
     while (!WindowShouldClose())
@@ -209,15 +209,75 @@ int main()
             flashTime = FLASH_DURATION;
             flashRotation = (float)GetRandomValue(0, 3600) / 10.0f;
 
-            Vector3 dir = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
-            Vector3 hitPos, hitNormal;
-            if (RaycastWall(level, camera.position, dir, 100.0f, hitPos, hitNormal))
+            Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
+            Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, (Vector3){0, 1, 0}));
+            Vector3 up = Vector3Normalize(Vector3CrossProduct(right, forward));
+
+            const int PELLET_COUNT = 7;
+            const float SPREAD = 0.1f;
+
+            for (int i = 0; i < PELLET_COUNT; i++)
             {
-                hitPos.x += hitNormal.x * 0.05f;
-                hitPos.z += hitNormal.z * 0.05f;
-                if (bulletHoles.size() >= 50)
-                    bulletHoles.erase(bulletHoles.begin());
-                bulletHoles.push_back({hitPos, hitNormal});
+                float rx = ((float)GetRandomValue(-10000, 10000) / 10000.0f) * SPREAD;
+                float ry = ((float)GetRandomValue(-10000, 10000) / 10000.0f) * SPREAD;
+
+                Vector3 dir = Vector3Normalize(Vector3Add(forward, Vector3Add(Vector3Scale(right, rx), Vector3Scale(up, ry))));
+
+                Vector3 wallPos, wallNorm;
+                bool wallHit = RaycastWall(level, camera.position, dir, 100.0f, wallPos, wallNorm);
+
+                Vector3 doorPos, doorNorm;
+                bool doorHit = !door.isOpen && RayDoorIntersect(door, camera.position, dir, 100.0f, doorPos, doorNorm);
+
+                if (wallHit || doorHit)
+                {
+                    bool hitDoor = false;
+                    Vector3 bestPos, bestNorm;
+
+                    if (wallHit && doorHit)
+                    {
+                        float wd = Vector3Distance(camera.position, wallPos);
+                        float dd = Vector3Distance(camera.position, doorPos);
+                        if (dd < wd)
+                        {
+                            hitDoor = true;
+                            bestPos = doorPos;
+                            bestNorm = doorNorm;
+                        }
+                        else
+                        {
+                            bestPos = wallPos;
+                            bestNorm = wallNorm;
+                        }
+                    }
+                    else if (wallHit)
+                    {
+                        bestPos = wallPos;
+                        bestNorm = wallNorm;
+                    }
+                    else
+                    {
+                        hitDoor = true;
+                        bestPos = doorPos;
+                        bestNorm = doorNorm;
+                    }
+
+                    bestPos.x += bestNorm.x * 0.05f;
+                    bestPos.z += bestNorm.z * 0.05f;
+
+                    if (hitDoor)
+                    {
+                        if (door.bulletHoles.size() >= 50)
+                            door.bulletHoles.erase(door.bulletHoles.begin());
+                        door.bulletHoles.push_back({bestPos, bestNorm});
+                    }
+                    else
+                    {
+                        if (bulletHoles.size() >= 50)
+                            bulletHoles.erase(bulletHoles.begin());
+                        bulletHoles.push_back({bestPos, bestNorm});
+                    }
+                }
             }
         }
 
