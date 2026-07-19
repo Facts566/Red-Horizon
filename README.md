@@ -1,5 +1,7 @@
 # Red Horizon
 
+![screenshot](screen.png)
+
 ## Управление
 
 | Клавиша | Действие |
