@@ -7,7 +7,7 @@
 #include "level.h"
 #include "door.h"
 #include "raycast.h"
-#include "props.h"
+#include "scene.h"
 #include "weapon.h"
 
 int main()
@@ -69,9 +69,6 @@ int main()
         doorTexClosed, doorTexOpen, greenTex, wallTex, shader, LoadTexture("tex/shothole.png")
     );
 
-    Sofa sofa;
-    LoadSofa(sofa, shader, tileSize);
-
     WeaponState weapon;
     LoadWeapon(weapon, shader);
 
@@ -81,6 +78,9 @@ int main()
     camera.up = (Vector3){0.0f, 1.0f, 0.0f};
     camera.fovy = 60.0f;
     camera.projection = CAMERA_PERSPECTIVE;
+
+    Scene scene;
+    LoadScene(scene, shader, tileSize, camera.position);
 
     SetLightUniforms(shader, camera.position, {1,1,1}, 80.0f, 0.05f);
     int lightRangeLoc = GetShaderLocation(shader, "lightRange");
@@ -98,7 +98,7 @@ int main()
 
     while (!WindowShouldClose())
     {
-        UpdatePlayer(&camera, &yaw, level, doors, doorCount);
+        UpdatePlayer(&camera, &yaw, level, doors, doorCount, GetSofaCollider(scene));
 
         if (IsKeyPressed(KEY_F)) flashlightOn = !flashlightOn;
 
@@ -137,7 +137,7 @@ int main()
 
         DrawLevel(level);
         DrawDoors(doors, doorCount);
-        DrawSofa(sofa);
+        DrawScene(scene);
         DrawWeaponDecals(weapon, weapon.decalModel);
 
         EndMode3D();
@@ -151,7 +151,7 @@ int main()
     EnableCursor();
     UnloadLevel(level);
     UnloadDoors();
-    UnloadSofa(sofa);
+    UnloadScene(scene);
     UnloadWeapon(weapon);
     UnloadShader(shader);
     UnloadTexture(texture);
