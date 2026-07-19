@@ -126,7 +126,7 @@ int main()
             }
         }
 
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && fireCooldown <= 0.0f && !isReloading && currentAmmo > 0)
+        if ((IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_SPACE)) && fireCooldown <= 0.0f && !isReloading && currentAmmo > 0)
         {
             currentAmmo--;
             fireCooldown = FIRE_RATE;
