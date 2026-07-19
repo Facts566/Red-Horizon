@@ -111,7 +111,7 @@ static int FindPath(Level level, float startX, float startZ, float endX, float e
 void InitZombie(Zombie &zombie, Vector3 pos)
 {
     zombie.position = pos;
-    zombie.health = 50.0f;
+    zombie.health = 100.0f;
     zombie.speed = 12.0f;
     zombie.radius = 1.5f;
     zombie.pathCount = 0;
