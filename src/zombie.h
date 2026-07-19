@@ -17,7 +17,13 @@ struct Zombie {
     float pathRecalcTimer;
     int pathIndex;
 
-    Texture2D texture;
+    Texture2D textureIdle;
+    Texture2D textureWalk1;
+    Texture2D textureWalk2;
+    Texture2D textureDead;
+    bool isWalking;
+    float animTimer;
+    bool animFrame;
 
     bool active;
 };

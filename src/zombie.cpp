@@ -117,14 +117,25 @@ void InitZombie(Zombie &zombie, Vector3 pos)
     zombie.pathCount = 0;
     zombie.pathRecalcTimer = 0.0f;
     zombie.pathIndex = 0;
-    zombie.texture = LoadTexture("tex/zombi.png");
-    SetTextureFilter(zombie.texture, TEXTURE_FILTER_POINT);
+    zombie.textureIdle = LoadTexture("tex/zombi/zombi.png");
+    SetTextureFilter(zombie.textureIdle, TEXTURE_FILTER_POINT);
+    zombie.textureWalk1 = LoadTexture("tex/zombi/zombi_walk.png");
+    SetTextureFilter(zombie.textureWalk1, TEXTURE_FILTER_POINT);
+    zombie.textureWalk2 = LoadTexture("tex/zombi/zombi_walk_1.png");
+    SetTextureFilter(zombie.textureWalk2, TEXTURE_FILTER_POINT);
+    zombie.textureDead = LoadTexture("tex/zombi/zombi_kill.png");
+    SetTextureFilter(zombie.textureDead, TEXTURE_FILTER_POINT);
+    zombie.isWalking = false;
+    zombie.animTimer = 0.0f;
+    zombie.animFrame = false;
     zombie.active = true;
 }
 
 void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, BoxCollider sofaBox, Vector3 playerPos, float dt)
 {
-    if (!zombie.active) return;
+    if (!zombie.active || zombie.health <= 0.0f) return;
+
+    zombie.isWalking = false;
 
     zombie.pathRecalcTimer -= dt;
     if (zombie.pathRecalcTimer <= 0.0f) {
@@ -160,6 +171,7 @@ void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, BoxC
                 !CheckAnyDoorCollision(doors, doorCount, zombie.position.x, nz, zombie.radius) &&
                 !CheckBoxCollision(sofaBox, zombie.position.x, nz, zombie.radius))
                 zombie.position.z = nz;
+            zombie.isWalking = true;
         }
         return;
     }
@@ -183,18 +195,40 @@ void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, BoxC
             !CheckAnyDoorCollision(doors, doorCount, zombie.position.x, nz, zombie.radius) &&
             !CheckBoxCollision(sofaBox, zombie.position.x, nz, zombie.radius))
             zombie.position.z = nz;
+        zombie.isWalking = true;
+    }
+
+    if (zombie.isWalking) {
+        zombie.animTimer += dt;
+        if (zombie.animTimer >= 0.3f) {
+            zombie.animTimer -= 0.3f;
+            zombie.animFrame = !zombie.animFrame;
+        }
+    } else {
+        zombie.animTimer = 0.0f;
+        zombie.animFrame = false;
     }
 }
 
 void DrawZombie(Zombie &zombie, Camera3D camera)
 {
     if (!zombie.active) return;
-    DrawBillboard(camera, zombie.texture, zombie.position, 10.8f, WHITE);
+    Texture2D tex;
+    if (zombie.health <= 0.0f)
+        tex = zombie.textureDead;
+    else if (zombie.isWalking)
+        tex = zombie.animFrame ? zombie.textureWalk1 : zombie.textureWalk2;
+    else
+        tex = zombie.textureIdle;
+    DrawBillboard(camera, tex, zombie.position, 10.8f, WHITE);
 }
 
 void UnloadZombie(Zombie &zombie)
 {
-    UnloadTexture(zombie.texture);
+    UnloadTexture(zombie.textureIdle);
+    UnloadTexture(zombie.textureWalk1);
+    UnloadTexture(zombie.textureWalk2);
+    UnloadTexture(zombie.textureDead);
 }
 
 bool ZombieHitByRay(Zombie &zombie, Vector3 origin, Vector3 dir)
