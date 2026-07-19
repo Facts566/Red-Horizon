@@ -131,8 +131,6 @@ int main()
                 for (int i = 0; i < scene.zombieCount; i++) {
                     if (ZombieHitByRay(scene.zombies[i], camera.position, forward)) {
                         scene.zombies[i].health -= 50.0f;
-                        if (scene.zombies[i].health <= 0.0f)
-                            scene.zombies[i].active = false;
                     }
                 }
             }
@@ -141,7 +139,7 @@ int main()
                 static float touchTimer = 0.0f;
                 bool touching = false;
                 for (int i = 0; i < scene.zombieCount; i++) {
-                    if (!scene.zombies[i].active) continue;
+                    if (!scene.zombies[i].active || scene.zombies[i].health <= 0.0f) continue;
                     float dx = camera.position.x - scene.zombies[i].position.x;
                     float dz = camera.position.z - scene.zombies[i].position.z;
                     if (dx * dx + dz * dz < (PLAYER_RADIUS + scene.zombies[i].radius * 2) * (PLAYER_RADIUS + scene.zombies[i].radius * 2))
