@@ -79,14 +79,8 @@ void DrawDoors(Door doors[], int count)
             {
                 Vector3 p = bh.pos;
                 p.y -= 0.3f;
-                if (bh.normal.z < 0)
-                    DrawModelEx(doorDecalModel, p, (Vector3){0,1,0}, 180.0f, (Vector3){1,1,1}, WHITE);
-                else if (bh.normal.z > 0)
-                    DrawModel(doorDecalModel, p, 1.0f, WHITE);
-                else if (bh.normal.x < 0)
-                    DrawModelEx(doorDecalModel, p, (Vector3){0,1,0}, -90.0f, (Vector3){1,1,1}, WHITE);
-                else if (bh.normal.x > 0)
-                    DrawModelEx(doorDecalModel, p, (Vector3){0,1,0}, 90.0f, (Vector3){1,1,1}, WHITE);
+                float decalAngle = atan2f(bh.normal.x, bh.normal.z) * 180.0f / 3.14159f;
+                DrawModelEx(doorDecalModel, p, (Vector3){0,1,0}, decalAngle, (Vector3){1,1,1}, WHITE);
             }
         }
 
@@ -135,25 +129,34 @@ bool CheckAnyDoorCollision(Door doors[], int count, float x, float z, float radi
 
 bool RayDoorIntersect(Door door, Vector3 origin, Vector3 dir, float maxDist, Vector3 &hitPos, Vector3 &hitNormal)
 {
-    if (fabsf(dir.z) < 0.0001f) return false;
-
     float ts = 5.0f;
-    float doorZ = door.position.z;
-    float t = (doorZ - origin.z) / dir.z;
+    float hw = ts;
+    float doorHeight = 3.0f * ts;
+
+    float rad = door.rotationAngle * 3.14159f / 180.0f;
+    float nx = -sinf(rad);
+    float nz = -cosf(rad);
+
+    float denom = dir.x * nx + dir.z * nz;
+    if (fabsf(denom) < 0.0001f) return false;
+
+    float t = ((door.position.x - origin.x) * nx + (door.position.z - origin.z) * nz) / denom;
     if (t < 0 || t > maxDist) return false;
 
     float hx = origin.x + dir.x * t;
     float hy = origin.y + dir.y * t;
-    float hw = ts;
-    float doorHeight = 3.0f * ts;
+    float hz = origin.z + dir.z * t;
 
-    if (hx >= door.position.x - hw && hx <= door.position.x + hw &&
-        hy >= 0 && hy <= doorHeight)
+    float dx = hx - door.position.x;
+    float dz = hz - door.position.z;
+    float local = dx * cosf(rad) - dz * sinf(rad);
+
+    if (local >= -hw && local <= hw && hy >= 0 && hy <= doorHeight)
     {
         hitPos.x = hx;
         hitPos.y = hy;
-        hitPos.z = doorZ;
-        hitNormal = (Vector3){0, 0, (dir.z > 0) ? -1.0f : 1.0f};
+        hitPos.z = hz;
+        hitNormal = (Vector3){nx, 0, nz};
         return true;
     }
     return false;
