@@ -4,6 +4,7 @@
 struct LevelModels {
     Model floor;
     Model planks;
+    Model ceiling;
     Model wallN, wallS, wallW, wallE;
     Model greenN, greenS, greenW, greenE;
 };

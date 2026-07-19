@@ -86,6 +86,9 @@ Level LoadLevel(const char *path, float tileSize, float wallHeight, Texture2D fl
     level.models.greenE = MakeWall(ts, wh, 1.0f, wh/ts, greenTex);
     level.models.greenE.materials[0].shader = shader;
 
+    level.models.ceiling = MakePlane(ts, ts, 1.0f, 1.0f, floorTex);
+    level.models.ceiling.materials[0].shader = shader;
+
     return level;
 }
 
@@ -149,6 +152,10 @@ void DrawLevel(Level level)
             if (c == '0')
                 DrawModel(m.planks, (Vector3){cx, 0, cz}, 1.0f, WHITE);
 
+            if (c == '@' || c == '0') {
+                DrawModelEx(m.ceiling, (Vector3){cx, level.wallHeight, cz}, (Vector3){1,0,0}, 180.0f, (Vector3){1,1,1}, WHITE);
+            }
+
             if (c == '&' || c == '@') {
                 Model *n = (c == '@') ? &m.greenN : &m.wallN;
                 Model *s = (c == '@') ? &m.greenS : &m.wallS;
@@ -173,6 +180,7 @@ void UnloadLevel(Level level)
     if (level.data) free(level.data);
     UnloadModel(level.models.floor);
     UnloadModel(level.models.planks);
+    UnloadModel(level.models.ceiling);
     UnloadModel(level.models.wallN);
     UnloadModel(level.models.wallS);
     UnloadModel(level.models.wallW);
