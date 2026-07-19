@@ -79,18 +79,61 @@ int main()
 
     rlDisableBackfaceCulling();
 
+    // Muzzle flash configuration
+    const float FLASH_OFFSET_X = 170.0f;
+    const float FLASH_OFFSET_Y = 70.0f;
+    const float FLASH_SCALE = 2.0f;
+    const float FLASH_DURATION = 0.08f;
+
+    Texture2D muzzleTex = LoadTexture("tex/Muzzle.png");
+
     float shakeTime = 0.0f;
+    float flashTime = 0.0f;
+    float flashRotation = 0.0f;
     const float SHAKE_DURATION = 0.3f;
     const float SHAKE_AMOUNT = 1.6f;
+    float fireCooldown = 0.0f;
+    const float FIRE_RATE = 0.5f;
+
+    int maxAmmo = 7;
+    int currentAmmo = maxAmmo;
+    bool isReloading = false;
+    float reloadTimer = 0.0f;
+    const float RELOAD_TIME = 5.0f;
 
     while (!WindowShouldClose())
     {
         UpdatePlayer(&camera, &yaw, level, &door);
 
+        if (fireCooldown > 0.0f)
+            fireCooldown -= GetFrameTime();
+
         if (IsKeyPressed(KEY_F)) flashlightOn = !flashlightOn;
 
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        if (IsKeyPressed(KEY_R) && !isReloading && currentAmmo < maxAmmo)
+        {
+            isReloading = true;
+            reloadTimer = RELOAD_TIME;
+        }
+
+        if (isReloading)
+        {
+            reloadTimer -= GetFrameTime();
+            if (reloadTimer <= 0.0f)
+            {
+                currentAmmo = maxAmmo;
+                isReloading = false;
+            }
+        }
+
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && fireCooldown <= 0.0f && !isReloading && currentAmmo > 0)
+        {
+            currentAmmo--;
+            fireCooldown = FIRE_RATE;
             shakeTime = SHAKE_DURATION;
+            flashTime = FLASH_DURATION;
+            flashRotation = (float)GetRandomValue(0, 3600) / 10.0f;
+        }
 
         Vector3 shakeOffset = {0};
         float gunKickY = 0.0f;
@@ -106,6 +149,9 @@ int main()
             gunScale = 5.0f + 0.2f;
             shakeTime -= GetFrameTime();
         }
+
+        if (flashTime > 0.0f)
+            flashTime -= GetFrameTime();
 
         float range = flashlightOn ? 80.0f : 0.0f;
         float ambient = 0.01f;
@@ -130,7 +176,47 @@ int main()
         DrawDoor(door);
 
         EndMode3D();
-        DrawTextureEx(gunTex, (Vector2){(float)GetScreenWidth()/2 - gunTex.width*gunScale/2, (float)GetScreenHeight() - gunTex.height * gunScale + gunKickY + 50.0f}, 0.0f, gunScale, WHITE);
+
+        Vector2 gunPos = {
+            (float)GetScreenWidth()/2 - gunTex.width*gunScale/2,
+            (float)GetScreenHeight() - gunTex.height*gunScale + gunKickY + 50.0f
+        };
+        if (flashTime > 0.0f)
+        {
+            Vector2 flashCenter = {
+                gunPos.x + FLASH_OFFSET_X * gunScale,
+                gunPos.y + FLASH_OFFSET_Y * gunScale
+            };
+            float fw = (float)muzzleTex.width * FLASH_SCALE;
+            float fh = (float)muzzleTex.height * FLASH_SCALE;
+            Rectangle flashDest = {flashCenter.x - fw/2, flashCenter.y - fh/2, fw, fh};
+            DrawTexturePro(muzzleTex, (Rectangle){0, 0, (float)muzzleTex.width, (float)muzzleTex.height}, flashDest, (Vector2){fw/2, fh/2}, flashRotation, WHITE);
+        }
+
+        DrawTextureEx(gunTex, gunPos, 0.0f, gunScale, WHITE);
+
+        const char *ammoText = TextFormat("%i / %i", currentAmmo, maxAmmo);
+        int ammoFontSize = 40;
+        int ammoTextWidth = MeasureText(ammoText, ammoFontSize);
+        DrawText(ammoText, GetScreenWidth() / 2 - ammoTextWidth / 2, GetScreenHeight() - 120, ammoFontSize, WHITE);
+
+        if (isReloading)
+        {
+            const char *reloadText = "RELOADING...";
+            int reloadFontSize = 24;
+            int reloadTextWidth = MeasureText(reloadText, reloadFontSize);
+            int reloadY = GetScreenHeight() - 80;
+            DrawText(reloadText, GetScreenWidth() / 2 - reloadTextWidth / 2, reloadY, reloadFontSize, YELLOW);
+
+            float reloadProgress = 1.0f - reloadTimer / RELOAD_TIME;
+            int barWidth = 200;
+            int barHeight = 8;
+            int barX = GetScreenWidth() / 2 - barWidth / 2;
+            int barY = reloadY + 30;
+            DrawRectangle(barX, barY, barWidth, barHeight, DARKGRAY);
+            DrawRectangle(barX, barY, (int)(barWidth * reloadProgress), barHeight, YELLOW);
+        }
+
         DrawFPS(10, 10);
         EndDrawing();
     }
@@ -146,6 +232,7 @@ int main()
     UnloadTexture(planksTex);
     UnloadTexture(handTex);
     UnloadTexture(gunTex);
+    UnloadTexture(muzzleTex);
     UnloadTexture(doorTexClosed);
     UnloadTexture(doorTexOpen);
     CloseWindow();
