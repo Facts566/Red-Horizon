@@ -4,6 +4,7 @@
 #include "map.h"
 #include "light.h"
 #include "level.h"
+#include "door.h"
 
 int main()
 {
@@ -35,6 +36,17 @@ int main()
 
     Texture2D handTex = LoadTexture("tex/hand_with_flashligh.png");
     Texture2D gunTex = LoadTexture("tex/gun.png");
+    Texture2D doorTexClosed = LoadTexture("tex/door/door_1.png");
+    SetTextureFilter(doorTexClosed, TEXTURE_FILTER_POINT);
+    SetTextureWrap(doorTexClosed, TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(doorTexClosed.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(doorTexClosed.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
+
+    Texture2D doorTexOpen = LoadTexture("tex/door/door_2.png");
+    SetTextureFilter(doorTexOpen, TEXTURE_FILTER_POINT);
+    SetTextureWrap(doorTexOpen, TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(doorTexOpen.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(doorTexOpen.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
     float tileSize = 5.0f;
     float wallHeight = 20.0f;
@@ -42,6 +54,12 @@ int main()
     Shader shader = LoadLightShader();
 
     Level level = LoadLevel("map/map.txt", tileSize, wallHeight, texture, planksTex, wallTex, greenTex, shader);
+
+    Door door = CreateDoor(
+        (Vector3){10 * tileSize, 0, 8 * tileSize},
+        (Vector3){0,1,0}, 90.0f,
+        doorTexClosed, doorTexOpen, shader
+    );
 
     Camera3D camera = { 0 };
     camera.position = level.playerStart;
@@ -67,7 +85,7 @@ int main()
 
     while (!WindowShouldClose())
     {
-        UpdatePlayer(&camera, &yaw, level);
+        UpdatePlayer(&camera, &yaw, level, &door);
 
         if (IsKeyPressed(KEY_F)) flashlightOn = !flashlightOn;
 
@@ -109,17 +127,18 @@ int main()
         BeginMode3D(shakeCam);
 
         DrawLevel(level);
+        DrawDoor(door);
 
         EndMode3D();
         DrawTextureEx(gunTex, (Vector2){(float)GetScreenWidth()/2 - gunTex.width*gunScale/2, (float)GetScreenHeight() - gunTex.height * gunScale + gunKickY + 50.0f}, 0.0f, gunScale, WHITE);
         DrawFPS(10, 10);
-        DrawCircle(GetScreenWidth()/2, GetScreenHeight()/2, 4, WHITE);
         EndDrawing();
     }
 
     rlDisableBackfaceCulling();
     EnableCursor();
     UnloadLevel(level);
+    UnloadDoor();
     UnloadShader(shader);
     UnloadTexture(texture);
     UnloadTexture(wallTex);
@@ -127,6 +146,8 @@ int main()
     UnloadTexture(planksTex);
     UnloadTexture(handTex);
     UnloadTexture(gunTex);
+    UnloadTexture(doorTexClosed);
+    UnloadTexture(doorTexOpen);
     CloseWindow();
     return 0;
 }
