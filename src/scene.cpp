@@ -2,6 +2,7 @@
 #include <rlgl.h>
 #include <cstring>
 #include <raymath.h>
+#include <algorithm>
 
 void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart, Texture2D greenTex, Texture2D wallTex)
 {
@@ -124,8 +125,20 @@ void DrawScene(Scene &scene, Camera3D camera)
             DrawMesh(obj.model.meshes[mi], obj.model.materials[obj.model.meshMaterial[mi]], transform);
     }
 
-    for (int i = 0; i < scene.zombieCount; i++)
-        DrawZombie(scene.zombies[i], camera);
+    {
+        int order[SCENE_MAX_ZOMBIES];
+        for (int i = 0; i < scene.zombieCount; i++)
+            order[i] = i;
+        for (int i = 0; i < scene.zombieCount - 1; i++) {
+            for (int j = i + 1; j < scene.zombieCount; j++) {
+                float di = Vector3DistanceSqr(camera.position, scene.zombies[order[i]].position);
+                float dj = Vector3DistanceSqr(camera.position, scene.zombies[order[j]].position);
+                if (di < dj) { int tmp = order[i]; order[i] = order[j]; order[j] = tmp; }
+            }
+        }
+        for (int i = 0; i < scene.zombieCount; i++)
+            DrawZombie(scene.zombies[order[i]], camera);
+    }
 }
 
 void UnloadScene(Scene &scene)

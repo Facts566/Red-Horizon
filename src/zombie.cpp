@@ -1,4 +1,6 @@
 #include "zombie.h"
+#include <rlgl.h>
+#include <raymath.h>
 #include <cmath>
 
 static bool IsWalkable(Level level, int col, int row)
@@ -220,7 +222,28 @@ void DrawZombie(Zombie &zombie, Camera3D camera)
         tex = zombie.animFrame ? zombie.textureWalk1 : zombie.textureWalk2;
     else
         tex = zombie.textureIdle;
-    DrawBillboard(camera, tex, zombie.position, 10.8f, WHITE);
+
+    float size = 10.8f;
+    Vector3 forward = Vector3Normalize(Vector3Subtract(camera.position, zombie.position));
+    Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, (Vector3){0, 1.0f, 0.0f}));
+    Vector3 up = {0, 1.0f, 0};
+
+    Vector3 bl = Vector3Subtract(zombie.position, Vector3Add(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
+    Vector3 br = Vector3Add(zombie.position, Vector3Subtract(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
+    Vector3 tr = Vector3Add(zombie.position, Vector3Add(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
+    Vector3 tl = Vector3Add(zombie.position, Vector3Subtract(Vector3Scale(up, size * 0.5f), Vector3Scale(right, size * 0.5f)));
+
+    rlDisableDepthMask();
+    rlSetTexture(tex.id);
+    rlBegin(RL_QUADS);
+        rlColor4ub(255, 255, 255, 255);
+        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(bl.x, bl.y, bl.z);
+        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(br.x, br.y, br.z);
+        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(tr.x, tr.y, tr.z);
+        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(tl.x, tl.y, tl.z);
+    rlEnd();
+    rlSetTexture(0);
+    rlEnableDepthMask();
 }
 
 void UnloadZombie(Zombie &zombie)
