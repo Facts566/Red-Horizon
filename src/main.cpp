@@ -98,6 +98,9 @@ int main()
     int maxHealth = 100;
     float health = (float)maxHealth;
 
+    float hitFlash = 0.0f;
+    float hitShakeTime = 0.0f;
+
     while (!WindowShouldClose())
     {
         UpdatePlayer(&camera, &yaw, level, scene.doors, scene.doorCount, GetCollider(scene, sofaIndex));
@@ -161,6 +164,8 @@ int main()
                     while (touchTimer >= 1.0f) {
                         health -= 10.0f;
                         touchTimer -= 1.0f;
+                        hitFlash = 0.2f;
+                        hitShakeTime = 0.15f;
                     }
                 } else {
                     touchTimer = 0.0f;
@@ -209,6 +214,13 @@ int main()
             shakeOffset.z = ((float)GetRandomValue(0, 1000) / 500.0f - 1.0f) * intensity * 0.2f;
             weapon.shakeTime -= GetFrameTime();
         }
+        if (hitShakeTime > 0.0f)
+        {
+            float intensity = 0.3f;
+            shakeOffset.x += ((float)GetRandomValue(0, 1000) / 500.0f - 1.0f) * intensity;
+            shakeOffset.y += ((float)GetRandomValue(0, 1000) / 500.0f - 1.0f) * intensity;
+            hitShakeTime -= GetFrameTime();
+        }
 
         Camera3D shakeCam = camera;
         shakeCam.position.x += shakeOffset.x;
@@ -227,6 +239,15 @@ int main()
         EndMode3D();
 
         DrawWeaponHUD(weapon, (int)health, maxHealth);
+
+        if (hitFlash > 0.0f)
+        {
+            int alpha = (int)(hitFlash / 0.15f * 100.0f);
+            if (alpha > 100) alpha = 100;
+            DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), (Color){180, 0, 0, (unsigned char)alpha});
+            hitFlash -= GetFrameTime();
+            if (hitFlash < 0.0f) hitFlash = 0.0f;
+        }
 
         EndDrawing();
     }
