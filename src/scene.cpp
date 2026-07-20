@@ -28,23 +28,23 @@ void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart,
     scene.doors[scene.doorCount++] = CreateDoor(
         (Vector3){12 * tileSize, 0, 9 * tileSize},
         (Vector3){0,1,0}, 0.0f,
-        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, shotholeTex
+        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, LoadTexture("tex/shothole.png")
     );
     scene.doors[scene.doorCount++] = CreateDoor(
         (Vector3){22 * tileSize, 0, 17 * tileSize},
         (Vector3){0,1,0}, 270.0f,
-        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, shotholeTex
+        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, LoadTexture("tex/shothole.png")
     );
     scene.doors[scene.doorCount++] = CreateDoor(
         (Vector3){37 * tileSize, 0, 4 * tileSize},
         (Vector3){0,1,0}, 90.0f,
-        doorTexClosed, doorTexOpen, wallTex, greenTex, shader, shotholeTex
+        doorTexClosed, doorTexOpen, wallTex, greenTex, shader, LoadTexture("tex/shothole.png")
     );
 
     scene.doors[scene.doorCount++] = CreateDoor(
         (Vector3){32 * tileSize, 0, 17 * tileSize},
         (Vector3){0,1,0}, 90.0f,
-        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, shotholeTex
+        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, LoadTexture("tex/shothole.png")
     );
 }
 

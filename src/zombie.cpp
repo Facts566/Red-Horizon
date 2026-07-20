@@ -1,4 +1,5 @@
 #include "zombie.h"
+#include "raycast.h"
 #include <rlgl.h>
 #include <raymath.h>
 #include <cmath>
@@ -181,6 +182,7 @@ void InitZombie(Zombie &zombie, Vector3 pos, Texture2D idle, Texture2D walk1, Te
     zombie.animTimer = 0.0f;
     zombie.animFrame = false;
     zombie.active = true;
+    zombie.triggered = false;
 }
 
 void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, BoxCollider sofaBox, Vector3 playerPos, float dt)
@@ -188,6 +190,19 @@ void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, BoxC
     if (!zombie.active || zombie.health <= 0.0f) return;
 
     zombie.isWalking = false;
+
+    if (!zombie.triggered) {
+        Vector3 toPlayer = Vector3Subtract(playerPos, zombie.position);
+        float dist = Vector3Length(toPlayer);
+        if (dist < 60.0f) {
+            Vector3 dir = Vector3Normalize(toPlayer);
+            Vector3 hitPos, hitNorm;
+            if (!RaycastWall(level, zombie.position, dir, dist, hitPos, hitNorm))
+                zombie.triggered = true;
+        }
+    }
+    if (!zombie.triggered)
+        return;
 
     zombie.pathRecalcTimer -= dt;
     if (zombie.pathRecalcTimer <= 0.0f) {

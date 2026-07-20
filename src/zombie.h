@@ -26,6 +26,7 @@ struct Zombie {
     bool animFrame;
 
     bool active;
+    bool triggered;
 };
 
 void InitZombie(Zombie &zombie, Vector3 pos, Texture2D idle, Texture2D walk1, Texture2D walk2, Texture2D dead);
