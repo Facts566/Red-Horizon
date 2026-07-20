@@ -1,9 +1,45 @@
 #include "zombie.h"
 #include "raycast.h"
+#include "map.h"
 #include <rlgl.h>
 #include <raymath.h>
 #include <cmath>
 #include <cstring>
+
+static Model s_zombieModel = { 0 };
+
+void InitZombieModel(Shader shader)
+{
+    Mesh m = { 0 };
+    m.vertexCount = 4;
+    m.triangleCount = 2;
+    m.vertices = (float *)MemAlloc(12 * sizeof(float));
+    m.texcoords = (float *)MemAlloc(8 * sizeof(float));
+    m.normals = (float *)MemAlloc(12 * sizeof(float));
+    m.indices = (unsigned short *)MemAlloc(6 * sizeof(unsigned short));
+
+    float hw = 5.4f;
+    m.vertices[0]  = -hw; m.vertices[1]  = -hw; m.vertices[2]  = 0;
+    m.vertices[3]  =  hw; m.vertices[4]  = -hw; m.vertices[5]  = 0;
+    m.vertices[6]  = -hw; m.vertices[7]  =  hw; m.vertices[8]  = 0;
+    m.vertices[9]  =  hw; m.vertices[10] =  hw; m.vertices[11] = 0;
+
+    m.texcoords[0] = 0; m.texcoords[1] = 1;
+    m.texcoords[2] = 1; m.texcoords[3] = 1;
+    m.texcoords[4] = 0; m.texcoords[5] = 0;
+    m.texcoords[6] = 1; m.texcoords[7] = 0;
+
+    for (int i = 0; i < 4; i++) {
+        m.normals[i*3] = 0; m.normals[i*3+1] = 0; m.normals[i*3+2] = 1;
+    }
+
+    m.indices[0] = 0; m.indices[1] = 1; m.indices[2] = 2;
+    m.indices[3] = 1; m.indices[4] = 3; m.indices[5] = 2;
+
+    UploadMesh(&m, false);
+    s_zombieModel = LoadModelFromMesh(m);
+    s_zombieModel.materials[0].shader = shader;
+}
 
 #define ASTAR_MAX_NODES 2048
 
@@ -277,7 +313,7 @@ void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, BoxC
     }
 }
 
-void DrawZombie(Zombie &zombie, Camera3D camera)
+void DrawZombie(Zombie &zombie, Camera3D camera, Shader shader)
 {
     if (!zombie.active) return;
     Texture2D tex;
@@ -299,6 +335,7 @@ void DrawZombie(Zombie &zombie, Camera3D camera)
     Vector3 tl = Vector3Add(zombie.position, Vector3Subtract(Vector3Scale(up, size * 0.5f), Vector3Scale(right, size * 0.5f)));
 
     rlDisableDepthMask();
+    BeginShaderMode(shader);
     rlSetTexture(tex.id);
     rlBegin(RL_QUADS);
         rlColor4ub(255, 255, 255, 255);
@@ -308,6 +345,7 @@ void DrawZombie(Zombie &zombie, Camera3D camera)
         rlTexCoord2f(0.0f, 0.0f); rlVertex3f(tl.x, tl.y, tl.z);
     rlEnd();
     rlSetTexture(0);
+    EndShaderMode();
     rlEnableDepthMask();
 }
 

@@ -35,7 +35,7 @@ struct Scene {
 
 void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart, Texture2D greenTex, Texture2D wallTex, Texture2D shotholeTex);
 void AddObject(Scene &scene, const char *name, Vector3 pos, float rot, float sc, bool addCollision, Shader shader);
-void DrawScene(Scene &scene, Camera3D camera);
+void DrawScene(Scene &scene, Camera3D camera, Shader shader);
 void UnloadScene(Scene &scene);
 bool CheckBoxCollision(BoxCollider box, float x, float z, float radius);
 BoxCollider GetCollider(Scene &scene, int index);

@@ -71,6 +71,8 @@ int main()
     Scene scene = { 0 };
     LoadScene(scene, shader, tileSize, camera.position, greenTex, wallTex, shotholeTex);
 
+    InitZombieModel(shader);
+
     scene.zombieCount = 10;
     InitZombie(scene.zombies[0], (Vector3){30 * tileSize + tileSize / 2.0f, 5.4f, 4 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
     InitZombie(scene.zombies[1], (Vector3){10 * tileSize + tileSize / 2.0f, 5.4f, 3 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
@@ -221,7 +223,7 @@ int main()
         BeginMode3D(shakeCam);
 
         DrawLevel(level);
-        DrawScene(scene, shakeCam);
+        DrawScene(scene, shakeCam, shader);
         DrawWeaponDecals(weapon, weapon.decalModel);
 
         EndMode3D();

@@ -108,7 +108,7 @@ void AddObject(Scene &scene, const char *name, Vector3 pos, float rot, float sc,
     scene.objectCount++;
 }
 
-void DrawScene(Scene &scene, Camera3D camera)
+void DrawScene(Scene &scene, Camera3D camera, Shader shader)
 {
     DrawDoors(scene.doors, scene.doorCount);
 
@@ -137,7 +137,7 @@ void DrawScene(Scene &scene, Camera3D camera)
             }
         }
         for (int i = 0; i < scene.zombieCount; i++)
-            DrawZombie(scene.zombies[order[i]], camera);
+            DrawZombie(scene.zombies[order[i]], camera, shader);
     }
 }
 
