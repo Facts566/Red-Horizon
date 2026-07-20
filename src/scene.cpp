@@ -1,14 +1,50 @@
 #include "scene.h"
+#include <rlgl.h>
 #include <cstring>
 #include <raymath.h>
 
-void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart)
+void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart, Texture2D greenTex, Texture2D wallTex)
 {
+    Texture2D doorTexClosed = LoadTexture("tex/door/door_1.png");
+    SetTextureFilter(doorTexClosed, TEXTURE_FILTER_POINT);
+    SetTextureWrap(doorTexClosed, TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(doorTexClosed.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(doorTexClosed.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
+
+    Texture2D doorTexOpen = LoadTexture("tex/door/door_2.png");
+    SetTextureFilter(doorTexOpen, TEXTURE_FILTER_POINT);
+    SetTextureWrap(doorTexOpen, TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(doorTexOpen.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(doorTexOpen.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
+
     scene.tileSize = tileSize;
 
     AddObject(scene, "sofa", {12 * tileSize, 0.7f * tileSize, 1.8f * tileSize}, 0.0f, 4.0f, true, shader);
-    AddObject(scene, "lamp", {playerStart.x, 19.0f, playerStart.z}, 0.0f, 0.5f, false, shader);
+    AddObject(scene, "lamp", {playerStart.x + 80.0f, 19.0f, playerStart.z + 2.0f}, 0.0f, 0.5f, false, shader);
     AddObject(scene, "lamp", {playerStart.x + 2.0f, 19.0f, playerStart.z + -70.0f}, 0.0f, 0.5f, false, shader);
+
+    scene.doorCount = 0;
+    scene.doors[scene.doorCount++] = CreateDoor(
+        (Vector3){12 * tileSize, 0, 9 * tileSize},
+        (Vector3){0,1,0}, 0.0f,
+        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, LoadTexture("tex/shothole.png")
+    );
+    scene.doors[scene.doorCount++] = CreateDoor(
+        (Vector3){22 * tileSize, 0, 17 * tileSize},
+        (Vector3){0,1,0}, 270.0f,
+        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, LoadTexture("tex/shothole.png")
+    );
+    scene.doors[scene.doorCount++] = CreateDoor(
+        (Vector3){37 * tileSize, 0, 4 * tileSize},
+        (Vector3){0,1,0}, 90.0f,
+        doorTexClosed, doorTexOpen, wallTex, greenTex, shader, LoadTexture("tex/shothole.png")
+    );
+
+    scene.doors[scene.doorCount++] = CreateDoor(
+        (Vector3){32 * tileSize, 0, 17 * tileSize},
+        (Vector3){0,1,0}, 90.0f,
+        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, LoadTexture("tex/shothole.png")
+    );
 }
 
 static void LoadObjectModel(SceneObject &obj, const char *name, Shader shader)
@@ -73,6 +109,8 @@ void AddObject(Scene &scene, const char *name, Vector3 pos, float rot, float sc,
 
 void DrawScene(Scene &scene, Camera3D camera)
 {
+    DrawDoors(scene.doors, scene.doorCount);
+
     for (int i = 0; i < scene.objectCount; i++) {
         SceneObject &obj = scene.objects[i];
         Matrix transform = MatrixMultiply(
@@ -92,6 +130,8 @@ void DrawScene(Scene &scene, Camera3D camera)
 
 void UnloadScene(Scene &scene)
 {
+    UnloadDoors();
+
     for (int i = 0; i < scene.objectCount; i++) {
         UnloadModel(scene.objects[i].model);
         UnloadTexture(scene.objects[i].texture);

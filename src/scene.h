@@ -3,6 +3,7 @@
 #include "level.h"
 #include "zombie.h"
 #include "props.h"
+#include "door.h"
 
 #define SCENE_MAX_OBJECTS 64
 #define SCENE_MAX_LAMPS 4
@@ -25,11 +26,14 @@ struct Scene {
     int objectCount;
     int lampCount;
 
+    Door doors[MAX_DOORS];
+    int doorCount;
+
     Zombie zombies[SCENE_MAX_ZOMBIES];
     int zombieCount;
 };
 
-void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart);
+void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart, Texture2D greenTex, Texture2D wallTex);
 void AddObject(Scene &scene, const char *name, Vector3 pos, float rot, float sc, bool addCollision, Shader shader);
 void DrawScene(Scene &scene, Camera3D camera);
 void UnloadScene(Scene &scene);

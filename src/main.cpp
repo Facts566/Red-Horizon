@@ -46,31 +46,6 @@ int main()
     Shader shader = LoadLightShader();
     Level level = LoadLevel("map/map.txt", tileSize, wallHeight, texture, planksTex, wallTex, greenTex, shader);
 
-    Texture2D doorTexClosed = LoadTexture("tex/door/door_1.png");
-    SetTextureFilter(doorTexClosed, TEXTURE_FILTER_POINT);
-    SetTextureWrap(doorTexClosed, TEXTURE_WRAP_REPEAT);
-    rlTextureParameters(doorTexClosed.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
-    rlTextureParameters(doorTexClosed.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
-
-    Texture2D doorTexOpen = LoadTexture("tex/door/door_2.png");
-    SetTextureFilter(doorTexOpen, TEXTURE_FILTER_POINT);
-    SetTextureWrap(doorTexOpen, TEXTURE_WRAP_REPEAT);
-    rlTextureParameters(doorTexOpen.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
-    rlTextureParameters(doorTexOpen.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
-
-    Door doors[MAX_DOORS];
-    int doorCount = 0;
-    doors[doorCount++] = CreateDoor(
-        (Vector3){12 * tileSize, 0, 9 * tileSize},
-        (Vector3){0,1,0}, 0.0f,
-        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, LoadTexture("tex/shothole.png")
-    );
-    doors[doorCount++] = CreateDoor(
-        (Vector3){22 * tileSize, 0, 17 * tileSize},
-        (Vector3){0,1,0}, 270.0f,
-        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, LoadTexture("tex/shothole.png")
-    );
-
     WeaponState weapon;
     LoadWeapon(weapon, shader);
 
@@ -82,7 +57,7 @@ int main()
     camera.projection = CAMERA_PERSPECTIVE;
 
     Scene scene = { 0 };
-    LoadScene(scene, shader, tileSize, camera.position);
+    LoadScene(scene, shader, tileSize, camera.position, greenTex, wallTex);
 
     scene.zombieCount = 1;
     InitZombie(scene.zombies[0], (Vector3){30 * tileSize + tileSize / 2.0f, 5.4f, 4 * tileSize + tileSize / 2.0f});
@@ -104,12 +79,12 @@ int main()
 
     while (!WindowShouldClose())
     {
-        UpdatePlayer(&camera, &yaw, level, doors, doorCount, GetCollider(scene, sofaIndex));
+        UpdatePlayer(&camera, &yaw, level, scene.doors, scene.doorCount, GetCollider(scene, sofaIndex));
 
         UpdateWeapon(weapon);
 
         bool shotFired = (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_SPACE)) && weapon.fireCooldown <= 0.0f && !weapon.isReloading && weapon.currentAmmo > 0;
-        ShootWeapon(weapon, camera, level, doors, doorCount, shader);
+        ShootWeapon(weapon, camera, level, scene.doors, scene.doorCount, shader);
 
         {
             float dt = GetFrameTime();
@@ -121,10 +96,10 @@ int main()
                 if (scene.zombies[i].active)
                     doorPositions[doorPosCount++] = scene.zombies[i].position;
             }
-            UpdateDoors(doors, doorCount, doorPositions, doorPosCount);
+            UpdateDoors(scene.doors, scene.doorCount, doorPositions, doorPosCount);
 
             for (int i = 0; i < scene.zombieCount; i++)
-                UpdateZombie(scene.zombies[i], level, doors, doorCount, GetCollider(scene, sofaIndex), camera.position, dt);
+                UpdateZombie(scene.zombies[i], level, scene.doors, scene.doorCount, GetCollider(scene, sofaIndex), camera.position, dt);
 
             if (shotFired) {
                 Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
@@ -210,7 +185,6 @@ int main()
         BeginMode3D(shakeCam);
 
         DrawLevel(level);
-        DrawDoors(doors, doorCount);
         DrawScene(scene, shakeCam);
         DrawWeaponDecals(weapon, weapon.decalModel);
 
@@ -224,7 +198,6 @@ int main()
     rlDisableBackfaceCulling();
     EnableCursor();
     UnloadLevel(level);
-    UnloadDoors();
     UnloadScene(scene);
     UnloadWeapon(weapon);
     UnloadShader(shader);
@@ -232,8 +205,6 @@ int main()
     UnloadTexture(wallTex);
     UnloadTexture(greenTex);
     UnloadTexture(planksTex);
-    UnloadTexture(doorTexClosed);
-    UnloadTexture(doorTexOpen);
     CloseWindow();
     return 0;
 }
