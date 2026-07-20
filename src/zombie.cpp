@@ -2,6 +2,56 @@
 #include <rlgl.h>
 #include <raymath.h>
 #include <cmath>
+#include <cstring>
+
+#define ASTAR_MAX_NODES 2048
+
+static struct AStarNode {
+    float g, f;
+    int px, pz;
+    unsigned char flags;
+} s_astarNodes[ASTAR_MAX_NODES];
+
+static int s_openHeap[ASTAR_MAX_NODES];
+static int s_heapSize;
+
+static void HeapPush(int idx)
+{
+    s_openHeap[s_heapSize] = idx;
+    s_heapSize++;
+    int i = s_heapSize - 1;
+    while (i > 0) {
+        int parent = (i - 1) / 2;
+        if (s_astarNodes[s_openHeap[parent]].f <= s_astarNodes[s_openHeap[i]].f) break;
+        int tmp = s_openHeap[parent];
+        s_openHeap[parent] = s_openHeap[i];
+        s_openHeap[i] = tmp;
+        i = parent;
+    }
+}
+
+static int HeapPop()
+{
+    int top = s_openHeap[0];
+    s_heapSize--;
+    s_openHeap[0] = s_openHeap[s_heapSize];
+    int i = 0;
+    while (true) {
+        int smallest = i;
+        int l = 2 * i + 1;
+        int r = 2 * i + 2;
+        if (l < s_heapSize && s_astarNodes[s_openHeap[l]].f < s_astarNodes[s_openHeap[smallest]].f)
+            smallest = l;
+        if (r < s_heapSize && s_astarNodes[s_openHeap[r]].f < s_astarNodes[s_openHeap[smallest]].f)
+            smallest = r;
+        if (smallest == i) break;
+        int tmp = s_openHeap[i];
+        s_openHeap[i] = s_openHeap[smallest];
+        s_openHeap[smallest] = tmp;
+        i = smallest;
+    }
+    return top;
+}
 
 static bool IsWalkable(Level level, int col, int row)
 {
@@ -16,6 +66,8 @@ static int FindPath(Level level, float startX, float startZ, float endX, float e
     int w = level.width;
     int h = level.height;
     float ts = level.tileSize;
+    int total = w * h;
+    if (total > ASTAR_MAX_NODES) return 0;
 
     int sc = (int)(startX / ts);
     int sr = (int)(startZ / ts);
@@ -30,42 +82,27 @@ static int FindPath(Level level, float startX, float startZ, float endX, float e
     if (!IsWalkable(level, sc, sr) || !IsWalkable(level, ec, er))
         return 0;
 
-    struct Node {
-        float g, f;
-        int px, pz;
-        bool inOpen, inClosed;
-    };
-    Node *nodes = new Node[w * h]();
+    memset(s_astarNodes, 0, total * sizeof(AStarNode));
+    s_heapSize = 0;
 
-    nodes[sr * w + sc].g = 0;
+    int si = sr * w + sc;
+    s_astarNodes[si].g = 0;
     float dx = (float)(ec - sc), dz = (float)(er - sr);
-    nodes[sr * w + sc].f = sqrtf(dx * dx + dz * dz);
-    nodes[sr * w + sc].px = sc; nodes[sr * w + sc].pz = sr;
-    nodes[sr * w + sc].inOpen = true;
+    s_astarNodes[si].f = sqrtf(dx * dx + dz * dz);
+    s_astarNodes[si].px = sc; s_astarNodes[si].pz = sr;
+    s_astarNodes[si].flags = 1;
+    HeapPush(si);
 
-    int openCount = 1;
     int dirs[4][2] = {{1,0},{-1,0},{0,1},{0,-1}};
     bool found = false;
-    int foundIdx = -1;
 
-    while (openCount > 0) {
-        int bestIdx = -1;
-        float bestF = 1e9f;
-        for (int i = 0; i < w * h; i++) {
-            if (nodes[i].inOpen && !nodes[i].inClosed && nodes[i].f < bestF) {
-                bestF = nodes[i].f;
-                bestIdx = i;
-            }
-        }
-        if (bestIdx == -1) break;
-
-        Node &cur = nodes[bestIdx];
+    while (s_heapSize > 0) {
+        int bestIdx = HeapPop();
+        AStarNode &cur = s_astarNodes[bestIdx];
+        cur.flags = 2;
         int cx = bestIdx % w;
         int cz = bestIdx / w;
-        if (cx == ec && cz == er) { found = true; foundIdx = bestIdx; break; }
-
-        cur.inClosed = true;
-        openCount--;
+        if (cx == ec && cz == er) { found = true; break; }
 
         for (int d = 0; d < 4; d++) {
             int nx = cx + dirs[d][0];
@@ -73,16 +110,34 @@ static int FindPath(Level level, float startX, float startZ, float endX, float e
             if (nx < 0 || nx >= w || nz < 0 || nz >= h) continue;
             if (!IsWalkable(level, nx, nz)) continue;
 
-            Node &nb = nodes[nz * w + nx];
-            if (nb.inClosed) continue;
+            int ni = nz * w + nx;
+            AStarNode &nb = s_astarNodes[ni];
+            if (nb.flags == 2) continue;
 
             float ng = cur.g + 1.0f;
-            if (!nb.inOpen || ng < nb.g) {
+            if (nb.flags == 0 || ng < nb.g) {
                 nb.g = ng;
                 float ddx = (float)(ec - nx), ddz = (float)(er - nz);
                 nb.f = ng + sqrtf(ddx * ddx + ddz * ddz);
                 nb.px = cx; nb.pz = cz;
-                if (!nb.inOpen) { nb.inOpen = true; openCount++; }
+                if (nb.flags == 0) {
+                    nb.flags = 1;
+                    HeapPush(ni);
+                } else {
+                    for (int i = 0; i < s_heapSize; i++) {
+                        if (s_openHeap[i] == ni) {
+                            while (i > 0) {
+                                int parent = (i - 1) / 2;
+                                if (s_astarNodes[s_openHeap[parent]].f <= s_astarNodes[s_openHeap[i]].f) break;
+                                int tmp = s_openHeap[parent];
+                                s_openHeap[parent] = s_openHeap[i];
+                                s_openHeap[i] = tmp;
+                                i = parent;
+                            }
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
@@ -96,7 +151,7 @@ static int FindPath(Level level, float startX, float startZ, float endX, float e
                 outPath[count].y = (float)cz;
                 count++;
             }
-            Node &n = nodes[cz * w + cx];
+            AStarNode &n = s_astarNodes[cz * w + cx];
             cx = n.px; cz = n.pz;
         }
         for (int i = 0; i < count / 2; i++) {
@@ -106,11 +161,10 @@ static int FindPath(Level level, float startX, float startZ, float endX, float e
         }
     }
 
-    delete[] nodes;
     return count;
 }
 
-void InitZombie(Zombie &zombie, Vector3 pos)
+void InitZombie(Zombie &zombie, Vector3 pos, Texture2D idle, Texture2D walk1, Texture2D walk2, Texture2D dead)
 {
     zombie.position = pos;
     zombie.health = 100.0f;
@@ -119,14 +173,10 @@ void InitZombie(Zombie &zombie, Vector3 pos)
     zombie.pathCount = 0;
     zombie.pathRecalcTimer = 0.0f;
     zombie.pathIndex = 0;
-    zombie.textureIdle = LoadTexture("tex/zombi/zombi.png");
-    SetTextureFilter(zombie.textureIdle, TEXTURE_FILTER_POINT);
-    zombie.textureWalk1 = LoadTexture("tex/zombi/zombi_walk.png");
-    SetTextureFilter(zombie.textureWalk1, TEXTURE_FILTER_POINT);
-    zombie.textureWalk2 = LoadTexture("tex/zombi/zombi_walk_1.png");
-    SetTextureFilter(zombie.textureWalk2, TEXTURE_FILTER_POINT);
-    zombie.textureDead = LoadTexture("tex/zombi/zombi_kill.png");
-    SetTextureFilter(zombie.textureDead, TEXTURE_FILTER_POINT);
+    zombie.textureIdle = idle;
+    zombie.textureWalk1 = walk1;
+    zombie.textureWalk2 = walk2;
+    zombie.textureDead = dead;
     zombie.isWalking = false;
     zombie.animTimer = 0.0f;
     zombie.animFrame = false;
@@ -248,10 +298,6 @@ void DrawZombie(Zombie &zombie, Camera3D camera)
 
 void UnloadZombie(Zombie &zombie)
 {
-    UnloadTexture(zombie.textureIdle);
-    UnloadTexture(zombie.textureWalk1);
-    UnloadTexture(zombie.textureWalk2);
-    UnloadTexture(zombie.textureDead);
 }
 
 bool ZombieHitByRay(Zombie &zombie, Vector3 origin, Vector3 dir)

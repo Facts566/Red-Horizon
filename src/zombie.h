@@ -28,7 +28,7 @@ struct Zombie {
     bool active;
 };
 
-void InitZombie(Zombie &zombie, Vector3 pos);
+void InitZombie(Zombie &zombie, Vector3 pos, Texture2D idle, Texture2D walk1, Texture2D walk2, Texture2D dead);
 void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, BoxCollider sofaBox, Vector3 playerPos, float dt);
 void DrawZombie(Zombie &zombie, Camera3D camera);
 void UnloadZombie(Zombie &zombie);

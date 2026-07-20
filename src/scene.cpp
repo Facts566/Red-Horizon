@@ -4,7 +4,7 @@
 #include <raymath.h>
 #include <algorithm>
 
-void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart, Texture2D greenTex, Texture2D wallTex)
+void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart, Texture2D greenTex, Texture2D wallTex, Texture2D shotholeTex)
 {
     Texture2D doorTexClosed = LoadTexture("tex/door/door_1.png");
     SetTextureFilter(doorTexClosed, TEXTURE_FILTER_POINT);
@@ -28,23 +28,23 @@ void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart,
     scene.doors[scene.doorCount++] = CreateDoor(
         (Vector3){12 * tileSize, 0, 9 * tileSize},
         (Vector3){0,1,0}, 0.0f,
-        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, LoadTexture("tex/shothole.png")
+        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, shotholeTex
     );
     scene.doors[scene.doorCount++] = CreateDoor(
         (Vector3){22 * tileSize, 0, 17 * tileSize},
         (Vector3){0,1,0}, 270.0f,
-        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, LoadTexture("tex/shothole.png")
+        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, shotholeTex
     );
     scene.doors[scene.doorCount++] = CreateDoor(
         (Vector3){37 * tileSize, 0, 4 * tileSize},
         (Vector3){0,1,0}, 90.0f,
-        doorTexClosed, doorTexOpen, wallTex, greenTex, shader, LoadTexture("tex/shothole.png")
+        doorTexClosed, doorTexOpen, wallTex, greenTex, shader, shotholeTex
     );
 
     scene.doors[scene.doorCount++] = CreateDoor(
         (Vector3){32 * tileSize, 0, 17 * tileSize},
         (Vector3){0,1,0}, 90.0f,
-        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, LoadTexture("tex/shothole.png")
+        doorTexClosed, doorTexOpen, greenTex, wallTex, shader, shotholeTex
     );
 }
 

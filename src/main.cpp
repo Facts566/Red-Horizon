@@ -40,6 +40,18 @@ int main()
     rlTextureParameters(planksTex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
     rlTextureParameters(planksTex.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
+    Texture2D zombiIdle = LoadTexture("tex/zombi/zombi.png");
+    SetTextureFilter(zombiIdle, TEXTURE_FILTER_POINT);
+    Texture2D zombiWalk1 = LoadTexture("tex/zombi/zombi_walk.png");
+    SetTextureFilter(zombiWalk1, TEXTURE_FILTER_POINT);
+    Texture2D zombiWalk2 = LoadTexture("tex/zombi/zombi_walk_1.png");
+    SetTextureFilter(zombiWalk2, TEXTURE_FILTER_POINT);
+    Texture2D zombiDead = LoadTexture("tex/zombi/zombi_kill.png");
+    SetTextureFilter(zombiDead, TEXTURE_FILTER_POINT);
+
+    Texture2D shotholeTex = LoadTexture("tex/shothole.png");
+    SetTextureFilter(shotholeTex, TEXTURE_FILTER_POINT);
+
     float tileSize = 5.0f;
     float wallHeight = 20.0f;
 
@@ -47,7 +59,7 @@ int main()
     Level level = LoadLevel("map/map.txt", tileSize, wallHeight, texture, planksTex, wallTex, greenTex, shader);
 
     WeaponState weapon;
-    LoadWeapon(weapon, shader);
+    LoadWeapon(weapon, shader, shotholeTex);
 
     Camera3D camera = { 0 };
     camera.position = level.playerStart;
@@ -57,19 +69,19 @@ int main()
     camera.projection = CAMERA_PERSPECTIVE;
 
     Scene scene = { 0 };
-    LoadScene(scene, shader, tileSize, camera.position, greenTex, wallTex);
+    LoadScene(scene, shader, tileSize, camera.position, greenTex, wallTex, shotholeTex);
 
     scene.zombieCount = 10;
-    InitZombie(scene.zombies[0], (Vector3){30 * tileSize + tileSize / 2.0f, 5.4f, 4 * tileSize + tileSize / 2.0f});
-    InitZombie(scene.zombies[1], (Vector3){10 * tileSize + tileSize / 2.0f, 5.4f, 3 * tileSize + tileSize / 2.0f});
-    InitZombie(scene.zombies[2], (Vector3){16 * tileSize + tileSize / 2.0f, 5.4f, 6 * tileSize + tileSize / 2.0f});
-    InitZombie(scene.zombies[3], (Vector3){25 * tileSize + tileSize / 2.0f, 5.4f, 3 * tileSize + tileSize / 2.0f});
-    InitZombie(scene.zombies[4], (Vector3){33 * tileSize + tileSize / 2.0f, 5.4f, 6 * tileSize + tileSize / 2.0f});
-    InitZombie(scene.zombies[5], (Vector3){28 * tileSize + tileSize / 2.0f, 5.4f, 11 * tileSize + tileSize / 2.0f});
-    InitZombie(scene.zombies[6], (Vector3){26 * tileSize + tileSize / 2.0f, 5.4f, 15 * tileSize + tileSize / 2.0f});
-    InitZombie(scene.zombies[7], (Vector3){13 * tileSize + tileSize / 2.0f, 5.4f, 15 * tileSize + tileSize / 2.0f});
-    InitZombie(scene.zombies[8], (Vector3){27 * tileSize + tileSize / 2.0f, 5.4f, 19 * tileSize + tileSize / 2.0f});
-    InitZombie(scene.zombies[9], (Vector3){27 * tileSize + tileSize / 2.0f, 5.4f, 22 * tileSize + tileSize / 2.0f});
+    InitZombie(scene.zombies[0], (Vector3){30 * tileSize + tileSize / 2.0f, 5.4f, 4 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+    InitZombie(scene.zombies[1], (Vector3){10 * tileSize + tileSize / 2.0f, 5.4f, 3 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+    InitZombie(scene.zombies[2], (Vector3){16 * tileSize + tileSize / 2.0f, 5.4f, 6 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+    InitZombie(scene.zombies[3], (Vector3){25 * tileSize + tileSize / 2.0f, 5.4f, 3 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+    InitZombie(scene.zombies[4], (Vector3){33 * tileSize + tileSize / 2.0f, 5.4f, 6 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+    InitZombie(scene.zombies[5], (Vector3){28 * tileSize + tileSize / 2.0f, 5.4f, 11 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+    InitZombie(scene.zombies[6], (Vector3){26 * tileSize + tileSize / 2.0f, 5.4f, 15 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+    InitZombie(scene.zombies[7], (Vector3){13 * tileSize + tileSize / 2.0f, 5.4f, 15 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+    InitZombie(scene.zombies[8], (Vector3){27 * tileSize + tileSize / 2.0f, 5.4f, 19 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+    InitZombie(scene.zombies[9], (Vector3){27 * tileSize + tileSize / 2.0f, 5.4f, 22 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
 
     int sofaIndex = 0;
 
@@ -112,10 +124,25 @@ int main()
 
             if (shotFired) {
                 Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
+                float closestDist = 1e9f;
+                int closestIdx = -1;
                 for (int i = 0; i < scene.zombieCount; i++) {
-                    if (ZombieHitByRay(scene.zombies[i], camera.position, forward)) {
-                        scene.zombies[i].health -= 50.0f;
+                    if (!scene.zombies[i].active || scene.zombies[i].health <= 0.0f) continue;
+                    if (!ZombieHitByRay(scene.zombies[i], camera.position, forward)) continue;
+                    float dx = scene.zombies[i].position.x - camera.position.x;
+                    float dz = scene.zombies[i].position.z - camera.position.z;
+                    float dist = dx * dx + dz * dz;
+                    if (dist < closestDist) {
+                        closestDist = dist;
+                        closestIdx = i;
                     }
+                }
+                if (closestIdx >= 0) {
+                    Vector3 hitPos, hitNorm;
+                    Vector3 closestZ = scene.zombies[closestIdx].position;
+                    bool blocked = RaycastWall(level, camera.position, forward, sqrtf(closestDist), hitPos, hitNorm);
+                    if (!blocked)
+                        scene.zombies[closestIdx].health -= 50.0f;
                 }
             }
 
@@ -214,6 +241,11 @@ int main()
     UnloadTexture(wallTex);
     UnloadTexture(greenTex);
     UnloadTexture(planksTex);
+    UnloadTexture(zombiIdle);
+    UnloadTexture(zombiWalk1);
+    UnloadTexture(zombiWalk2);
+    UnloadTexture(zombiDead);
+    UnloadTexture(shotholeTex);
     CloseWindow();
     return 0;
 }

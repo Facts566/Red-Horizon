@@ -3,11 +3,11 @@
 #include <raymath.h>
 #include <cmath>
 
-void LoadWeapon(WeaponState &w, Shader shader)
+void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex)
 {
     w.gunTex = LoadTexture("tex/gun.png");
     w.muzzleTex = LoadTexture("tex/Muzzle.png");
-    w.shotholeTex = LoadTexture("tex/shothole.png");
+    w.shotholeTex = shotholeTex;
     w.decalModel = MakeWall(0.6f, 0.6f, 1.0f, 1.0f, w.shotholeTex);
     w.decalModel.materials[0].shader = shader;
 
@@ -166,7 +166,6 @@ void UnloadWeapon(WeaponState &w)
 {
     UnloadTexture(w.gunTex);
     UnloadTexture(w.muzzleTex);
-    UnloadTexture(w.shotholeTex);
     UnloadModel(w.decalModel);
 }
 

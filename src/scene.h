@@ -33,7 +33,7 @@ struct Scene {
     int zombieCount;
 };
 
-void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart, Texture2D greenTex, Texture2D wallTex);
+void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart, Texture2D greenTex, Texture2D wallTex, Texture2D shotholeTex);
 void AddObject(Scene &scene, const char *name, Vector3 pos, float rot, float sc, bool addCollision, Shader shader);
 void DrawScene(Scene &scene, Camera3D camera);
 void UnloadScene(Scene &scene);

@@ -34,7 +34,7 @@ struct WeaponState {
     float flashDuration;
 };
 
-void LoadWeapon(WeaponState &w, Shader shader);
+void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex);
 void UpdateWeapon(WeaponState &w);
 void ShootWeapon(WeaponState &w, Camera3D camera, Level level, Door doors[], int doorCount, Shader shader);
 void DrawWeaponDecals(WeaponState &w, Model decalModel);
