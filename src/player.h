@@ -7,4 +7,6 @@
 constexpr float PLAYER_SPEED = 20.0f;
 constexpr float PLAYER_RADIUS = 1.0f;
 
-void UpdatePlayer(Camera3D *camera, float *yaw, Level level, Door doors[], int doorCount, BoxCollider sofaBox);
+struct Scene;
+
+void UpdatePlayer(Camera3D *camera, float *yaw, Level level, Door doors[], int doorCount, Scene &scene);

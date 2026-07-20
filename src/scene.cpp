@@ -20,7 +20,15 @@ void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart,
 
     scene.tileSize = tileSize;
 
-    AddObject(scene, "sofa", {12 * tileSize, 0.7f * tileSize, 1.8f * tileSize}, 0.0f, 4.0f, true, shader);
+    //decor
+    AddObject(scene, "sofa", {playerStart.x + 0.0f, 0.7f * tileSize, playerStart.z + -84.0f}, 0.0f, 4.0f, true, shader);
+    AddObject(scene, "sofa", {playerStart.x + 82.5f, 0.7f * tileSize, playerStart.z + 14.0f}, 180.0f, 4.0f, true, shader);
+    //blood
+    AddObject(scene, "blood", {playerStart.x + 40.0f, 0.1f, playerStart.z}, 0.0f, 6.0f, false, shader);
+    AddObject(scene, "blood", {playerStart.x + -20.0f, 0.1f, playerStart.z + 10.0f}, 0.0f, 6.0f, false, shader);
+    AddObject(scene, "blood", {playerStart.x + 0.0f, 0.1f, playerStart.z + -30.0f}, 0.0f, 6.0f, false, shader);
+    AddObject(scene, "blood", {playerStart.x + 0.0f, 0.1f, playerStart.z + -70.0f}, 0.0f, 6.0f, false, shader);
+    //lamp
     AddObject(scene, "lamp", {playerStart.x + 80.0f, 19.0f, playerStart.z + 2.0f}, 0.0f, 0.5f, false, shader);
     AddObject(scene, "lamp", {playerStart.x + 2.0f, 19.0f, playerStart.z + -70.0f}, 0.0f, 0.5f, false, shader);
 
@@ -59,6 +67,9 @@ static void LoadObjectModel(SceneObject &obj, const char *name, Shader shader)
     } else if (strcmp(name, "sofa") == 0) {
         obj.model = LoadModel("models/sofa.obj");
         obj.texture = LoadTexture("tex/sofa.png");
+    } else if (strcmp(name, "blood") == 0) {
+        obj.model = LoadModel("models/blood.obj");
+        obj.texture = LoadTexture("tex/blood.png");
     }
 
     SetTextureFilter(obj.texture, TEXTURE_FILTER_POINT);
@@ -115,12 +126,14 @@ void DrawScene(Scene &scene, Camera3D camera, Shader shader)
     for (int i = 0; i < scene.objectCount; i++) {
         SceneObject &obj = scene.objects[i];
         Matrix transform = MatrixMultiply(
-            MatrixScale(obj.scale, obj.scale, obj.scale),
+            MatrixMultiply(
+                MatrixScale(obj.scale, obj.scale, obj.scale),
+                (obj.rotation != 0.0f) ? MatrixRotateY(obj.rotation * 3.14159f / 180.0f) : MatrixIdentity()
+            ),
             MatrixTranslate(obj.position.x, obj.position.y, obj.position.z)
         );
-        if (obj.rotation != 0.0f)
-            transform = MatrixMultiply(transform, MatrixRotateY(obj.rotation * 3.14159f / 180.0f));
 
+        rlDisableBackfaceCulling();
         for (int mi = 0; mi < obj.model.meshCount; mi++)
             DrawMesh(obj.model.meshes[mi], obj.model.materials[obj.model.meshMaterial[mi]], transform);
     }
@@ -157,4 +170,14 @@ void UnloadScene(Scene &scene)
 BoxCollider GetCollider(Scene &scene, int index)
 {
     return scene.objects[index].collider;
+}
+
+bool CheckSceneCollision(Scene &scene, float x, float z, float radius)
+{
+    for (int i = 0; i < scene.objectCount; i++) {
+        if (scene.objects[i].addCollision &&
+            CheckBoxCollision(scene.objects[i].collider, x, z, radius))
+            return true;
+    }
+    return false;
 }

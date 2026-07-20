@@ -1,8 +1,9 @@
 #include "player.h"
 #include "door.h"
+#include "scene.h"
 #include <math.h>
 
-void UpdatePlayer(Camera3D *camera, float *yaw, Level level, Door doors[], int doorCount, BoxCollider sofaBox)
+void UpdatePlayer(Camera3D *camera, float *yaw, Level level, Door doors[], int doorCount, Scene &scene)
 {
     *yaw -= GetMouseDelta().x * 0.003f;
     if (IsKeyDown(KEY_LEFT))  *yaw += 2.0f * GetFrameTime();
@@ -30,11 +31,11 @@ void UpdatePlayer(Camera3D *camera, float *yaw, Level level, Door doors[], int d
 
     if (!CheckWallCollision(level, nx, camera->position.z, PLAYER_RADIUS) &&
         !CheckAnyDoorCollision(doors, doorCount, nx, camera->position.z, PLAYER_RADIUS) &&
-        !CheckBoxCollision(sofaBox, nx, camera->position.z, PLAYER_RADIUS))
+        !CheckSceneCollision(scene, nx, camera->position.z, PLAYER_RADIUS))
         camera->position.x = nx;
     if (!CheckWallCollision(level, camera->position.x, nz, PLAYER_RADIUS) &&
         !CheckAnyDoorCollision(doors, doorCount, camera->position.x, nz, PLAYER_RADIUS) &&
-        !CheckBoxCollision(sofaBox, camera->position.x, nz, PLAYER_RADIUS))
+        !CheckSceneCollision(scene, camera->position.x, nz, PLAYER_RADIUS))
         camera->position.z = nz;
 
     camera->target.x = camera->position.x + fx;

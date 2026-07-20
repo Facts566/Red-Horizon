@@ -39,3 +39,4 @@ void DrawScene(Scene &scene, Camera3D camera, Shader shader);
 void UnloadScene(Scene &scene);
 bool CheckBoxCollision(BoxCollider box, float x, float z, float radius);
 BoxCollider GetCollider(Scene &scene, int index);
+bool CheckSceneCollision(Scene &scene, float x, float z, float radius);

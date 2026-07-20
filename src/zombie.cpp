@@ -1,4 +1,5 @@
 #include "zombie.h"
+#include "scene.h"
 #include "raycast.h"
 #include "map.h"
 #include <rlgl.h>
@@ -222,7 +223,7 @@ void InitZombie(Zombie &zombie, Vector3 pos, Texture2D idle, Texture2D walk1, Te
     zombie.hitTime = 0.0f;
 }
 
-void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, BoxCollider sofaBox, Vector3 playerPos, float dt)
+void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, Scene &scene, Vector3 playerPos, float dt)
 {
     if (!zombie.active || zombie.health <= 0.0f) return;
 
@@ -274,11 +275,11 @@ void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, BoxC
             float nz = zombie.position.z + (dz / dist) * speed;
             if (!CheckWallCollision(level, nx, zombie.position.z, zombie.radius) &&
                 !CheckAnyDoorCollision(doors, doorCount, nx, zombie.position.z, zombie.radius) &&
-                !CheckBoxCollision(sofaBox, nx, zombie.position.z, zombie.radius))
+                !CheckSceneCollision(scene, nx, zombie.position.z, zombie.radius))
                 zombie.position.x = nx;
             if (!CheckWallCollision(level, zombie.position.x, nz, zombie.radius) &&
                 !CheckAnyDoorCollision(doors, doorCount, zombie.position.x, nz, zombie.radius) &&
-                !CheckBoxCollision(sofaBox, zombie.position.x, nz, zombie.radius))
+                !CheckSceneCollision(scene, zombie.position.x, nz, zombie.radius))
                 zombie.position.z = nz;
             zombie.isWalking = true;
         }
@@ -298,11 +299,11 @@ void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, BoxC
 
         if (!CheckWallCollision(level, nx, zombie.position.z, zombie.radius) &&
             !CheckAnyDoorCollision(doors, doorCount, nx, zombie.position.z, zombie.radius) &&
-            !CheckBoxCollision(sofaBox, nx, zombie.position.z, zombie.radius))
+            !CheckSceneCollision(scene, nx, zombie.position.z, zombie.radius))
             zombie.position.x = nx;
         if (!CheckWallCollision(level, zombie.position.x, nz, zombie.radius) &&
             !CheckAnyDoorCollision(doors, doorCount, zombie.position.x, nz, zombie.radius) &&
-            !CheckBoxCollision(sofaBox, zombie.position.x, nz, zombie.radius))
+            !CheckSceneCollision(scene, zombie.position.x, nz, zombie.radius))
             zombie.position.z = nz;
         zombie.isWalking = true;
     }

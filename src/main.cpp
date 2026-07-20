@@ -83,8 +83,6 @@ int main()
         InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
     }
 
-    int sofaIndex = 0;
-
     SetLightUniforms(shader, camera.position, {1,1,1}, 80.0f, 0.05f);
     int lightRangeLoc = GetShaderLocation(shader, "lightRange");
     int lightAmbLoc = GetShaderLocation(shader, "ambientStrength");
@@ -103,7 +101,7 @@ int main()
 
     while (!WindowShouldClose())
     {
-        UpdatePlayer(&camera, &yaw, level, scene.doors, scene.doorCount, GetCollider(scene, sofaIndex));
+        UpdatePlayer(&camera, &yaw, level, scene.doors, scene.doorCount, scene);
 
         UpdateWeapon(weapon);
 
@@ -123,7 +121,7 @@ int main()
             UpdateDoors(scene.doors, scene.doorCount, doorPositions, doorPosCount);
 
             for (int i = 0; i < scene.zombieCount; i++)
-                UpdateZombie(scene.zombies[i], level, scene.doors, scene.doorCount, GetCollider(scene, sofaIndex), camera.position, dt);
+                UpdateZombie(scene.zombies[i], level, scene.doors, scene.doorCount, scene, camera.position, dt);
 
             if (shotFired) {
                 Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
