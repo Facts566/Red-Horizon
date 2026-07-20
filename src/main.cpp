@@ -144,8 +144,10 @@ int main()
                     Vector3 hitPos, hitNorm;
                     Vector3 closestZ = scene.zombies[closestIdx].position;
                     bool blocked = RaycastWall(level, camera.position, forward, sqrtf(closestDist), hitPos, hitNorm);
-                    if (!blocked)
+                    if (!blocked) {
                         scene.zombies[closestIdx].health -= 50.0f;
+                        scene.zombies[closestIdx].hitTime = 0.15f;
+                    }
                 }
             }
 

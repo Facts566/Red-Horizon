@@ -27,6 +27,7 @@ struct Zombie {
 
     bool active;
     bool triggered;
+    float hitTime;
 };
 
 void InitZombie(Zombie &zombie, Vector3 pos, Texture2D idle, Texture2D walk1, Texture2D walk2, Texture2D dead);

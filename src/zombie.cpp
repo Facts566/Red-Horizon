@@ -219,11 +219,17 @@ void InitZombie(Zombie &zombie, Vector3 pos, Texture2D idle, Texture2D walk1, Te
     zombie.animFrame = false;
     zombie.active = true;
     zombie.triggered = false;
+    zombie.hitTime = 0.0f;
 }
 
 void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, BoxCollider sofaBox, Vector3 playerPos, float dt)
 {
     if (!zombie.active || zombie.health <= 0.0f) return;
+
+    if (zombie.hitTime > 0.0f) {
+        zombie.hitTime -= dt;
+        if (zombie.hitTime < 0.0f) zombie.hitTime = 0.0f;
+    }
 
     zombie.isWalking = false;
 
@@ -336,7 +342,9 @@ void DrawZombie(Zombie &zombie, Camera3D camera, Shader shader)
 
     rlSetTexture(tex.id);
     rlBegin(RL_QUADS);
-        rlColor4ub(255, 255, 255, 255);
+        unsigned char r = 255, g = 255, b = 255;
+        if (zombie.hitTime > 0.0f) { r = 255; g = 80; b = 80; }
+        rlColor4ub(r, g, b, 255);
         rlTexCoord2f(0.0f, 1.0f); rlVertex3f(bl.x, bl.y, bl.z);
         rlTexCoord2f(1.0f, 1.0f); rlVertex3f(br.x, br.y, br.z);
         rlTexCoord2f(1.0f, 0.0f); rlVertex3f(tr.x, tr.y, tr.z);
