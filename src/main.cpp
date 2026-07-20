@@ -73,17 +73,15 @@ int main()
 
     InitZombieModel(shader);
 
-    scene.zombieCount = 10;
-    InitZombie(scene.zombies[0], (Vector3){30 * tileSize + tileSize / 2.0f, 5.4f, 4 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
-    InitZombie(scene.zombies[1], (Vector3){10 * tileSize + tileSize / 2.0f, 5.4f, 3 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
-    InitZombie(scene.zombies[2], (Vector3){16 * tileSize + tileSize / 2.0f, 5.4f, 6 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
-    InitZombie(scene.zombies[3], (Vector3){25 * tileSize + tileSize / 2.0f, 5.4f, 3 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
-    InitZombie(scene.zombies[4], (Vector3){33 * tileSize + tileSize / 2.0f, 5.4f, 6 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
-    InitZombie(scene.zombies[5], (Vector3){28 * tileSize + tileSize / 2.0f, 5.4f, 11 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
-    InitZombie(scene.zombies[6], (Vector3){26 * tileSize + tileSize / 2.0f, 5.4f, 15 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
-    InitZombie(scene.zombies[7], (Vector3){13 * tileSize + tileSize / 2.0f, 5.4f, 15 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
-    InitZombie(scene.zombies[8], (Vector3){27 * tileSize + tileSize / 2.0f, 5.4f, 19 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
-    InitZombie(scene.zombies[9], (Vector3){27 * tileSize + tileSize / 2.0f, 5.4f, 22 * tileSize + tileSize / 2.0f}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+    ZombieSpawn spawns[MAX_ZOMBIE_SPAWNS];
+    int spawnCount = LoadZombieSpawns("map/enemy.txt", spawns, MAX_ZOMBIE_SPAWNS);
+    if (spawnCount > SCENE_MAX_ZOMBIES) spawnCount = SCENE_MAX_ZOMBIES;
+    scene.zombieCount = spawnCount;
+    for (int i = 0; i < spawnCount; i++) {
+        float wx = (float)spawns[i].col * tileSize + tileSize / 2.0f;
+        float wz = (float)spawns[i].row * tileSize + tileSize / 2.0f;
+        InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+    }
 
     int sofaIndex = 0;
 

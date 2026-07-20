@@ -23,3 +23,12 @@ Level LoadLevel(const char *path, float tileSize, float wallHeight, Texture2D fl
 void DrawLevel(Level level);
 void UnloadLevel(Level level);
 bool CheckWallCollision(Level level, float x, float z, float radius);
+
+#define MAX_ZOMBIE_SPAWNS 64
+
+struct ZombieSpawn {
+    int col;
+    int row;
+};
+
+int LoadZombieSpawns(const char *path, ZombieSpawn *spawns, int maxSpawns);
