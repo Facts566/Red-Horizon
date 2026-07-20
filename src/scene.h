@@ -4,6 +4,7 @@
 #include "zombie.h"
 
 #define SCENE_MAX_ZOMBIES 8
+#define SCENE_MAX_LAMPS 4
 
 struct Scene {
     float tileSize;
@@ -11,7 +12,8 @@ struct Scene {
     Sofa sofa;
     BoxCollider sofaBox;
 
-    Lamp lamp;
+    Lamp lamps[SCENE_MAX_LAMPS];
+    int lampCount;
 
     Zombie zombies[SCENE_MAX_ZOMBIES];
     int zombieCount;

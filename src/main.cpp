@@ -1,6 +1,7 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
+#include <cstdio>
 #include "player.h"
 #include "map.h"
 #include "light.h"
@@ -87,10 +88,6 @@ int main()
     int lightRangeLoc = GetShaderLocation(shader, "lightRange");
     int lightAmbLoc = GetShaderLocation(shader, "ambientStrength");
     int lightPosLoc = GetShaderLocation(shader, "lightPosition");
-    int light2PosLoc = GetShaderLocation(shader, "light2Position");
-    int light2RangeLoc = GetShaderLocation(shader, "light2Range");
-    int light2ColorLoc = GetShaderLocation(shader, "light2Color");
-    bool flashlightOn = true;
 
     DisableCursor();
     float yaw = 0.0f;
@@ -103,8 +100,6 @@ int main()
     while (!WindowShouldClose())
     {
         UpdatePlayer(&camera, &yaw, level, doors, doorCount, GetSofaCollider(scene));
-
-        if (IsKeyPressed(KEY_F)) flashlightOn = !flashlightOn;
 
         UpdateWeapon(weapon);
 
@@ -158,19 +153,28 @@ int main()
             if (health < 0) health = 0;
         }
 
-        float range = flashlightOn ? 80.0f : 0.0f;
-        float ambient = 0.01f;
+        float range = 80.0f;
+        float ambient = 0.05f;
         SetShaderValue(shader, lightRangeLoc, &range, SHADER_UNIFORM_FLOAT);
         SetShaderValue(shader, lightAmbLoc, &ambient, SHADER_UNIFORM_FLOAT);
         SetShaderValue(shader, lightPosLoc, &camera.position, SHADER_UNIFORM_VEC3);
 
-        Vector3 lampLightPos = scene.lamp.position;
-        lampLightPos.y -= 5.0f;
-        SetShaderValue(shader, light2PosLoc, &lampLightPos, SHADER_UNIFORM_VEC3);
-        float lampRange = 30.0f;
-        SetShaderValue(shader, light2RangeLoc, &lampRange, SHADER_UNIFORM_FLOAT);
-        Vector3 lampColor = {1.0f, 0.9f, 0.7f};
-        SetShaderValue(shader, light2ColorLoc, &lampColor, SHADER_UNIFORM_VEC3);
+        for (int i = 0; i < scene.lampCount; i++) {
+            Vector3 pos = scene.lamps[i].position;
+            pos.y -= 5.0f;
+            Vector3 color = {1.0f, 0.9f, 0.7f};
+            float range = 30.0f;
+            char buf[32];
+
+            snprintf(buf, sizeof(buf), "lampPos[%d]", i);
+            SetShaderValue(shader, GetShaderLocation(shader, buf), &pos, SHADER_UNIFORM_VEC3);
+
+            snprintf(buf, sizeof(buf), "lampColor[%d]", i);
+            SetShaderValue(shader, GetShaderLocation(shader, buf), &color, SHADER_UNIFORM_VEC3);
+
+            snprintf(buf, sizeof(buf), "lampRange[%d]", i);
+            SetShaderValue(shader, GetShaderLocation(shader, buf), &range, SHADER_UNIFORM_FLOAT);
+        }
 
         BeginDrawing();
         ClearBackground(BLACK);
