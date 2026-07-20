@@ -335,7 +335,6 @@ void DrawZombie(Zombie &zombie, Camera3D camera, Shader shader)
     Vector3 tl = Vector3Add(zombie.position, Vector3Subtract(Vector3Scale(up, size * 0.5f), Vector3Scale(right, size * 0.5f)));
 
     rlSetTexture(tex.id);
-    BeginShaderMode(shader);
     rlBegin(RL_QUADS);
         rlColor4ub(255, 255, 255, 255);
         rlTexCoord2f(0.0f, 1.0f); rlVertex3f(bl.x, bl.y, bl.z);
@@ -343,7 +342,6 @@ void DrawZombie(Zombie &zombie, Camera3D camera, Shader shader)
         rlTexCoord2f(1.0f, 0.0f); rlVertex3f(tr.x, tr.y, tr.z);
         rlTexCoord2f(0.0f, 0.0f); rlVertex3f(tl.x, tl.y, tl.z);
     rlEnd();
-    EndShaderMode();
     rlSetTexture(0);
 }
 
