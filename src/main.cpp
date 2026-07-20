@@ -81,8 +81,13 @@ int main()
     camera.fovy = 60.0f;
     camera.projection = CAMERA_PERSPECTIVE;
 
-    Scene scene;
+    Scene scene = { 0 };
     LoadScene(scene, shader, tileSize, camera.position);
+
+    scene.zombieCount = 1;
+    InitZombie(scene.zombies[0], (Vector3){30 * tileSize + tileSize / 2.0f, 5.4f, 4 * tileSize + tileSize / 2.0f});
+
+    int sofaIndex = 0;
 
     SetLightUniforms(shader, camera.position, {1,1,1}, 80.0f, 0.05f);
     int lightRangeLoc = GetShaderLocation(shader, "lightRange");
@@ -99,7 +104,7 @@ int main()
 
     while (!WindowShouldClose())
     {
-        UpdatePlayer(&camera, &yaw, level, doors, doorCount, GetSofaCollider(scene));
+        UpdatePlayer(&camera, &yaw, level, doors, doorCount, GetCollider(scene, sofaIndex));
 
         UpdateWeapon(weapon);
 
@@ -119,7 +124,7 @@ int main()
             UpdateDoors(doors, doorCount, doorPositions, doorPosCount);
 
             for (int i = 0; i < scene.zombieCount; i++)
-                UpdateZombie(scene.zombies[i], level, doors, doorCount, scene.sofaBox, camera.position, dt);
+                UpdateZombie(scene.zombies[i], level, doors, doorCount, GetCollider(scene, sofaIndex), camera.position, dt);
 
             if (shotFired) {
                 Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
@@ -159,21 +164,25 @@ int main()
         SetShaderValue(shader, lightAmbLoc, &ambient, SHADER_UNIFORM_FLOAT);
         SetShaderValue(shader, lightPosLoc, &camera.position, SHADER_UNIFORM_VEC3);
 
-        for (int i = 0; i < scene.lampCount; i++) {
-            Vector3 pos = scene.lamps[i].position;
+        int lampIdx = 0;
+        for (int i = 0; i < scene.objectCount; i++) {
+            if (!scene.objects[i].isLamp) continue;
+            Vector3 pos = scene.objects[i].position;
             pos.y -= 5.0f;
             Vector3 color = {1.0f, 0.9f, 0.7f};
-            float range = 30.0f;
+            float lr = 30.0f;
             char buf[32];
 
-            snprintf(buf, sizeof(buf), "lampPos[%d]", i);
+            snprintf(buf, sizeof(buf), "lampPos[%d]", lampIdx);
             SetShaderValue(shader, GetShaderLocation(shader, buf), &pos, SHADER_UNIFORM_VEC3);
 
-            snprintf(buf, sizeof(buf), "lampColor[%d]", i);
+            snprintf(buf, sizeof(buf), "lampColor[%d]", lampIdx);
             SetShaderValue(shader, GetShaderLocation(shader, buf), &color, SHADER_UNIFORM_VEC3);
 
-            snprintf(buf, sizeof(buf), "lampRange[%d]", i);
-            SetShaderValue(shader, GetShaderLocation(shader, buf), &range, SHADER_UNIFORM_FLOAT);
+            snprintf(buf, sizeof(buf), "lampRange[%d]", lampIdx);
+            SetShaderValue(shader, GetShaderLocation(shader, buf), &lr, SHADER_UNIFORM_FLOAT);
+
+            lampIdx++;
         }
 
         BeginDrawing();
