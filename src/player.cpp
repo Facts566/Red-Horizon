@@ -29,15 +29,18 @@ void UpdatePlayer(Camera3D *camera, float *yaw, Level level, Door doors[], int d
     float nx = camera->position.x + dx * dt;
     float nz = camera->position.z + dz * dt;
 
+    float oldX = camera->position.x;
+    float oldZ = camera->position.z;
+
     if (!CheckWallCollision(level, nx, camera->position.z, PLAYER_RADIUS) &&
         !CheckAnyDoorCollision(doors, doorCount, nx, camera->position.z, PLAYER_RADIUS) &&
         !CheckSceneCollision(scene, nx, camera->position.z, PLAYER_RADIUS) &&
-        !CheckZombieCollision(scene, nx, camera->position.z, PLAYER_RADIUS))
+        !CheckZombieCollision(scene, nx, camera->position.z, PLAYER_RADIUS, oldX, oldZ))
         camera->position.x = nx;
     if (!CheckWallCollision(level, camera->position.x, nz, PLAYER_RADIUS) &&
         !CheckAnyDoorCollision(doors, doorCount, camera->position.x, nz, PLAYER_RADIUS) &&
         !CheckSceneCollision(scene, camera->position.x, nz, PLAYER_RADIUS) &&
-        !CheckZombieCollision(scene, camera->position.x, nz, PLAYER_RADIUS))
+        !CheckZombieCollision(scene, camera->position.x, nz, PLAYER_RADIUS, oldX, oldZ))
         camera->position.z = nz;
 
     camera->target.x = camera->position.x + fx;

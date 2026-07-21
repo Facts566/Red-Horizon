@@ -175,7 +175,7 @@ int main()
         }
 
         float range = 80.0f;
-        float ambient = 0.05f;
+        float ambient = 0.15f;
         SetShaderValue(shader, lightRangeLoc, &range, SHADER_UNIFORM_FLOAT);
         SetShaderValue(shader, lightAmbLoc, &ambient, SHADER_UNIFORM_FLOAT);
         SetShaderValue(shader, lightPosLoc, &camera.position, SHADER_UNIFORM_VEC3);

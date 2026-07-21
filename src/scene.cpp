@@ -182,15 +182,19 @@ bool CheckSceneCollision(Scene &scene, float x, float z, float radius)
     return false;
 }
 
-bool CheckZombieCollision(Scene &scene, float x, float z, float radius)
+bool CheckZombieCollision(Scene &scene, float x, float z, float radius, float oldX, float oldZ)
 {
     for (int i = 0; i < scene.zombieCount; i++) {
         if (!scene.zombies[i].active || scene.zombies[i].health <= 0.0f) continue;
         float dx = x - scene.zombies[i].position.x;
         float dz = z - scene.zombies[i].position.z;
         float minDist = radius + scene.zombies[i].radius;
-        if (dx * dx + dz * dz < minDist * minDist)
-            return true;
+        if (dx * dx + dz * dz < minDist * minDist) {
+            float odx = oldX - scene.zombies[i].position.x;
+            float odz = oldZ - scene.zombies[i].position.z;
+            if (odx * odx + odz * odz >= minDist * minDist)
+                return true;
+        }
     }
     return false;
 }

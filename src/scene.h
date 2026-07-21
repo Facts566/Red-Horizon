@@ -40,4 +40,4 @@ void UnloadScene(Scene &scene);
 bool CheckBoxCollision(BoxCollider box, float x, float z, float radius);
 BoxCollider GetCollider(Scene &scene, int index);
 bool CheckSceneCollision(Scene &scene, float x, float z, float radius);
-bool CheckZombieCollision(Scene &scene, float x, float z, float radius);
+bool CheckZombieCollision(Scene &scene, float x, float z, float radius, float oldX, float oldZ);
