@@ -99,8 +99,51 @@ int main()
     float hitFlash = 0.0f;
     float hitShakeTime = 0.0f;
 
+    bool gameOver = false;
+
     while (!WindowShouldClose())
     {
+        if (gameOver) {
+            if (IsKeyPressed(KEY_R)) {
+                health = (float)maxHealth;
+                camera.position = level.playerStart;
+                camera.target = (Vector3){camera.position.x, camera.position.y, camera.position.z - 1};
+                yaw = 0.0f;
+                hitFlash = 0.0f;
+                hitShakeTime = 0.0f;
+
+                ZombieSpawn spawns2[MAX_ZOMBIE_SPAWNS];
+                int sc2 = LoadZombieSpawns("map/enemy.txt", spawns2, MAX_ZOMBIE_SPAWNS);
+                if (sc2 > SCENE_MAX_ZOMBIES) sc2 = SCENE_MAX_ZOMBIES;
+                scene.zombieCount = sc2;
+                for (int i = 0; i < sc2; i++) {
+                    float wx = (float)spawns2[i].col * tileSize + tileSize / 2.0f;
+                    float wz = (float)spawns2[i].row * tileSize + tileSize / 2.0f;
+                    InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+                }
+
+                weapon.currentAmmo = weapon.maxAmmo;
+                weapon.isReloading = false;
+                weapon.reloadTimer = 0.0f;
+                weapon.fireCooldown = 0.0f;
+
+                for (int i = 0; i < scene.doorCount; i++) {
+                    scene.doors[i].isOpen = false;
+                    scene.doors[i].bulletHoles.clear();
+                }
+                weapon.bulletHoles.clear();
+
+                gameOver = false;
+            }
+
+            BeginDrawing();
+            ClearBackground(BLACK);
+            DrawText("YOU DIED", GetScreenWidth()/2 - MeasureText("YOU DIED", 80)/2, GetScreenHeight()/2 - 80, 80, RED);
+            DrawText("Press R to restart", GetScreenWidth()/2 - MeasureText("Press R to restart", 30)/2, GetScreenHeight()/2 + 20, 30, GRAY);
+            EndDrawing();
+            continue;
+        }
+
         UpdatePlayer(&camera, &yaw, level, scene.doors, scene.doorCount, scene);
 
         UpdateWeapon(weapon);
@@ -172,6 +215,7 @@ int main()
                 }
             }
             if (health < 0) health = 0;
+            if (health <= 0.0f) gameOver = true;
         }
 
         float range = 80.0f;
