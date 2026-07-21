@@ -31,6 +31,10 @@ void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart,
     //lamp
     AddObject(scene, "lamp", {playerStart.x + 80.0f, 19.0f, playerStart.z + 2.0f}, 0.0f, 0.5f, false, shader);
     AddObject(scene, "lamp", {playerStart.x + 2.0f, 19.0f, playerStart.z + -70.0f}, 0.0f, 0.5f, false, shader);
+    //trash
+    AddObject(scene, "trash", {playerStart.x + 28.0f, 3.0f, playerStart.z + -35.0f}, 45.0f, 3.0f, true, shader);
+    AddObject(scene, "trash", {playerStart.x + 38.0f, 3.0f, playerStart.z + -35.0f}, 0.0f, 3.0f, true, shader);
+    AddObject(scene, "trash", {playerStart.x + 48.0f, 3.0f, playerStart.z + -35.0f}, -25.0f, 3.0f, true, shader);
 
     scene.doorCount = 0;
     scene.doors[scene.doorCount++] = CreateDoor(
@@ -70,6 +74,9 @@ static void LoadObjectModel(SceneObject &obj, const char *name, Shader shader)
     } else if (strcmp(name, "blood") == 0) {
         obj.model = LoadModel("models/blood.obj");
         obj.texture = LoadTexture("tex/blood.png");
+    } else if (strcmp(name, "trash") == 0) {
+        obj.model = LoadModel("models/trash.obj");
+        obj.texture = LoadTexture("tex/trash.png");
     }
 
     SetTextureFilter(obj.texture, TEXTURE_FILTER_POINT);
