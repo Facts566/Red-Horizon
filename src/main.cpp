@@ -161,9 +161,9 @@ int main()
                 }
                 if (touching) {
                     touchTimer += dt;
-                    while (touchTimer >= 1.0f) {
+                    while (touchTimer >= 0.3f) {
                         health -= 10.0f;
-                        touchTimer -= 1.0f;
+                        touchTimer -= 0.3f;
                         hitFlash = 0.2f;
                         hitShakeTime = 0.15f;
                     }
