@@ -42,7 +42,7 @@ void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart,
     AddDoor(scene, (Vector3){playerStart.x + 7.5f, 0, playerStart.z + 22.5f}, 180.0f, scene.doorTexClosed, scene.doorTexOpen, whiteTex, wallTex, shader, shotholeTex);
     AddDoor(scene, (Vector3){playerStart.x + 57.5f, 0, playerStart.z + -7.5f}, 270.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
     AddDoor(scene, (Vector3){playerStart.x + 107.5f, 0, playerStart.z + -7.5f}, 90.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
-    AddDoor(scene, (Vector3){playerStart.x + 132.5f, 0, playerStart.z + -72.5f}, 90.0f, scene.doorTexClosed, scene.doorTexOpen, wallTex, greenTex, shader, shotholeTex);
+    AddDoor(scene, (Vector3){playerStart.x + 132.5f, 0, playerStart.z + -72.5f}, 90.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
 }
 
 static void LoadObjectModel(SceneObject &obj, const char *name, Shader shader)
