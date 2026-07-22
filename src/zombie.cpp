@@ -221,11 +221,16 @@ void InitZombie(Zombie &zombie, Vector3 pos, Texture2D idle, Texture2D walk1, Te
     zombie.active = true;
     zombie.triggered = false;
     zombie.hitTime = 0.0f;
+    zombie.isMilitary = false;
+    zombie.shootTimer = 0.0f;
+    zombie.wantsToShoot = false;
 }
 
 void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, Scene &scene, Vector3 playerPos, float dt)
 {
     if (!zombie.active || zombie.health <= 0.0f) return;
+
+    zombie.wantsToShoot = false;
 
     if (zombie.hitTime > 0.0f) {
         zombie.hitTime -= dt;
@@ -327,6 +332,31 @@ void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, Scen
     } else {
         zombie.animTimer = 0.0f;
         zombie.animFrame = false;
+    }
+
+    if (zombie.isMilitary && zombie.triggered) {
+        zombie.shootTimer += dt;
+        if (zombie.shootTimer >= 2.0f) {
+            zombie.shootTimer = 0.0f;
+            Vector3 toPlayer = Vector3Subtract(playerPos, zombie.position);
+            float dist = Vector3Length(toPlayer);
+            if (dist < 60.0f) {
+                Vector3 dir = Vector3Normalize(toPlayer);
+                Vector3 hitPos, hitNorm;
+                bool blocked = RaycastWall(level, zombie.position, dir, dist, hitPos, hitNorm);
+                if (!blocked) {
+                    for (int d = 0; d < doorCount; d++) {
+                        if (doors[d].isOpen) continue;
+                        if (RayDoorIntersect(doors[d], zombie.position, dir, dist, hitPos, hitNorm)) {
+                            blocked = true;
+                            break;
+                        }
+                    }
+                }
+                if (!blocked)
+                    zombie.wantsToShoot = true;
+            }
+        }
     }
 }
 

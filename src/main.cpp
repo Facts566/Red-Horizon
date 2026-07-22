@@ -49,6 +49,9 @@ int main()
     Texture2D zombiDead = LoadTexture("tex/zombi/zombi_kill.png");
     SetTextureFilter(zombiDead, TEXTURE_FILTER_POINT);
 
+    Texture2D milIdle = LoadTexture("tex/zombie_military/zombie_military.png");
+    SetTextureFilter(milIdle, TEXTURE_FILTER_POINT);
+
     Texture2D shotholeTex = LoadTexture("tex/shothole.png");
     SetTextureFilter(shotholeTex, TEXTURE_FILTER_POINT);
 
@@ -86,7 +89,12 @@ int main()
     for (int i = 0; i < spawnCount; i++) {
         float wx = (float)spawns[i].col * tileSize + tileSize / 2.0f;
         float wz = (float)spawns[i].row * tileSize + tileSize / 2.0f;
-        InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+        if (spawns[i].isMilitary) {
+            InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, milIdle, milIdle, milIdle, milIdle);
+            scene.zombies[i].isMilitary = true;
+        } else {
+            InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+        }
     }
 
     SetLightUniforms(shader, camera.position, {1,1,1}, 80.0f, 0.05f);
@@ -125,7 +133,12 @@ int main()
                 for (int i = 0; i < sc2; i++) {
                     float wx = (float)spawns2[i].col * tileSize + tileSize / 2.0f;
                     float wz = (float)spawns2[i].row * tileSize + tileSize / 2.0f;
-                    InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+                    if (spawns2[i].isMilitary) {
+                        InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, milIdle, milIdle, milIdle, milIdle);
+                        scene.zombies[i].isMilitary = true;
+                    } else {
+                        InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
+                    }
                 }
 
                 weapon.currentAmmo = weapon.maxAmmo;
@@ -220,6 +233,15 @@ int main()
                     touchTimer = 0.0f;
                 }
             }
+            for (int i = 0; i < scene.zombieCount; i++) {
+                if (scene.zombies[i].wantsToShoot) {
+                    health -= 10.0f;
+                    scene.zombies[i].wantsToShoot = false;
+                    hitFlash = 0.2f;
+                    hitShakeTime = 0.15f;
+                }
+            }
+
             if (health < 0) health = 0;
             if (health <= 0.0f) gameOver = true;
         }
@@ -317,6 +339,7 @@ int main()
     UnloadTexture(zombiWalk1);
     UnloadTexture(zombiWalk2);
     UnloadTexture(zombiDead);
+    UnloadTexture(milIdle);
     UnloadTexture(shotholeTex);
     CloseWindow();
     return 0;

@@ -30,6 +30,7 @@ bool CheckWallCollision(Level level, float x, float z, float radius);
 struct ZombieSpawn {
     int col;
     int row;
+    bool isMilitary;
 };
 
 int LoadZombieSpawns(const char *path, ZombieSpawn *spawns, int maxSpawns);

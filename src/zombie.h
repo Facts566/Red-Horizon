@@ -28,6 +28,10 @@ struct Zombie {
     bool active;
     bool triggered;
     float hitTime;
+
+    bool isMilitary;
+    float shootTimer;
+    bool wantsToShoot;
 };
 
 struct Scene;
