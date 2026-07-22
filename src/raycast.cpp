@@ -30,7 +30,7 @@ bool RaycastWall(Level level, Vector3 origin, Vector3 dir, float maxDist, Vector
         if (col >= 0 && col < level.width && row >= 0 && row < level.height)
         {
             char c = level.data[row * level.width + col];
-            if (c == '&' || c == '@')
+            if (c == '&' || c == '@' || c == '#')
             {
                 hitPos.x = origin.x + dir.x * t;
                 hitPos.y = origin.y + dir.y * t;

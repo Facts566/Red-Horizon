@@ -55,8 +55,14 @@ int main()
     float tileSize = 5.0f;
     float wallHeight = 20.0f;
 
+    Texture2D whiteWallTex = LoadTexture("tex/white_wall.png");
+    SetTextureFilter(whiteWallTex, TEXTURE_FILTER_POINT);
+    SetTextureWrap(whiteWallTex, TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(whiteWallTex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(whiteWallTex.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
+
     Shader shader = LoadLightShader();
-    Level level = LoadLevel("map/map.txt", tileSize, wallHeight, texture, planksTex, wallTex, greenTex, shader);
+    Level level = LoadLevel("map/map.txt", tileSize, wallHeight, texture, planksTex, wallTex, greenTex, whiteWallTex, shader);
 
     WeaponState weapon;
     LoadWeapon(weapon, shader, shotholeTex);
@@ -306,6 +312,7 @@ int main()
     UnloadTexture(wallTex);
     UnloadTexture(greenTex);
     UnloadTexture(planksTex);
+    UnloadTexture(whiteWallTex);
     UnloadTexture(zombiIdle);
     UnloadTexture(zombiWalk1);
     UnloadTexture(zombiWalk2);

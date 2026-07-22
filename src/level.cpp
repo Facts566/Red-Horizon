@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 
-Level LoadLevel(const char *path, float tileSize, float wallHeight, Texture2D floorTex, Texture2D planksTex, Texture2D wallTex, Texture2D greenTex, Shader shader)
+Level LoadLevel(const char *path, float tileSize, float wallHeight, Texture2D floorTex, Texture2D planksTex, Texture2D wallTex, Texture2D greenTex, Texture2D whiteTex, Shader shader)
 {
     Level level = { 0 };
     level.tileSize = tileSize;
@@ -86,6 +86,15 @@ Level LoadLevel(const char *path, float tileSize, float wallHeight, Texture2D fl
     level.models.greenE = MakeWall(ts, wh, 1.0f, wh/ts, greenTex);
     level.models.greenE.materials[0].shader = shader;
 
+    level.models.whiteN = MakeWall(ts, wh, 1.0f, wh/ts, whiteTex);
+    level.models.whiteN.materials[0].shader = shader;
+    level.models.whiteS = MakeWall(ts, wh, 1.0f, wh/ts, whiteTex);
+    level.models.whiteS.materials[0].shader = shader;
+    level.models.whiteW = MakeWall(ts, wh, 1.0f, wh/ts, whiteTex);
+    level.models.whiteW.materials[0].shader = shader;
+    level.models.whiteE = MakeWall(ts, wh, 1.0f, wh/ts, whiteTex);
+    level.models.whiteE.materials[0].shader = shader;
+
     level.models.ceiling = MakePlane(ts, ts, 1.0f, 1.0f, floorTex);
     level.models.ceiling.materials[0].shader = shader;
 
@@ -97,7 +106,7 @@ static bool IsSolid(Level level, int col, int row)
     if (col < 0 || col >= level.width || row < 0 || row >= level.height)
         return false;
     char c = level.data[row * level.width + col];
-    return c == '&' || c == '@';
+    return c == '&' || c == '@' || c == '#';
 }
 
 bool CheckWallCollision(Level level, float x, float z, float radius)
@@ -156,18 +165,18 @@ void DrawLevel(Level level)
                 DrawModelEx(m.ceiling, (Vector3){cx, level.wallHeight, cz}, (Vector3){1,0,0}, 180.0f, (Vector3){1,1,1}, WHITE);
             }
 
-            if (c == '&' || c == '@') {
-                Model *n = (c == '@') ? &m.greenN : &m.wallN;
-                Model *s = (c == '@') ? &m.greenS : &m.wallS;
-                Model *w = (c == '@') ? &m.greenW : &m.wallW;
-                Model *e = (c == '@') ? &m.greenE : &m.wallE;
+            if (c == '&' || c == '@' || c == '#') {
+                Model *n, *s, *w2, *e;
+                if (c == '@') { n = &m.greenN; s = &m.greenS; w2 = &m.greenW; e = &m.greenE; }
+                else if (c == '#') { n = &m.whiteN; s = &m.whiteS; w2 = &m.whiteW; e = &m.whiteE; }
+                else { n = &m.wallN; s = &m.wallS; w2 = &m.wallW; e = &m.wallE; }
 
                 if (!IsSolid(level, col, row - 1))
                     DrawModelEx(*n, (Vector3){cx, 0, row * ts}, (Vector3){0,1,0}, 180.0f, (Vector3){1,1,1}, WHITE);
                 if (!IsSolid(level, col, row + 1))
                     DrawModel(*s, (Vector3){cx, 0, (row + 1) * ts}, 1.0f, WHITE);
                 if (!IsSolid(level, col - 1, row))
-                    DrawModelEx(*w, (Vector3){col * ts, 0, cz}, (Vector3){0,1,0}, -90.0f, (Vector3){1,1,1}, WHITE);
+                    DrawModelEx(*w2, (Vector3){col * ts, 0, cz}, (Vector3){0,1,0}, -90.0f, (Vector3){1,1,1}, WHITE);
                 if (!IsSolid(level, col + 1, row))
                     DrawModelEx(*e, (Vector3){(col + 1) * ts, 0, cz}, (Vector3){0,1,0}, 90.0f, (Vector3){1,1,1}, WHITE);
             }
@@ -189,6 +198,10 @@ void UnloadLevel(Level level)
     UnloadModel(level.models.greenS);
     UnloadModel(level.models.greenW);
     UnloadModel(level.models.greenE);
+    UnloadModel(level.models.whiteN);
+    UnloadModel(level.models.whiteS);
+    UnloadModel(level.models.whiteW);
+    UnloadModel(level.models.whiteE);
 }
 
 int LoadZombieSpawns(const char *path, ZombieSpawn *spawns, int maxSpawns)
