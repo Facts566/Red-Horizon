@@ -72,6 +72,11 @@ void DrawDoors(Door doors[], int count)
 
     for (int i = 0; i < count; i++)
     {
+        doorModelClosed.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = doors[i].closedTex;
+        doorModelOpen.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = doors[i].openTex;
+        doorCapLeft.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = doors[i].capLeftTex;
+        doorCapRight.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = doors[i].capRightTex;
+
         if (doors[i].isOpen)
         {
             DrawModelEx(doorModelOpen, doors[i].position, doors[i].rotationAxis, doors[i].rotationAngle, (Vector3){1,1,1}, WHITE);

@@ -75,7 +75,7 @@ int main()
     camera.projection = CAMERA_PERSPECTIVE;
 
     Scene scene = { 0 };
-    LoadScene(scene, shader, tileSize, camera.position, greenTex, wallTex, shotholeTex);
+    LoadScene(scene, shader, tileSize, camera.position, greenTex, wallTex, shotholeTex, whiteWallTex);
 
     InitZombieModel(shader);
 
