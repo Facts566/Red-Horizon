@@ -67,8 +67,10 @@ int main()
     Shader shader = LoadLightShader();
     Level level = LoadLevel("map/map.txt", tileSize, wallHeight, texture, planksTex, wallTex, greenTex, whiteWallTex, shader);
 
-    WeaponState weapon;
-    LoadWeapon(weapon, shader, shotholeTex);
+    WeaponState weapons[WEAPON_COUNT];
+    LoadWeapon(weapons[0], shader, shotholeTex, "tex/gun.png");
+    LoadMachineGun(weapons[1], shader, shotholeTex);
+    int currentWeapon = 0;
 
     Camera3D camera = { 0 };
     camera.position = level.playerStart;
@@ -141,16 +143,18 @@ int main()
                     }
                 }
 
-                weapon.currentAmmo = weapon.maxAmmo;
-                weapon.isReloading = false;
-                weapon.reloadTimer = 0.0f;
-                weapon.fireCooldown = 0.0f;
+                for (int i = 0; i < WEAPON_COUNT; i++) {
+                    weapons[i].currentAmmo = weapons[i].maxAmmo;
+                    weapons[i].isReloading = false;
+                    weapons[i].reloadTimer = 0.0f;
+                    weapons[i].fireCooldown = 0.0f;
+                    weapons[i].bulletHoles.clear();
+                }
 
                 for (int i = 0; i < scene.doorCount; i++) {
                     scene.doors[i].isOpen = false;
                     scene.doors[i].bulletHoles.clear();
                 }
-                weapon.bulletHoles.clear();
 
                 gameOver = false;
             }
@@ -165,10 +169,14 @@ int main()
 
         UpdatePlayer(&camera, &yaw, level, scene.doors, scene.doorCount, scene);
 
-        UpdateWeapon(weapon);
+        if (IsKeyPressed(KEY_F)) {
+            currentWeapon = (currentWeapon + 1) % WEAPON_COUNT;
+        }
 
-        bool shotFired = (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_SPACE)) && weapon.fireCooldown <= 0.0f && !weapon.isReloading && weapon.currentAmmo > 0;
-        ShootWeapon(weapon, camera, level, scene.doors, scene.doorCount, shader);
+        UpdateWeapon(weapons[currentWeapon]);
+
+        bool shotFired = (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_SPACE)) && weapons[currentWeapon].fireCooldown <= 0.0f && !weapons[currentWeapon].isReloading && weapons[currentWeapon].currentAmmo > 0;
+        ShootWeapon(weapons[currentWeapon], camera, level, scene.doors, scene.doorCount, shader);
 
         {
             float dt = GetFrameTime();
@@ -277,14 +285,14 @@ int main()
         ClearBackground(BLACK);
 
         Vector3 shakeOffset = {0};
-        if (weapon.shakeTime > 0.0f)
+        if (weapons[currentWeapon].shakeTime > 0.0f)
         {
-            float t = weapon.shakeTime / weapon.shakeDuration;
-            float intensity = weapon.shakeAmount * t;
+            float t = weapons[currentWeapon].shakeTime / weapons[currentWeapon].shakeDuration;
+            float intensity = weapons[currentWeapon].shakeAmount * t;
             shakeOffset.y = intensity;
             shakeOffset.x = ((float)GetRandomValue(0, 1000) / 500.0f - 1.0f) * intensity * 0.2f;
             shakeOffset.z = ((float)GetRandomValue(0, 1000) / 500.0f - 1.0f) * intensity * 0.2f;
-            weapon.shakeTime -= GetFrameTime();
+            weapons[currentWeapon].shakeTime -= GetFrameTime();
         }
         if (hitShakeTime > 0.0f)
         {
@@ -306,11 +314,11 @@ int main()
 
         DrawLevel(level);
         DrawScene(scene, shakeCam, shader);
-        DrawWeaponDecals(weapon, weapon.decalModel);
+        DrawWeaponDecals(weapons[currentWeapon], weapons[currentWeapon].decalModel);
 
         EndMode3D();
 
-        DrawWeaponHUD(weapon, (int)health, maxHealth);
+        DrawWeaponHUD(weapons[currentWeapon], (int)health, maxHealth);
 
         if (hitFlash > 0.0f)
         {
@@ -328,7 +336,8 @@ int main()
     EnableCursor();
     UnloadLevel(level);
     UnloadScene(scene);
-    UnloadWeapon(weapon);
+    for (int i = 0; i < WEAPON_COUNT; i++)
+        UnloadWeapon(weapons[i]);
     UnloadShader(shader);
     UnloadTexture(texture);
     UnloadTexture(wallTex);

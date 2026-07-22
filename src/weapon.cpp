@@ -3,9 +3,10 @@
 #include <raymath.h>
 #include <cmath>
 
-void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex)
+void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char *gunPath)
 {
-    w.gunTex = LoadTexture("tex/gun.png");
+    w.gunTex = LoadTexture(gunPath);
+    SetTextureFilter(w.gunTex, TEXTURE_FILTER_POINT);
     w.muzzleTex = LoadTexture("tex/Muzzle.png");
     w.shotholeTex = shotholeTex;
     w.decalModel = MakeWall(0.6f, 0.6f, 1.0f, 1.0f, w.shotholeTex);
@@ -30,6 +31,26 @@ void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex)
     w.flashOffsetY = 70.0f;
     w.flashScale = 2.0f;
     w.flashDuration = 0.08f;
+
+    w.name = "Shotgun";
+}
+
+void LoadMachineGun(WeaponState &w, Shader shader, Texture2D shotholeTex)
+{
+    LoadWeapon(w, shader, shotholeTex, "tex/gun_1.png");
+
+    w.maxAmmo = 30;
+    w.currentAmmo = w.maxAmmo;
+    w.fireRate = 0.1f;
+    w.reloadTime = 2.5f;
+    w.shakeDuration = 0.15f;
+    w.shakeAmount = 0.8f;
+    w.flashOffsetX = 135.0f;
+    w.flashOffsetY = 40.0f;
+    w.flashScale = 1.5f;
+    w.flashDuration = 0.05f;
+
+    w.name = "Machine Gun";
 }
 
 void UpdateWeapon(WeaponState &w)
@@ -233,6 +254,11 @@ void DrawWeaponHUD(WeaponState &w, int health, int maxHealth)
     DrawRectangle(hpBarX, hpBarY, hpBarWidth, hpBarHeight, ColorAlpha(BLACK, 0.7f));
     DrawRectangle(hpBarX, hpBarY, (int)(hpBarWidth * hpPercent), hpBarHeight, hpColor);
     DrawText(TextFormat("HP: %i / %i", health, maxHealth), hpBarX + 15, hpBarY + 4, 27, WHITE);
+
+    if (w.name) {
+        int nameWidth = MeasureText(w.name, 20);
+        DrawText(w.name, GetScreenWidth() / 2 - nameWidth / 2, GetScreenHeight() - 150, 20, LIGHTGRAY);
+    }
 
     DrawFPS(10, 10);
 }

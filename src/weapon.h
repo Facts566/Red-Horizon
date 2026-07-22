@@ -5,6 +5,8 @@
 #include "door.h"
 #include "map.h"
 
+#define WEAPON_COUNT 2
+
 struct WeaponState {
     Texture2D gunTex;
     Texture2D muzzleTex;
@@ -32,9 +34,12 @@ struct WeaponState {
     float flashOffsetY;
     float flashScale;
     float flashDuration;
+
+    const char *name;
 };
 
-void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex);
+void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char *gunPath);
+void LoadMachineGun(WeaponState &w, Shader shader, Texture2D shotholeTex);
 void UpdateWeapon(WeaponState &w);
 void ShootWeapon(WeaponState &w, Camera3D camera, Level level, Door doors[], int doorCount, Shader shader);
 void DrawWeaponDecals(WeaponState &w, Model decalModel);
