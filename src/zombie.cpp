@@ -240,7 +240,17 @@ void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, Scen
         if (dist < 60.0f) {
             Vector3 dir = Vector3Normalize(toPlayer);
             Vector3 hitPos, hitNorm;
-            if (!RaycastWall(level, zombie.position, dir, dist, hitPos, hitNorm))
+            bool blocked = RaycastWall(level, zombie.position, dir, dist, hitPos, hitNorm);
+            if (!blocked) {
+                for (int d = 0; d < doorCount; d++) {
+                    if (doors[d].isOpen) continue;
+                    if (RayDoorIntersect(doors[d], zombie.position, dir, dist, hitPos, hitNorm)) {
+                        blocked = true;
+                        break;
+                    }
+                }
+            }
+            if (!blocked)
                 zombie.triggered = true;
         }
     }
