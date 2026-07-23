@@ -7,7 +7,7 @@
 
 #define SCENE_MAX_OBJECTS 64
 #define SCENE_MAX_LAMPS 4
-#define SCENE_MAX_ZOMBIES 32
+#define SCENE_MAX_ZOMBIES 64
 
 struct SceneObject {
     Model model;
