@@ -11,6 +11,7 @@
 #include "scene.h"
 #include "weapon.h"
 #include "zombie.h"
+#include "bonus.h"
 
 int main()
 {
@@ -55,6 +56,9 @@ int main()
     Texture2D shotholeTex = LoadTexture("tex/shothole.png");
     SetTextureFilter(shotholeTex, TEXTURE_FILTER_POINT);
 
+    Texture2D medicTex = LoadTexture("tex/bonus/medic.png");
+    SetTextureFilter(medicTex, TEXTURE_FILTER_POINT);
+
     float tileSize = 5.0f;
     float wallHeight = 20.0f;
 
@@ -98,6 +102,11 @@ int main()
             InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
         }
     }
+
+    BonusSpawn bonusSpawns[MAX_BONUSES];
+    int bonusCount = LoadBonusSpawns("map/enemy.txt", bonusSpawns, MAX_BONUSES);
+    Bonus bonuses[MAX_BONUSES];
+    InitBonuses(bonuses, bonusSpawns, bonusCount, medicTex, tileSize);
 
     SetLightUniforms(shader, camera.position, {1,1,1}, 80.0f, 0.05f);
     int lightRangeLoc = GetShaderLocation(shader, "lightRange");
@@ -155,6 +164,11 @@ int main()
                     scene.doors[i].isOpen = false;
                     scene.doors[i].bulletHoles.clear();
                 }
+
+                BonusSpawn bonusSpawns2[MAX_BONUSES];
+                int bc2 = LoadBonusSpawns("map/enemy.txt", bonusSpawns2, MAX_BONUSES);
+                InitBonuses(bonuses, bonusSpawns2, bc2, medicTex, tileSize);
+                bonusCount = bc2;
 
                 gameOver = false;
             }
@@ -252,6 +266,8 @@ int main()
 
             if (health < 0) health = 0;
             if (health <= 0.0f) gameOver = true;
+
+            UpdateBonuses(bonuses, bonusCount, camera.position, health, maxHealth);
         }
 
         float range = 80.0f;
@@ -314,6 +330,7 @@ int main()
 
         DrawLevel(level);
         DrawScene(scene, shakeCam, shader);
+        DrawBonuses(bonuses, bonusCount, shakeCam);
         DrawWeaponDecals(weapons[currentWeapon], weapons[currentWeapon].decalModel);
 
         EndMode3D();
@@ -350,6 +367,7 @@ int main()
     UnloadTexture(zombiDead);
     UnloadTexture(milIdle);
     UnloadTexture(shotholeTex);
+    UnloadTexture(medicTex);
     CloseWindow();
     return 0;
 }
