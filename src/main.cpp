@@ -72,8 +72,9 @@ int main()
     Level level = LoadLevel("map/map.txt", tileSize, wallHeight, texture, planksTex, wallTex, greenTex, whiteWallTex, shader);
 
     WeaponState weapons[WEAPON_COUNT];
-    LoadWeapon(weapons[0], shader, shotholeTex, "tex/gun.png");
-    LoadDoubleBarreledShotgun(weapons[1], shader, shotholeTex);
+    LoadPistol(weapons[0], shader, shotholeTex);
+    LoadWeapon(weapons[1], shader, shotholeTex, "tex/gun.png");
+    LoadDoubleBarreledShotgun(weapons[2], shader, shotholeTex);
     int currentWeapon = 0;
 
     std::vector<BulletHole> wallHoles;
@@ -127,6 +128,7 @@ int main()
     float hitShakeTime = 0.0f;
 
     bool gameOver = false;
+    bool showWeaponPanel = false;
 
     while (!WindowShouldClose())
     {
@@ -187,7 +189,25 @@ int main()
         UpdatePlayer(&camera, &yaw, level, scene.doors, scene.doorCount, scene);
 
         if (IsKeyPressed(KEY_F)) {
-            currentWeapon = (currentWeapon + 1) % WEAPON_COUNT;
+            showWeaponPanel = !showWeaponPanel;
+        }
+
+        if (showWeaponPanel) {
+            if (IsKeyPressed(KEY_ONE) && weapons[0].unlocked) {
+                currentWeapon = 0;
+                showWeaponPanel = false;
+            }
+            if (IsKeyPressed(KEY_TWO) && weapons[1].unlocked) {
+                currentWeapon = 1;
+                showWeaponPanel = false;
+            }
+            if (IsKeyPressed(KEY_THREE) && weapons[2].unlocked) {
+                currentWeapon = 2;
+                showWeaponPanel = false;
+            }
+            if (IsKeyPressed(KEY_ESCAPE)) {
+                showWeaponPanel = false;
+            }
         }
 
         UpdateWeapon(weapons[currentWeapon]);
@@ -230,7 +250,8 @@ int main()
                     Vector3 closestZ = scene.zombies[closestIdx].position;
                     bool blocked = RaycastWall(level, camera.position, forward, sqrtf(closestDist), hitPos, hitNorm);
                     if (!blocked) {
-                        scene.zombies[closestIdx].health -= currentWeapon == 1 ? 100.0f : 50.0f;
+                        float damage = currentWeapon == 2 ? 100.0f : (currentWeapon == 1 ? 50.0f : 25.0f);
+                        scene.zombies[closestIdx].health -= damage;
                         scene.zombies[closestIdx].hitTime = 0.15f;
                     }
                 }
@@ -338,6 +359,10 @@ int main()
         EndMode3D();
 
         DrawWeaponHUD(weapons[currentWeapon], (int)health, maxHealth);
+
+        if (showWeaponPanel) {
+            DrawWeaponPanel(weapons, WEAPON_COUNT, currentWeapon);
+        }
 
         if (hitFlash > 0.0f)
         {

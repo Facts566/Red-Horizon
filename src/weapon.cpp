@@ -32,7 +32,33 @@ void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char
     w.flashScale = 2.0f;
     w.flashDuration = 0.08f;
 
+    w.pelletCount = 7;
+    w.spread = 0.1f;
+
     w.name = "Shotgun";
+    w.unlocked = false;
+}
+
+void LoadPistol(WeaponState &w, Shader shader, Texture2D shotholeTex)
+{
+    LoadWeapon(w, shader, shotholeTex, "tex/gun_2.png");
+
+    w.maxAmmo = 16;
+    w.currentAmmo = w.maxAmmo;
+    w.fireRate = 0.2f;
+    w.reloadTime = 2.0f;
+    w.shakeDuration = 0.15f;
+    w.shakeAmount = 0.6f;
+    w.flashOffsetX = 115.0f;
+    w.flashOffsetY = 50.0f;
+    w.flashScale = 1.2f;
+    w.flashDuration = 0.05f;
+
+    w.pelletCount = 1;
+    w.spread = 0.03f;
+
+    w.name = "Pistol";
+    w.unlocked = true;
 }
 
 void LoadDoubleBarreledShotgun(WeaponState &w, Shader shader, Texture2D shotholeTex)
@@ -92,13 +118,10 @@ void ShootWeapon(WeaponState &w, Camera3D camera, Level level, Door doors[], int
         Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, (Vector3){0, 1, 0}));
         Vector3 up = Vector3Normalize(Vector3CrossProduct(right, forward));
 
-        const int PELLET_COUNT = 7;
-        const float SPREAD = 0.1f;
-
-        for (int i = 0; i < PELLET_COUNT; i++)
+        for (int i = 0; i < w.pelletCount; i++)
         {
-            float rx = ((float)GetRandomValue(-10000, 10000) / 10000.0f) * SPREAD;
-            float ry = ((float)GetRandomValue(-10000, 10000) / 10000.0f) * SPREAD;
+            float rx = ((float)GetRandomValue(-10000, 10000) / 10000.0f) * w.spread;
+            float ry = ((float)GetRandomValue(-10000, 10000) / 10000.0f) * w.spread;
 
             Vector3 dir = Vector3Normalize(Vector3Add(forward, Vector3Add(Vector3Scale(right, rx), Vector3Scale(up, ry))));
 
@@ -261,4 +284,39 @@ void DrawWeaponHUD(WeaponState &w, int health, int maxHealth)
     }
 
     DrawFPS(10, 10);
+}
+
+void DrawWeaponPanel(WeaponState weapons[], int weaponCount, int currentWeapon)
+{
+    int panelWidth = 350;
+    int slotHeight = 50;
+    int panelHeight = weaponCount * slotHeight + 40;
+    int panelX = GetScreenWidth() / 2 - panelWidth / 2;
+    int panelY = GetScreenHeight() / 2 - panelHeight / 2;
+
+    DrawRectangle(panelX, panelY, panelWidth, panelHeight, ColorAlpha(BLACK, 0.85f));
+    DrawRectangleLines(panelX, panelY, panelWidth, panelHeight, WHITE);
+
+    const char *title = "WEAPON SELECT [F]";
+    int titleWidth = MeasureText(title, 22);
+    DrawText(title, GetScreenWidth() / 2 - titleWidth / 2, panelY + 10, 22, YELLOW);
+
+    for (int i = 0; i < weaponCount; i++) {
+        int slotY = panelY + 40 + i * slotHeight;
+        bool isSelected = (i == currentWeapon);
+        bool isUnlocked = weapons[i].unlocked;
+
+        Color bgColor = isSelected ? ColorAlpha(DARKBLUE, 0.9f) : ColorAlpha(DARKGRAY, 0.6f);
+        DrawRectangle(panelX + 10, slotY, panelWidth - 20, slotHeight - 5, bgColor);
+        DrawRectangleLines(panelX + 10, slotY, panelWidth - 20, slotHeight - 5, isSelected ? YELLOW : GRAY);
+
+        const char *keyLabel = TextFormat("[%d]", i + 1);
+        DrawText(keyLabel, panelX + 20, slotY + 14, 22, WHITE);
+
+        if (isUnlocked) {
+            DrawText(weapons[i].name, panelX + 60, slotY + 14, 22, WHITE);
+        } else {
+            DrawText("??? (locked)", panelX + 60, slotY + 14, 22, ColorAlpha(GRAY, 0.7f));
+        }
+    }
 }
