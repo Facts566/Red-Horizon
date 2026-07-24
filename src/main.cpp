@@ -17,25 +17,25 @@ int main()
 {
     InitWindow(GetScreenWidth(), GetScreenHeight(), "FactsEngine");
 
-    Texture2D texture = LoadTexture("tex/floor.png");
+    Texture2D texture = LoadTexture("tex/map/floor.png");
     SetTextureFilter(texture, TEXTURE_FILTER_POINT);
     SetTextureWrap(texture, TEXTURE_WRAP_REPEAT);
     rlTextureParameters(texture.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
     rlTextureParameters(texture.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
-    Texture2D wallTex = LoadTexture("tex/bricks.png");
+    Texture2D wallTex = LoadTexture("tex/map/bricks.png");
     SetTextureFilter(wallTex, TEXTURE_FILTER_POINT);
     SetTextureWrap(wallTex, TEXTURE_WRAP_REPEAT);
     rlTextureParameters(wallTex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
     rlTextureParameters(wallTex.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
-    Texture2D greenTex = LoadTexture("tex/green_wall.png");
+    Texture2D greenTex = LoadTexture("tex/map/green_wall.png");
     SetTextureFilter(greenTex, TEXTURE_FILTER_POINT);
     SetTextureWrap(greenTex, TEXTURE_WRAP_REPEAT);
     rlTextureParameters(greenTex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
     rlTextureParameters(greenTex.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
-    Texture2D planksTex = LoadTexture("tex/planks.png");
+    Texture2D planksTex = LoadTexture("tex/map/planks.png");
     SetTextureFilter(planksTex, TEXTURE_FILTER_POINT);
     SetTextureWrap(planksTex, TEXTURE_WRAP_REPEAT);
     rlTextureParameters(planksTex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
@@ -59,7 +59,7 @@ int main()
     Texture2D milDead = LoadTexture("tex/zombie_military/zombie_military_kill.png");
     SetTextureFilter(milDead, TEXTURE_FILTER_POINT);
 
-    Texture2D shotholeTex = LoadTexture("tex/shothole.png");
+    Texture2D shotholeTex = LoadTexture("tex/weapons/shothole.png");
     SetTextureFilter(shotholeTex, TEXTURE_FILTER_POINT);
 
     Texture2D medicTex = LoadTexture("tex/bonus/medic.png");
@@ -68,7 +68,7 @@ int main()
     float tileSize = 5.0f;
     float wallHeight = 20.0f;
 
-    Texture2D whiteWallTex = LoadTexture("tex/white_wall.png");
+    Texture2D whiteWallTex = LoadTexture("tex/map/white_wall.png");
     SetTextureFilter(whiteWallTex, TEXTURE_FILTER_POINT);
     SetTextureWrap(whiteWallTex, TEXTURE_WRAP_REPEAT);
     rlTextureParameters(whiteWallTex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
@@ -78,7 +78,7 @@ int main()
     Level level = LoadLevel("map/map.txt", tileSize, wallHeight, texture, planksTex, wallTex, greenTex, whiteWallTex, shader);
 
     WeaponState weapons[WEAPON_COUNT];
-    LoadWeapon(weapons[0], shader, shotholeTex, "tex/gun.png");
+    LoadWeapon(weapons[0], shader, shotholeTex, "tex/weapons/gun.png");
     LoadDoubleBarreledShotgun(weapons[1], shader, shotholeTex);
     int currentWeapon = 0;
 

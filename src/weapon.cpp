@@ -7,7 +7,7 @@ void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char
 {
     w.gunTex = LoadTexture(gunPath);
     SetTextureFilter(w.gunTex, TEXTURE_FILTER_POINT);
-    w.muzzleTex = LoadTexture("tex/Muzzle.png");
+    w.muzzleTex = LoadTexture("tex/weapons/Muzzle.png");
     w.shotholeTex = shotholeTex;
     w.decalModel = MakeWall(0.6f, 0.6f, 1.0f, 1.0f, w.shotholeTex);
     w.decalModel.materials[0].shader = shader;
@@ -37,7 +37,7 @@ void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char
 
 void LoadDoubleBarreledShotgun(WeaponState &w, Shader shader, Texture2D shotholeTex)
 {
-    LoadWeapon(w, shader, shotholeTex, "tex/gun_1.png");
+    LoadWeapon(w, shader, shotholeTex, "tex/weapons/gun_1.png");
 
     w.maxAmmo = 2;
     w.currentAmmo = w.maxAmmo;
