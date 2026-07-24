@@ -1,6 +1,7 @@
 #include "scene.h"
 #include <rlgl.h>
 #include <cstring>
+#include <cmath>
 #include <raymath.h>
 #include <algorithm>
 
@@ -120,7 +121,7 @@ void AddDoor(Scene &scene, Vector3 pos, float rot, Texture2D closedTex, Texture2
     );
 }
 
-void DrawScene(Scene &scene, Camera3D camera, Shader shader)
+void DrawScene(Scene &scene, Camera3D camera, Shader shader, Bonus bonuses[], int bonusCount)
 {
     DrawDoors(scene.doors, scene.doorCount);
 
@@ -139,20 +140,74 @@ void DrawScene(Scene &scene, Camera3D camera, Shader shader)
             DrawMesh(obj.model.meshes[mi], obj.model.materials[obj.model.meshMaterial[mi]], transform);
     }
 
-    {
-        int order[SCENE_MAX_ZOMBIES];
-        for (int i = 0; i < scene.zombieCount; i++)
-            order[i] = i;
-        for (int i = 0; i < scene.zombieCount - 1; i++) {
-            for (int j = i + 1; j < scene.zombieCount; j++) {
-                float di = Vector3DistanceSqr(camera.position, scene.zombies[order[i]].position);
-                float dj = Vector3DistanceSqr(camera.position, scene.zombies[order[j]].position);
-                if (di < dj) { int tmp = order[i]; order[i] = order[j]; order[j] = tmp; }
+    int totalBillboards = scene.zombieCount + bonusCount;
+
+    struct Billboard {
+        int type; // 0 = zombie, 1 = bonus
+        int index;
+        float dist;
+    };
+
+    Billboard billboards[SCENE_MAX_ZOMBIES + MAX_BONUSES];
+    int count = 0;
+
+    for (int i = 0; i < scene.zombieCount; i++) {
+        billboards[count].type = 0;
+        billboards[count].index = i;
+        billboards[count].dist = Vector3DistanceSqr(camera.position, scene.zombies[i].position);
+        count++;
+    }
+    for (int i = 0; i < bonusCount; i++) {
+        if (!bonuses[i].active) continue;
+        billboards[count].type = 1;
+        billboards[count].index = i;
+        billboards[count].dist = Vector3DistanceSqr(camera.position, bonuses[i].position);
+        count++;
+    }
+
+    for (int i = 0; i < count - 1; i++) {
+        for (int j = i + 1; j < count; j++) {
+            if (billboards[j].dist > billboards[i].dist) {
+                Billboard tmp = billboards[i];
+                billboards[i] = billboards[j];
+                billboards[j] = tmp;
             }
         }
-        for (int i = 0; i < scene.zombieCount; i++)
-            DrawZombie(scene.zombies[order[i]], camera, shader);
     }
+
+    rlDisableDepthMask();
+
+    for (int i = 0; i < count; i++) {
+        if (billboards[i].type == 0) {
+            DrawZombie(scene.zombies[billboards[i].index], camera, shader);
+        } else {
+            Bonus &b = bonuses[billboards[i].index];
+            Vector3 pos = b.position;
+            pos.y = 5.0f + sinf(b.bobTimer) * 1.0f;
+
+            Vector3 forward = Vector3Normalize(Vector3Subtract(camera.position, pos));
+            Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, (Vector3){0, 1.0f, 0.0f}));
+            Vector3 up = {0, 1.0f, 0};
+            float size = 4.0f;
+
+            Vector3 bl = Vector3Subtract(pos, Vector3Add(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
+            Vector3 br = Vector3Add(pos, Vector3Subtract(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
+            Vector3 tr = Vector3Add(pos, Vector3Add(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
+            Vector3 tl = Vector3Add(pos, Vector3Subtract(Vector3Scale(up, size * 0.5f), Vector3Scale(right, size * 0.5f)));
+
+            rlSetTexture(b.texture.id);
+            rlBegin(RL_QUADS);
+                rlColor4ub(255, 255, 255, 255);
+                rlTexCoord2f(0.0f, 1.0f); rlVertex3f(bl.x, bl.y, bl.z);
+                rlTexCoord2f(1.0f, 1.0f); rlVertex3f(br.x, br.y, br.z);
+                rlTexCoord2f(1.0f, 0.0f); rlVertex3f(tr.x, tr.y, tr.z);
+                rlTexCoord2f(0.0f, 0.0f); rlVertex3f(tl.x, tl.y, tl.z);
+            rlEnd();
+            rlSetTexture(0);
+        }
+    }
+
+    rlEnableDepthMask();
 }
 
 void UnloadScene(Scene &scene)

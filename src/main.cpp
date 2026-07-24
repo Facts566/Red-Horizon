@@ -332,8 +332,7 @@ int main()
         BeginMode3D(shakeCam);
 
         DrawLevel(level);
-        DrawScene(scene, shakeCam, shader);
-        DrawBonuses(bonuses, bonusCount, shakeCam);
+        DrawScene(scene, shakeCam, shader, bonuses, bonusCount);
         DrawWeaponDecals(wallHoles, weapons[currentWeapon].decalModel);
 
         EndMode3D();
