@@ -65,6 +65,9 @@ int main()
     Texture2D medicTex = LoadTexture("tex/bonus/medic.png");
     SetTextureFilter(medicTex, TEXTURE_FILTER_POINT);
 
+    Texture2D keyTex = LoadTexture("tex/bonus/key.png");
+    SetTextureFilter(keyTex, TEXTURE_FILTER_POINT);
+
     float tileSize = 5.0f;
     float wallHeight = 20.0f;
 
@@ -115,7 +118,9 @@ int main()
     BonusSpawn bonusSpawns[MAX_BONUSES];
     int bonusCount = LoadBonusSpawns("map/enemy.txt", bonusSpawns, MAX_BONUSES);
     Bonus bonuses[MAX_BONUSES];
-    InitBonuses(bonuses, bonusSpawns, bonusCount, medicTex, tileSize);
+    InitBonuses(bonuses, bonusSpawns, bonusCount, medicTex, keyTex, tileSize);
+
+    bool hasKey = false;
 
     SetLightUniforms(shader, camera.position, {1,1,1}, 80.0f, 0.05f);
     int lightRangeLoc = GetShaderLocation(shader, "lightRange");
@@ -178,8 +183,9 @@ int main()
 
                 BonusSpawn bonusSpawns2[MAX_BONUSES];
                 int bc2 = LoadBonusSpawns("map/enemy.txt", bonusSpawns2, MAX_BONUSES);
-                InitBonuses(bonuses, bonusSpawns2, bc2, medicTex, tileSize);
+                InitBonuses(bonuses, bonusSpawns2, bc2, medicTex, keyTex, tileSize);
                 bonusCount = bc2;
+                hasKey = false;
 
                 gameOver = false;
             }
@@ -231,7 +237,7 @@ int main()
                 if (scene.zombies[i].active)
                     doorPositions[doorPosCount++] = scene.zombies[i].position;
             }
-            UpdateDoors(scene.doors, scene.doorCount, doorPositions, doorPosCount);
+            UpdateDoors(scene.doors, scene.doorCount, doorPositions, doorPosCount, hasKey);
 
             for (int i = 0; i < scene.zombieCount; i++)
                 UpdateZombie(scene.zombies[i], level, scene.doors, scene.doorCount, scene, camera.position, dt);
@@ -297,7 +303,7 @@ int main()
             if (health < 0) health = 0;
             if (health <= 0.0f) gameOver = true;
 
-            UpdateBonuses(bonuses, bonusCount, camera.position, health, maxHealth);
+            UpdateBonuses(bonuses, bonusCount, camera.position, health, maxHealth, hasKey);
         }
 
         float range = 80.0f;
@@ -404,6 +410,7 @@ int main()
     UnloadTexture(milDead);
     UnloadTexture(shotholeTex);
     UnloadTexture(medicTex);
+    UnloadTexture(keyTex);
     CloseWindow();
     return 0;
 }

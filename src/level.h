@@ -34,3 +34,13 @@ struct ZombieSpawn {
 };
 
 int LoadZombieSpawns(const char *path, ZombieSpawn *spawns, int maxSpawns);
+
+#define MAX_DOOR_SPAWNS 8
+
+struct DoorSpawn {
+    int col;
+    int row;
+    float rotation;
+};
+
+int LoadDoorSpawns(const char *path, DoorSpawn *spawns, int maxSpawns);

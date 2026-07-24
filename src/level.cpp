@@ -248,3 +248,76 @@ int LoadZombieSpawns(const char *path, ZombieSpawn *spawns, int maxSpawns)
     free(buf);
     return count;
 }
+
+static bool IsSolidChar(char c)
+{
+    return c == '&' || c == '@' || c == '#';
+}
+
+int LoadDoorSpawns(const char *path, DoorSpawn *spawns, int maxSpawns)
+{
+    FILE *f = fopen(path, "r");
+    if (!f) return 0;
+
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    char *buf = (char *)malloc(size + 1);
+    fread(buf, 1, size, f);
+    buf[size] = '\0';
+    fclose(f);
+
+    int maxW = 0;
+    int h = 0;
+    int w = 0;
+
+    for (long i = 0; i <= size; i++) {
+        if (buf[i] == '\n' || buf[i] == '\0') {
+            if (w > maxW) maxW = w;
+            w = 0;
+            h++;
+        } else if (buf[i] != ' ') {
+            w++;
+        }
+    }
+
+    char *data = (char *)calloc(maxW * h, sizeof(char));
+    int col = 0, row = 0;
+    for (long i = 0; i <= size; i++) {
+        if (buf[i] == '\n' || buf[i] == '\0') {
+            row++;
+            col = 0;
+        } else if (buf[i] != ' ') {
+            data[row * maxW + col] = buf[i];
+            col++;
+        }
+    }
+
+    int count = 0;
+    for (int r = 0; r < h && count < maxSpawns; r++) {
+        for (int c = 0; c < maxW && count < maxSpawns; c++) {
+            if (data[r * maxW + c] != 'D') continue;
+
+            bool leftSolid  = (c == 0)         || IsSolidChar(data[r * maxW + (c - 1)]);
+            bool rightSolid = (c == maxW - 1)   || IsSolidChar(data[r * maxW + (c + 1)]);
+            bool upSolid    = (r == 0)          || IsSolidChar(data[(r - 1) * maxW + c]);
+            bool downSolid  = (r == h - 1)      || IsSolidChar(data[(r + 1) * maxW + c]);
+
+            float rot = 0.0f;
+            if (leftSolid && !rightSolid)      rot = 270.0f;
+            else if (!leftSolid && rightSolid)  rot = 90.0f;
+            else if (upSolid && !downSolid)     rot = 180.0f;
+            else if (!upSolid && downSolid)     rot = 0.0f;
+
+            spawns[count].col = c;
+            spawns[count].row = r;
+            spawns[count].rotation = rot;
+            count++;
+        }
+    }
+
+    free(data);
+    free(buf);
+    return count;
+}

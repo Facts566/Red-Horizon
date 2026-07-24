@@ -36,6 +36,12 @@ int LoadBonusSpawns(const char *path, BonusSpawn *spawns, int maxSpawns)
                 if (c == 'H' || c == 'h') {
                     spawns[count].col = col;
                     spawns[count].row = row;
+                    spawns[count].type = BONUS_HEALTH;
+                    count++;
+                } else if (c == 'K' || c == 'k') {
+                    spawns[count].col = col;
+                    spawns[count].row = row;
+                    spawns[count].type = BONUS_KEY;
                     count++;
                 }
                 col++;
@@ -48,19 +54,20 @@ int LoadBonusSpawns(const char *path, BonusSpawn *spawns, int maxSpawns)
     return count;
 }
 
-void InitBonuses(Bonus bonuses[], BonusSpawn spawns[], int count, Texture2D medicTex, float tileSize)
+void InitBonuses(Bonus bonuses[], BonusSpawn spawns[], int count, Texture2D medicTex, Texture2D keyTex, float tileSize)
 {
     for (int i = 0; i < count; i++) {
         bonuses[i].position.x = (float)spawns[i].col * tileSize + tileSize / 2.0f;
         bonuses[i].position.y = 0.0f;
         bonuses[i].position.z = (float)spawns[i].row * tileSize + tileSize / 2.0f;
-        bonuses[i].texture = medicTex;
+        bonuses[i].texture = (spawns[i].type == BONUS_KEY) ? keyTex : medicTex;
         bonuses[i].active = true;
         bonuses[i].bobTimer = (float)GetRandomValue(0, 100) * 0.1f;
+        bonuses[i].type = spawns[i].type;
     }
 }
 
-void UpdateBonuses(Bonus bonuses[], int count, Vector3 playerPos, float &health, int maxHealth)
+void UpdateBonuses(Bonus bonuses[], int count, Vector3 playerPos, float &health, int maxHealth, bool &hasKey)
 {
     float dt = GetFrameTime();
     for (int i = 0; i < count; i++) {
@@ -70,8 +77,12 @@ void UpdateBonuses(Bonus bonuses[], int count, Vector3 playerPos, float &health,
         float dz = playerPos.z - bonuses[i].position.z;
         if (dx * dx + dz * dz < 3.5f * 3.5f) {
             bonuses[i].active = false;
-            health += 20.0f;
-            if (health > (float)maxHealth) health = (float)maxHealth;
+            if (bonuses[i].type == BONUS_KEY) {
+                hasKey = true;
+            } else {
+                health += 20.0f;
+                if (health > (float)maxHealth) health = (float)maxHealth;
+            }
         }
     }
 }
