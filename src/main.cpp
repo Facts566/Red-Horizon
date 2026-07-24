@@ -76,6 +76,8 @@ int main()
     LoadMachineGun(weapons[1], shader, shotholeTex);
     int currentWeapon = 0;
 
+    std::vector<BulletHole> wallHoles;
+
     Camera3D camera = { 0 };
     camera.position = level.playerStart;
     camera.target = (Vector3){camera.position.x, camera.position.y, camera.position.z - 1};
@@ -157,8 +159,9 @@ int main()
                     weapons[i].isReloading = false;
                     weapons[i].reloadTimer = 0.0f;
                     weapons[i].fireCooldown = 0.0f;
-                    weapons[i].bulletHoles.clear();
                 }
+
+                wallHoles.clear();
 
                 for (int i = 0; i < scene.doorCount; i++) {
                     scene.doors[i].isOpen = false;
@@ -190,7 +193,7 @@ int main()
         UpdateWeapon(weapons[currentWeapon]);
 
         bool shotFired = (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_SPACE)) && weapons[currentWeapon].fireCooldown <= 0.0f && !weapons[currentWeapon].isReloading && weapons[currentWeapon].currentAmmo > 0;
-        ShootWeapon(weapons[currentWeapon], camera, level, scene.doors, scene.doorCount, shader);
+        ShootWeapon(weapons[currentWeapon], camera, level, scene.doors, scene.doorCount, shader, wallHoles);
 
         {
             float dt = GetFrameTime();
@@ -331,7 +334,7 @@ int main()
         DrawLevel(level);
         DrawScene(scene, shakeCam, shader);
         DrawBonuses(bonuses, bonusCount, shakeCam);
-        DrawWeaponDecals(weapons[currentWeapon], weapons[currentWeapon].decalModel);
+        DrawWeaponDecals(wallHoles, weapons[currentWeapon].decalModel);
 
         EndMode3D();
 

@@ -72,7 +72,7 @@ void UpdateWeapon(WeaponState &w)
         w.flashTime -= GetFrameTime();
 }
 
-void ShootWeapon(WeaponState &w, Camera3D camera, Level level, Door doors[], int doorCount, Shader shader)
+void ShootWeapon(WeaponState &w, Camera3D camera, Level level, Door doors[], int doorCount, Shader shader, std::vector<BulletHole> &wallHoles)
 {
     if (IsKeyPressed(KEY_R) && !w.isReloading && w.currentAmmo < w.maxAmmo)
     {
@@ -163,18 +163,18 @@ void ShootWeapon(WeaponState &w, Camera3D camera, Level level, Door doors[], int
                 }
                 else
                 {
-                    if (w.bulletHoles.size() >= 50)
-                        w.bulletHoles.erase(w.bulletHoles.begin());
-                    w.bulletHoles.push_back({bestPos, bestNorm});
+                    if (wallHoles.size() >= 50)
+                        wallHoles.erase(wallHoles.begin());
+                    wallHoles.push_back({bestPos, bestNorm});
                 }
             }
         }
     }
 }
 
-void DrawWeaponDecals(WeaponState &w, Model decalModel)
+void DrawWeaponDecals(std::vector<BulletHole> &wallHoles, Model decalModel)
 {
-    for (auto &bh : w.bulletHoles)
+    for (auto &bh : wallHoles)
     {
         Vector3 p = bh.pos;
         p.y -= 0.3f;
