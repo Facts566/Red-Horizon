@@ -298,6 +298,18 @@ void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, Scen
                 zombie.position.z = nz;
             zombie.isWalking = true;
         }
+
+        if (zombie.isWalking) {
+            zombie.animTimer += dt;
+            if (zombie.animTimer >= 0.3f) {
+                zombie.animTimer -= 0.3f;
+                zombie.animFrame = !zombie.animFrame;
+            }
+        } else {
+            zombie.animTimer = 0.0f;
+            zombie.animFrame = false;
+        }
+
         return;
     }
 
