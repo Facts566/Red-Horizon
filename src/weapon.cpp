@@ -35,13 +35,13 @@ void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char
     w.name = "Shotgun";
 }
 
-void LoadMachineGun(WeaponState &w, Shader shader, Texture2D shotholeTex)
+void LoadDoubleBarreledShotgun(WeaponState &w, Shader shader, Texture2D shotholeTex)
 {
     LoadWeapon(w, shader, shotholeTex, "tex/gun_1.png");
 
-    w.maxAmmo = 30;
+    w.maxAmmo = 2;
     w.currentAmmo = w.maxAmmo;
-    w.fireRate = 0.1f;
+    w.fireRate = 0.3f;
     w.reloadTime = 2.5f;
     w.shakeDuration = 0.15f;
     w.shakeAmount = 0.8f;
@@ -50,7 +50,7 @@ void LoadMachineGun(WeaponState &w, Shader shader, Texture2D shotholeTex)
     w.flashScale = 1.5f;
     w.flashDuration = 0.05f;
 
-    w.name = "Machine Gun";
+    w.name = "Double-barreled shotgun";
 }
 
 void UpdateWeapon(WeaponState &w)

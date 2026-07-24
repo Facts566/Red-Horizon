@@ -73,7 +73,7 @@ int main()
 
     WeaponState weapons[WEAPON_COUNT];
     LoadWeapon(weapons[0], shader, shotholeTex, "tex/gun.png");
-    LoadMachineGun(weapons[1], shader, shotholeTex);
+    LoadDoubleBarreledShotgun(weapons[1], shader, shotholeTex);
     int currentWeapon = 0;
 
     std::vector<BulletHole> wallHoles;
@@ -230,7 +230,7 @@ int main()
                     Vector3 closestZ = scene.zombies[closestIdx].position;
                     bool blocked = RaycastWall(level, camera.position, forward, sqrtf(closestDist), hitPos, hitNorm);
                     if (!blocked) {
-                        scene.zombies[closestIdx].health -= 50.0f;
+                        scene.zombies[closestIdx].health -= currentWeapon == 1 ? 100.0f : 50.0f;
                         scene.zombies[closestIdx].hitTime = 0.15f;
                     }
                 }

@@ -37,7 +37,7 @@ struct WeaponState {
 };
 
 void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char *gunPath);
-void LoadMachineGun(WeaponState &w, Shader shader, Texture2D shotholeTex);
+void LoadDoubleBarreledShotgun(WeaponState &w, Shader shader, Texture2D shotholeTex);
 void UpdateWeapon(WeaponState &w);
 void ShootWeapon(WeaponState &w, Camera3D camera, Level level, Door doors[], int doorCount, Shader shader, std::vector<BulletHole> &wallHoles);
 void DrawWeaponDecals(std::vector<BulletHole> &wallHoles, Model decalModel);
