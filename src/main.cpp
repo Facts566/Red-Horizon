@@ -17,25 +17,25 @@ int main()
 {
     InitWindow(GetScreenWidth(), GetScreenHeight(), "FactsEngine");
 
-    Texture2D texture = LoadTexture("tex/floor.png");
+    Texture2D texture = LoadTexture("tex/map/floor.png");
     SetTextureFilter(texture, TEXTURE_FILTER_POINT);
     SetTextureWrap(texture, TEXTURE_WRAP_REPEAT);
     rlTextureParameters(texture.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
     rlTextureParameters(texture.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
-    Texture2D wallTex = LoadTexture("tex/bricks.png");
+    Texture2D wallTex = LoadTexture("tex/map/bricks.png");
     SetTextureFilter(wallTex, TEXTURE_FILTER_POINT);
     SetTextureWrap(wallTex, TEXTURE_WRAP_REPEAT);
     rlTextureParameters(wallTex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
     rlTextureParameters(wallTex.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
-    Texture2D greenTex = LoadTexture("tex/green_wall.png");
+    Texture2D greenTex = LoadTexture("tex/map/green_wall.png");
     SetTextureFilter(greenTex, TEXTURE_FILTER_POINT);
     SetTextureWrap(greenTex, TEXTURE_WRAP_REPEAT);
     rlTextureParameters(greenTex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
     rlTextureParameters(greenTex.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
-    Texture2D planksTex = LoadTexture("tex/planks.png");
+    Texture2D planksTex = LoadTexture("tex/map/planks.png");
     SetTextureFilter(planksTex, TEXTURE_FILTER_POINT);
     SetTextureWrap(planksTex, TEXTURE_WRAP_REPEAT);
     rlTextureParameters(planksTex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
@@ -52,8 +52,14 @@ int main()
 
     Texture2D milIdle = LoadTexture("tex/zombie_military/zombie_military.png");
     SetTextureFilter(milIdle, TEXTURE_FILTER_POINT);
+    Texture2D milWalk1 = LoadTexture("tex/zombie_military/zombie_military_walk.png");
+    SetTextureFilter(milWalk1, TEXTURE_FILTER_POINT);
+    Texture2D milWalk2 = LoadTexture("tex/zombie_military/zombie_military_walk_1.png");
+    SetTextureFilter(milWalk2, TEXTURE_FILTER_POINT);
+    Texture2D milDead = LoadTexture("tex/zombie_military/zombie_military_kill.png");
+    SetTextureFilter(milDead, TEXTURE_FILTER_POINT);
 
-    Texture2D shotholeTex = LoadTexture("tex/shothole.png");
+    Texture2D shotholeTex = LoadTexture("tex/weapons/shothole.png");
     SetTextureFilter(shotholeTex, TEXTURE_FILTER_POINT);
 
     Texture2D medicTex = LoadTexture("tex/bonus/medic.png");
@@ -62,7 +68,7 @@ int main()
     float tileSize = 5.0f;
     float wallHeight = 20.0f;
 
-    Texture2D whiteWallTex = LoadTexture("tex/white_wall.png");
+    Texture2D whiteWallTex = LoadTexture("tex/map/white_wall.png");
     SetTextureFilter(whiteWallTex, TEXTURE_FILTER_POINT);
     SetTextureWrap(whiteWallTex, TEXTURE_WRAP_REPEAT);
     rlTextureParameters(whiteWallTex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
@@ -73,7 +79,7 @@ int main()
 
     WeaponState weapons[WEAPON_COUNT];
     LoadPistol(weapons[0], shader, shotholeTex);
-    LoadWeapon(weapons[1], shader, shotholeTex, "tex/gun.png");
+    LoadWeapon(weapons[1], shader, shotholeTex, "tex/weapons/gun.png");
     LoadDoubleBarreledShotgun(weapons[2], shader, shotholeTex);
     int currentWeapon = 0;
 
@@ -99,7 +105,7 @@ int main()
         float wx = (float)spawns[i].col * tileSize + tileSize / 2.0f;
         float wz = (float)spawns[i].row * tileSize + tileSize / 2.0f;
         if (spawns[i].isMilitary) {
-            InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, milIdle, milIdle, milIdle, milIdle);
+            InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, milIdle, milWalk1, milWalk2, milDead);
             scene.zombies[i].isMilitary = true;
         } else {
             InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
@@ -149,7 +155,7 @@ int main()
                     float wx = (float)spawns2[i].col * tileSize + tileSize / 2.0f;
                     float wz = (float)spawns2[i].row * tileSize + tileSize / 2.0f;
                     if (spawns2[i].isMilitary) {
-                        InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, milIdle, milIdle, milIdle, milIdle);
+            InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, milIdle, milWalk1, milWalk2, milDead);
                         scene.zombies[i].isMilitary = true;
                     } else {
                         InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
@@ -393,6 +399,9 @@ int main()
     UnloadTexture(zombiWalk2);
     UnloadTexture(zombiDead);
     UnloadTexture(milIdle);
+    UnloadTexture(milWalk1);
+    UnloadTexture(milWalk2);
+    UnloadTexture(milDead);
     UnloadTexture(shotholeTex);
     UnloadTexture(medicTex);
     CloseWindow();

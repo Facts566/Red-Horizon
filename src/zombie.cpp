@@ -242,22 +242,20 @@ void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, Scen
     if (!zombie.triggered) {
         Vector3 toPlayer = Vector3Subtract(playerPos, zombie.position);
         float dist = Vector3Length(toPlayer);
-        if (dist < 60.0f) {
-            Vector3 dir = Vector3Normalize(toPlayer);
-            Vector3 hitPos, hitNorm;
-            bool blocked = RaycastWall(level, zombie.position, dir, dist, hitPos, hitNorm);
-            if (!blocked) {
-                for (int d = 0; d < doorCount; d++) {
-                    if (doors[d].isOpen) continue;
-                    if (RayDoorIntersect(doors[d], zombie.position, dir, dist, hitPos, hitNorm)) {
-                        blocked = true;
-                        break;
-                    }
+        Vector3 dir = Vector3Normalize(toPlayer);
+        Vector3 hitPos, hitNorm;
+        bool blocked = RaycastWall(level, zombie.position, dir, dist, hitPos, hitNorm);
+        if (!blocked) {
+            for (int d = 0; d < doorCount; d++) {
+                if (doors[d].isOpen) continue;
+                if (RayDoorIntersect(doors[d], zombie.position, dir, dist, hitPos, hitNorm)) {
+                    blocked = true;
+                    break;
                 }
             }
-            if (!blocked)
-                zombie.triggered = true;
         }
+        if (!blocked)
+            zombie.triggered = true;
     }
     if (!zombie.triggered)
         return;
@@ -298,6 +296,18 @@ void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, Scen
                 zombie.position.z = nz;
             zombie.isWalking = true;
         }
+
+        if (zombie.isWalking) {
+            zombie.animTimer += dt;
+            if (zombie.animTimer >= 0.3f) {
+                zombie.animTimer -= 0.3f;
+                zombie.animFrame = !zombie.animFrame;
+            }
+        } else {
+            zombie.animTimer = 0.0f;
+            zombie.animFrame = false;
+        }
+
         return;
     }
 
@@ -340,22 +350,20 @@ void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, Scen
             zombie.shootTimer = 0.0f;
             Vector3 toPlayer = Vector3Subtract(playerPos, zombie.position);
             float dist = Vector3Length(toPlayer);
-            if (dist < 60.0f) {
-                Vector3 dir = Vector3Normalize(toPlayer);
-                Vector3 hitPos, hitNorm;
-                bool blocked = RaycastWall(level, zombie.position, dir, dist, hitPos, hitNorm);
-                if (!blocked) {
-                    for (int d = 0; d < doorCount; d++) {
-                        if (doors[d].isOpen) continue;
-                        if (RayDoorIntersect(doors[d], zombie.position, dir, dist, hitPos, hitNorm)) {
-                            blocked = true;
-                            break;
-                        }
+            Vector3 dir = Vector3Normalize(toPlayer);
+            Vector3 hitPos, hitNorm;
+            bool blocked = RaycastWall(level, zombie.position, dir, dist, hitPos, hitNorm);
+            if (!blocked) {
+                for (int d = 0; d < doorCount; d++) {
+                    if (doors[d].isOpen) continue;
+                    if (RayDoorIntersect(doors[d], zombie.position, dir, dist, hitPos, hitNorm)) {
+                        blocked = true;
+                        break;
                     }
                 }
-                if (!blocked)
-                    zombie.wantsToShoot = true;
             }
+            if (!blocked)
+                zombie.wantsToShoot = true;
         }
     }
 }

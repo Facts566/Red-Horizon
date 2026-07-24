@@ -9,13 +9,13 @@ void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart,
 {
     scene.tileSize = tileSize;
 
-    scene.doorTexClosed = LoadTexture("tex/door/door_1.png");
+    scene.doorTexClosed = LoadTexture("tex/decor/door_1.png");
     SetTextureFilter(scene.doorTexClosed, TEXTURE_FILTER_POINT);
     SetTextureWrap(scene.doorTexClosed, TEXTURE_WRAP_REPEAT);
     rlTextureParameters(scene.doorTexClosed.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
     rlTextureParameters(scene.doorTexClosed.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
 
-    scene.doorTexOpen = LoadTexture("tex/door/door_2.png");
+    scene.doorTexOpen = LoadTexture("tex/decor/door_2.png");
     SetTextureFilter(scene.doorTexOpen, TEXTURE_FILTER_POINT);
     SetTextureWrap(scene.doorTexOpen, TEXTURE_WRAP_REPEAT);
     rlTextureParameters(scene.doorTexOpen.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
@@ -52,17 +52,17 @@ static void LoadObjectModel(SceneObject &obj, const char *name, Shader shader)
 
     if (strcmp(name, "lamp") == 0) {
         obj.model = LoadModel("models/lamp.obj");
-        obj.texture = LoadTexture("tex/lamp.png");
+        obj.texture = LoadTexture("tex/decor/lamp.png");
         obj.isLamp = true;
     } else if (strcmp(name, "sofa") == 0) {
         obj.model = LoadModel("models/sofa.obj");
-        obj.texture = LoadTexture("tex/sofa.png");
+        obj.texture = LoadTexture("tex/decor/sofa.png");
     } else if (strcmp(name, "blood") == 0) {
         obj.model = LoadModel("models/blood.obj");
-        obj.texture = LoadTexture("tex/blood.png");
+        obj.texture = LoadTexture("tex/decor/blood.png");
     } else if (strcmp(name, "trash") == 0) {
         obj.model = LoadModel("models/trash.obj");
-        obj.texture = LoadTexture("tex/trash.png");
+        obj.texture = LoadTexture("tex/decor/trash.png");
     }
 
     SetTextureFilter(obj.texture, TEXTURE_FILTER_POINT);
