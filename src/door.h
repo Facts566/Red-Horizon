@@ -1,13 +1,12 @@
 #pragma once
 #include <raylib.h>
 #include <vector>
+#include "config.h"
 
 struct BulletHole {
     Vector3 pos;
     Vector3 normal;
 };
-
-const int MAX_DOORS = 8;
 
 struct Door {
     Vector3 position;

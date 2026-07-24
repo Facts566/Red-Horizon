@@ -1,4 +1,5 @@
 #include "scene.h"
+#include "config.h"
 #include <rlgl.h>
 #include <cstring>
 #include <cmath>
@@ -185,12 +186,12 @@ void DrawScene(Scene &scene, Camera3D camera, Shader shader, Bonus bonuses[], in
         } else {
             Bonus &b = bonuses[billboards[i].index];
             Vector3 pos = b.position;
-            pos.y = 5.0f + sinf(b.bobTimer) * 1.0f;
+            pos.y = BONUS_Y_HEIGHT + sinf(b.bobTimer) * BONUS_BOB_AMPLITUDE;
 
             Vector3 forward = Vector3Normalize(Vector3Subtract(camera.position, pos));
             Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, (Vector3){0, 1.0f, 0.0f}));
             Vector3 up = {0, 1.0f, 0};
-            float size = 4.0f;
+            float size = BONUS_SIZE;
 
             Vector3 bl = Vector3Subtract(pos, Vector3Add(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
             Vector3 br = Vector3Add(pos, Vector3Subtract(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));

@@ -3,8 +3,7 @@
 #include "level.h"
 #include "door.h"
 #include "props.h"
-
-#define ZOMBIE_MAX_PATH 256
+#include "config.h"
 
 struct Zombie {
     Vector3 position;

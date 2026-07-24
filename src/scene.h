@@ -5,10 +5,7 @@
 #include "props.h"
 #include "door.h"
 #include "bonus.h"
-
-#define SCENE_MAX_OBJECTS 64
-#define SCENE_MAX_LAMPS 4
-#define SCENE_MAX_ZOMBIES 64
+#include "config.h"
 
 struct SceneObject {
     Model model;

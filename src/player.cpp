@@ -1,13 +1,14 @@
 #include "player.h"
+#include "config.h"
 #include "door.h"
 #include "scene.h"
 #include <math.h>
 
 void UpdatePlayer(Camera3D *camera, float *yaw, Level level, Door doors[], int doorCount, Scene &scene)
 {
-    *yaw -= GetMouseDelta().x * 0.003f;
-    if (IsKeyDown(KEY_LEFT))  *yaw += 2.0f * GetFrameTime();
-    if (IsKeyDown(KEY_RIGHT)) *yaw -= 2.0f * GetFrameTime();
+    *yaw -= GetMouseDelta().x * MOUSE_SENSITIVITY;
+    if (IsKeyDown(KEY_LEFT))  *yaw += ARROW_YAW_SPEED * GetFrameTime();
+    if (IsKeyDown(KEY_RIGHT)) *yaw -= ARROW_YAW_SPEED * GetFrameTime();
 
     float fx = sinf(*yaw);
     float fz = cosf(*yaw);
@@ -23,7 +24,7 @@ void UpdatePlayer(Camera3D *camera, float *yaw, Level level, Door doors[], int d
     float len = sqrtf(dx * dx + dz * dz);
     if (len > 0) { dx /= len; dz /= len; }
 
-    float speed = IsKeyDown(KEY_LEFT_SHIFT) ? PLAYER_SPEED * 1.5f : PLAYER_SPEED;
+    float speed = IsKeyDown(KEY_LEFT_SHIFT) ? PLAYER_SPEED * PLAYER_SPRINT_MULT : PLAYER_SPEED;
     float dt = speed * GetFrameTime();
 
     float nx = camera->position.x + dx * dt;

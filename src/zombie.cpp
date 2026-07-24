@@ -1,4 +1,5 @@
 #include "zombie.h"
+#include "config.h"
 #include "scene.h"
 #include "raycast.h"
 #include "map.h"
@@ -19,7 +20,7 @@ void InitZombieModel(Shader shader)
     m.normals = (float *)MemAlloc(12 * sizeof(float));
     m.indices = (unsigned short *)MemAlloc(6 * sizeof(unsigned short));
 
-    float hw = 5.4f;
+    float hw = ZOMBIE_MODEL_SIZE;
     m.vertices[0]  = -hw; m.vertices[1]  = -hw; m.vertices[2]  = 0;
     m.vertices[3]  =  hw; m.vertices[4]  = -hw; m.vertices[5]  = 0;
     m.vertices[6]  = -hw; m.vertices[7]  =  hw; m.vertices[8]  = 0;
@@ -205,12 +206,13 @@ static int FindPath(Level level, float startX, float startZ, float endX, float e
 void InitZombie(Zombie &zombie, Vector3 pos, Texture2D idle, Texture2D walk1, Texture2D walk2, Texture2D dead)
 {
     zombie.position = pos;
-    zombie.health = 100.0f;
-    zombie.speed = 12.0f;
-    zombie.radius = 1.5f;
+    zombie.health = ZOMBIE_HEALTH;
+    zombie.speed = ZOMBIE_SPEED;
+    zombie.radius = ZOMBIE_RADIUS;
     zombie.pathCount = 0;
     zombie.pathRecalcTimer = 0.0f;
     zombie.pathIndex = 0;
+    zombie.hitTime = 0.0f;
     zombie.textureIdle = idle;
     zombie.textureWalk1 = walk1;
     zombie.textureWalk2 = walk2;
@@ -264,7 +266,7 @@ void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, Scen
     if (zombie.pathRecalcTimer <= 0.0f) {
         zombie.pathCount = FindPath(level, zombie.position.x, zombie.position.z, playerPos.x, playerPos.z, zombie.path, ZOMBIE_MAX_PATH);
         zombie.pathIndex = 0;
-        zombie.pathRecalcTimer = 0.3f;
+        zombie.pathRecalcTimer = ZOMBIE_PATH_RECALC;
     }
 
     if (zombie.pathCount == 0) return;
@@ -335,8 +337,8 @@ void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, Scen
 
     if (zombie.isWalking) {
         zombie.animTimer += dt;
-        if (zombie.animTimer >= 0.3f) {
-            zombie.animTimer -= 0.3f;
+        if (zombie.animTimer >= ZOMBIE_ANIM_INTERVAL) {
+            zombie.animTimer -= ZOMBIE_ANIM_INTERVAL;
             zombie.animFrame = !zombie.animFrame;
         }
     } else {
@@ -379,7 +381,7 @@ void DrawZombie(Zombie &zombie, Camera3D camera, Shader shader)
     else
         tex = zombie.textureIdle;
 
-    float size = 10.8f;
+    float size = ZOMBIE_BILLBOARD_SIZE;
     Vector3 forward = Vector3Normalize(Vector3Subtract(camera.position, zombie.position));
     Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, (Vector3){0, 1.0f, 0.0f}));
     Vector3 up = {0, 1.0f, 0};
@@ -410,7 +412,7 @@ bool ZombieHitByRay(Zombie &zombie, Vector3 origin, Vector3 dir)
 {
     if (!zombie.active) return false;
 
-    float hitRadius = 5.5f;
+    float hitRadius = ZOMBIE_HIT_RADIUS;
     Vector3 oc = {origin.x - zombie.position.x, origin.y - zombie.position.y, origin.z - zombie.position.z};
     float a = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
     float b = 2.0f * (oc.x * dir.x + oc.y * dir.y + oc.z * dir.z);

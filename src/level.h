@@ -1,5 +1,6 @@
 #pragma once
 #include <raylib.h>
+#include "config.h"
 
 struct LevelModels {
     Model floor;
@@ -24,23 +25,3 @@ Level LoadLevel(const char *path, float tileSize, float wallHeight, Texture2D fl
 void DrawLevel(Level level);
 void UnloadLevel(Level level);
 bool CheckWallCollision(Level level, float x, float z, float radius);
-
-#define MAX_ZOMBIE_SPAWNS 64
-
-struct ZombieSpawn {
-    int col;
-    int row;
-    bool isMilitary;
-};
-
-int LoadZombieSpawns(const char *path, ZombieSpawn *spawns, int maxSpawns);
-
-#define MAX_DOOR_SPAWNS 8
-
-struct DoorSpawn {
-    int col;
-    int row;
-    float rotation;
-};
-
-int LoadDoorSpawns(const char *path, DoorSpawn *spawns, int maxSpawns);

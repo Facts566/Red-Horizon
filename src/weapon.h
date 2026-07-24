@@ -4,8 +4,7 @@
 #include "level.h"
 #include "door.h"
 #include "map.h"
-
-#define WEAPON_COUNT 3
+#include "config.h"
 
 struct WeaponState {
     Texture2D gunTex;

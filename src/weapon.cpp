@@ -1,4 +1,5 @@
 #include "weapon.h"
+#include "config.h"
 #include "raycast.h"
 #include <raymath.h>
 #include <cmath>
@@ -9,7 +10,7 @@ void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char
     SetTextureFilter(w.gunTex, TEXTURE_FILTER_POINT);
     w.muzzleTex = LoadTexture("tex/weapons/Muzzle.png");
     w.shotholeTex = shotholeTex;
-    w.decalModel = MakeWall(0.6f, 0.6f, 1.0f, 1.0f, w.shotholeTex);
+    w.decalModel = MakeWall(WEAPON_DECAL_SIZE, WEAPON_DECAL_SIZE, 1.0f, 1.0f, w.shotholeTex);
     w.decalModel.materials[0].shader = shader;
 
     w.shakeTime = 0.0f;
@@ -106,18 +107,18 @@ void UpdateWeaponBob(WeaponState &w, bool isMoving, bool isSprinting)
 {
     if (isMoving)
     {
-        float speed = isSprinting ? 12.0f : 8.0f;
+        float speed = isSprinting ? BOB_SPEED_SPRINT : BOB_SPEED_WALK;
         w.bobTimer += GetFrameTime() * speed;
-        w.bobOffsetX = sinf(w.bobTimer) * 6.0f;
-        w.bobOffsetY = fabsf(cosf(w.bobTimer)) * 8.0f;
+        w.bobOffsetX = sinf(w.bobTimer) * BOB_AMPLITUDE_X;
+        w.bobOffsetY = fabsf(cosf(w.bobTimer)) * BOB_AMPLITUDE_Y;
     }
     else
     {
         w.bobTimer = 0.0f;
-        w.bobOffsetX *= 0.85f;
-        w.bobOffsetY *= 0.85f;
-        if (fabsf(w.bobOffsetX) < 0.01f) w.bobOffsetX = 0.0f;
-        if (fabsf(w.bobOffsetY) < 0.01f) w.bobOffsetY = 0.0f;
+        w.bobOffsetX *= BOB_DECAY;
+        w.bobOffsetY *= BOB_DECAY;
+        if (fabsf(w.bobOffsetX) < BOB_THRESHOLD) w.bobOffsetX = 0.0f;
+        if (fabsf(w.bobOffsetY) < BOB_THRESHOLD) w.bobOffsetY = 0.0f;
     }
 }
 
@@ -203,13 +204,13 @@ void ShootWeapon(WeaponState &w, Camera3D camera, Level level, Door doors[], int
 
                 if (hitDoor && hitDoorIdx >= 0)
                 {
-                    if (doors[hitDoorIdx].bulletHoles.size() >= 50)
+                    if ((int)doors[hitDoorIdx].bulletHoles.size() >= MAX_BULLET_HOLES)
                         doors[hitDoorIdx].bulletHoles.erase(doors[hitDoorIdx].bulletHoles.begin());
                     doors[hitDoorIdx].bulletHoles.push_back({bestPos, bestNorm});
                 }
                 else
                 {
-                    if (wallHoles.size() >= 50)
+                    if ((int)wallHoles.size() >= MAX_BULLET_HOLES)
                         wallHoles.erase(wallHoles.begin());
                     wallHoles.push_back({bestPos, bestNorm});
                 }
@@ -223,7 +224,7 @@ void DrawWeaponDecals(std::vector<BulletHole> &wallHoles, Model decalModel)
     for (auto &bh : wallHoles)
     {
         Vector3 p = bh.pos;
-        p.y -= 0.3f;
+        p.y -= DOOR_DECAL_Y_OFFSET;
         float decalAngle = atan2f(bh.normal.x, bh.normal.z) * 180.0f / 3.14159f;
         DrawModelEx(decalModel, p, (Vector3){0,1,0}, decalAngle, (Vector3){1,1,1}, WHITE);
     }
@@ -238,20 +239,20 @@ void UnloadWeapon(WeaponState &w)
 
 void DrawWeaponHUD(WeaponState &w, int health, int maxHealth)
 {
-    float gunScale = 5.0f;
+    float gunScale = GUN_BASE_SCALE;
     float gunKickY = 0.0f;
 
     if (w.shakeTime > 0.0f)
     {
         float t = w.shakeTime / w.shakeDuration;
         float intensity = w.shakeAmount * t;
-        gunKickY = -intensity * 12.0f;
-        gunScale = 5.0f + 0.2f;
+        gunKickY = -intensity * GUN_KICK_MULT;
+        gunScale = GUN_BASE_SCALE + GUN_SCALE_BOOST;
     }
 
     Vector2 gunPos = {
         (float)GetScreenWidth()/2 - w.gunTex.width*gunScale/2 + w.bobOffsetX,
-        (float)GetScreenHeight() - w.gunTex.height*gunScale + gunKickY + 50.0f + w.bobOffsetY
+        (float)GetScreenHeight() - w.gunTex.height*gunScale + gunKickY + GUN_Y_OFFSET + w.bobOffsetY
     };
 
     if (w.flashTime > 0.0f)
