@@ -224,6 +224,11 @@ int main()
 
         UpdateWeapon(weapons[currentWeapon]);
 
+        bool isMoving = IsKeyDown(KEY_W) || IsKeyDown(KEY_S) || IsKeyDown(KEY_A) || IsKeyDown(KEY_D) ||
+                        IsKeyDown(KEY_UP) || IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_RIGHT);
+        bool isSprinting = isMoving && IsKeyDown(KEY_LEFT_SHIFT);
+        UpdateWeaponBob(weapons[currentWeapon], isMoving, isSprinting);
+
         bool shotFired = (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_SPACE)) && weapons[currentWeapon].fireCooldown <= 0.0f && !weapons[currentWeapon].isReloading && weapons[currentWeapon].currentAmmo > 0;
         ShootWeapon(weapons[currentWeapon], camera, level, scene.doors, scene.doorCount, shader, wallHoles);
 

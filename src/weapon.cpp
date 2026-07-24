@@ -35,6 +35,10 @@ void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char
     w.pelletCount = 7;
     w.spread = 0.1f;
 
+    w.bobTimer = 0.0f;
+    w.bobOffsetX = 0.0f;
+    w.bobOffsetY = 0.0f;
+
     w.name = "Shotgun";
     w.unlocked = false;
 }
@@ -96,6 +100,25 @@ void UpdateWeapon(WeaponState &w)
 
     if (w.flashTime > 0.0f)
         w.flashTime -= GetFrameTime();
+}
+
+void UpdateWeaponBob(WeaponState &w, bool isMoving, bool isSprinting)
+{
+    if (isMoving)
+    {
+        float speed = isSprinting ? 12.0f : 8.0f;
+        w.bobTimer += GetFrameTime() * speed;
+        w.bobOffsetX = sinf(w.bobTimer) * 6.0f;
+        w.bobOffsetY = fabsf(cosf(w.bobTimer)) * 8.0f;
+    }
+    else
+    {
+        w.bobTimer = 0.0f;
+        w.bobOffsetX *= 0.85f;
+        w.bobOffsetY *= 0.85f;
+        if (fabsf(w.bobOffsetX) < 0.01f) w.bobOffsetX = 0.0f;
+        if (fabsf(w.bobOffsetY) < 0.01f) w.bobOffsetY = 0.0f;
+    }
 }
 
 void ShootWeapon(WeaponState &w, Camera3D camera, Level level, Door doors[], int doorCount, Shader shader, std::vector<BulletHole> &wallHoles)
@@ -227,8 +250,8 @@ void DrawWeaponHUD(WeaponState &w, int health, int maxHealth)
     }
 
     Vector2 gunPos = {
-        (float)GetScreenWidth()/2 - w.gunTex.width*gunScale/2,
-        (float)GetScreenHeight() - w.gunTex.height*gunScale + gunKickY + 50.0f
+        (float)GetScreenWidth()/2 - w.gunTex.width*gunScale/2 + w.bobOffsetX,
+        (float)GetScreenHeight() - w.gunTex.height*gunScale + gunKickY + 50.0f + w.bobOffsetY
     };
 
     if (w.flashTime > 0.0f)

@@ -36,6 +36,10 @@ struct WeaponState {
     int pelletCount;
     float spread;
 
+    float bobTimer;
+    float bobOffsetX;
+    float bobOffsetY;
+
     const char *name;
     bool unlocked;
 };
@@ -44,6 +48,7 @@ void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char
 void LoadPistol(WeaponState &w, Shader shader, Texture2D shotholeTex);
 void LoadDoubleBarreledShotgun(WeaponState &w, Shader shader, Texture2D shotholeTex);
 void UpdateWeapon(WeaponState &w);
+void UpdateWeaponBob(WeaponState &w, bool isMoving, bool isSprinting);
 void ShootWeapon(WeaponState &w, Camera3D camera, Level level, Door doors[], int doorCount, Shader shader, std::vector<BulletHole> &wallHoles);
 void DrawWeaponDecals(std::vector<BulletHole> &wallHoles, Model decalModel);
 void UnloadWeapon(WeaponState &w);
