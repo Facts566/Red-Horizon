@@ -104,7 +104,7 @@ int main()
         float wx = (float)spawns[i].col * tileSize + tileSize / 2.0f;
         float wz = (float)spawns[i].row * tileSize + tileSize / 2.0f;
         if (spawns[i].isMilitary) {
-            InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, milIdle, milIdle, milIdle, milIdle);
+            InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, milIdle, milWalk1, milWalk2, milDead);
             scene.zombies[i].isMilitary = true;
         } else {
             InitZombie(scene.zombies[i], (Vector3){wx, 5.4f, wz}, zombiIdle, zombiWalk1, zombiWalk2, zombiDead);
