@@ -38,6 +38,8 @@ void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart,
     AddObject(scene, "trash", {playerStart.x + 28.0f, 3.0f, playerStart.z + -35.0f}, 45.0f, 3.0f, true, shader);
     AddObject(scene, "trash", {playerStart.x + 38.0f, 3.0f, playerStart.z + -35.0f}, 0.0f, 3.0f, true, shader);
     AddObject(scene, "trash", {playerStart.x + 48.0f, 3.0f, playerStart.z + -35.0f}, -25.0f, 3.0f, true, shader);
+    //box (destructible)
+    AddObject(scene, "box", {playerStart.x + 30.0f, 2.5f, playerStart.z + -20.0f}, 15.0f, 5.0f, true, shader);
 
     scene.doorCount = 0;
     AddDoor(scene, (Vector3){playerStart.x + 7.5f, 0, playerStart.z + -47.5f}, 0.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
@@ -47,6 +49,8 @@ void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart,
     AddDoor(scene, (Vector3){playerStart.x + 132.5f, 0, playerStart.z + -72.5f}, 90.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
 
     AddDoor(scene, (Vector3){playerStart.x + -47.5f, 0, playerStart.z + -2.5f}, 90.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex, true);
+
+    scene.particleCount = 0;
 }
 
 static void LoadObjectModel(SceneObject &obj, const char *name, Shader shader)
@@ -66,6 +70,11 @@ static void LoadObjectModel(SceneObject &obj, const char *name, Shader shader)
     } else if (strcmp(name, "trash") == 0) {
         obj.model = LoadModel("models/trash.obj");
         obj.texture = LoadTexture("tex/decor/trash.png");
+    } else if (strcmp(name, "box") == 0) {
+        Mesh cube = GenMeshCube(1.0f, 1.0f, 1.0f);
+        obj.model = LoadModelFromMesh(cube);
+        obj.texture = LoadTexture("tex/decor/box.png");
+        obj.destructible = true;
     }
 
     SetTextureFilter(obj.texture, TEXTURE_FILTER_POINT);
@@ -100,17 +109,22 @@ void AddObject(Scene &scene, const char *name, Vector3 pos, float rot, float sc,
     if (scene.objectCount >= SCENE_MAX_OBJECTS) return;
 
     SceneObject &obj = scene.objects[scene.objectCount];
+    obj.destructible = false;
     LoadObjectModel(obj, name, shader);
     obj.position = pos;
     obj.rotation = rot;
     obj.scale = sc;
     obj.addCollision = addCollision;
+    obj.active = true;
 
     if (obj.isLamp)
         scene.lampCount++;
 
     if (addCollision)
         obj.collider = MakeColliderFromModel(obj);
+
+    if (obj.destructible)
+        obj.collider.max.y = obj.position.y + WALL_HEIGHT;
 
     scene.objectCount++;
 }
@@ -130,6 +144,7 @@ void DrawScene(Scene &scene, Camera3D camera, Shader shader, Bonus bonuses[], in
 
     for (int i = 0; i < scene.objectCount; i++) {
         SceneObject &obj = scene.objects[i];
+        if (!obj.active) continue;
         Matrix transform = MatrixMultiply(
             MatrixMultiply(
                 MatrixScale(obj.scale, obj.scale, obj.scale),
@@ -236,6 +251,7 @@ BoxCollider GetCollider(Scene &scene, int index)
 bool CheckSceneCollision(Scene &scene, float x, float z, float radius)
 {
     for (int i = 0; i < scene.objectCount; i++) {
+        if (!scene.objects[i].active) continue;
         if (scene.objects[i].addCollision &&
             CheckBoxCollision(scene.objects[i].collider, x, z, radius))
             return true;
@@ -258,4 +274,114 @@ bool CheckZombieCollision(Scene &scene, float x, float z, float radius, float ol
         }
     }
     return false;
+}
+
+void SpawnBoxParticles(Scene &scene, Vector3 pos, Texture2D tex)
+{
+    for (int i = 0; i < BOX_PARTICLE_COUNT; i++) {
+        if (scene.particleCount >= MAX_PARTICLES) break;
+        Particle &p = scene.particles[scene.particleCount];
+        p.position = pos;
+        p.velocity.x = ((float)GetRandomValue(-1000, 1000) / 1000.0f) * BOX_PARTICLE_SPEED;
+        p.velocity.y = ((float)GetRandomValue(200, 1000) / 1000.0f) * BOX_PARTICLE_SPEED;
+        p.velocity.z = ((float)GetRandomValue(-1000, 1000) / 1000.0f) * BOX_PARTICLE_SPEED;
+        p.lifetime = BOX_PARTICLE_LIFETIME;
+        p.maxLifetime = BOX_PARTICLE_LIFETIME;
+        p.texture = tex;
+        scene.particleCount++;
+    }
+}
+
+void UpdateParticles(Scene &scene, float dt)
+{
+    for (int i = scene.particleCount - 1; i >= 0; i--) {
+        Particle &p = scene.particles[i];
+        p.velocity.y -= BOX_PARTICLE_GRAVITY * dt;
+        p.position.x += p.velocity.x * dt;
+        p.position.y += p.velocity.y * dt;
+        p.position.z += p.velocity.z * dt;
+        p.lifetime -= dt;
+        if (p.lifetime <= 0.0f) {
+            scene.particles[i] = scene.particles[scene.particleCount - 1];
+            scene.particleCount--;
+        }
+    }
+}
+
+void DrawParticles(Scene &scene, Camera3D camera)
+{
+    rlDisableDepthMask();
+    for (int i = 0; i < scene.particleCount; i++) {
+        Particle &p = scene.particles[i];
+        float alpha = p.lifetime / p.maxLifetime;
+        float size = BOX_PARTICLE_SIZE * alpha;
+
+        Vector3 forward = Vector3Normalize(Vector3Subtract(camera.position, p.position));
+        Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, (Vector3){0, 1.0f, 0.0f}));
+        Vector3 up = {0, 1.0f, 0};
+
+        Vector3 bl = Vector3Subtract(p.position, Vector3Add(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
+        Vector3 br = Vector3Add(p.position, Vector3Subtract(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
+        Vector3 tr = Vector3Add(p.position, Vector3Add(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
+        Vector3 tl = Vector3Add(p.position, Vector3Subtract(Vector3Scale(up, size * 0.5f), Vector3Scale(right, size * 0.5f)));
+
+        rlSetTexture(p.texture.id);
+        rlBegin(RL_QUADS);
+            rlColor4ub(255, 255, 255, (unsigned char)(alpha * 255));
+            rlTexCoord2f(0.0f, 1.0f); rlVertex3f(bl.x, bl.y, bl.z);
+            rlTexCoord2f(1.0f, 1.0f); rlVertex3f(br.x, br.y, br.z);
+            rlTexCoord2f(1.0f, 0.0f); rlVertex3f(tr.x, tr.y, tr.z);
+            rlTexCoord2f(0.0f, 0.0f); rlVertex3f(tl.x, tl.y, tl.z);
+        rlEnd();
+        rlSetTexture(0);
+    }
+    rlEnableDepthMask();
+}
+
+bool RayBoxIntersect(BoxCollider box, Vector3 origin, Vector3 dir, float maxDist, Vector3 &hitPos, Vector3 &hitNormal)
+{
+    float tmin = -INFINITY, tmax = INFINITY;
+    Vector3 normals[6] = {
+        {-1, 0, 0}, {1, 0, 0},
+        {0, -1, 0}, {0, 1, 0},
+        {0, 0, -1}, {0, 0, 1}
+    };
+    float tMin[3], tMax[3];
+    int minAxis = 0, maxAxis = 0;
+
+    float invDir[3] = {
+        dir.x != 0 ? 1.0f / dir.x : INFINITY,
+        dir.y != 0 ? 1.0f / dir.y : INFINITY,
+        dir.z != 0 ? 1.0f / dir.z : INFINITY
+    };
+
+    float bmin[3] = {box.min.x, box.min.y, box.min.z};
+    float bmax[3] = {box.max.x, box.max.y, box.max.z};
+    float orig[3] = {origin.x, origin.y, origin.z};
+
+    for (int i = 0; i < 3; i++) {
+        tMin[i] = (bmin[i] - orig[i]) * invDir[i];
+        tMax[i] = (bmax[i] - orig[i]) * invDir[i];
+        if (tMin[i] > tMax[i]) {
+            float tmp = tMin[i]; tMin[i] = tMax[i]; tMax[i] = tmp;
+        }
+        if (tMin[i] > tmin) { tmin = tMin[i]; minAxis = i; }
+        if (tMax[i] < tmax) { tmax = tMax[i]; maxAxis = i; }
+        if (tmin > tmax || tmax < 0) return false;
+    }
+
+    float t = tmin;
+    if (t < 0) { t = tmax; if (t < 0 || t > maxDist) return false; }
+    if (t > maxDist) return false;
+
+    hitPos.x = origin.x + dir.x * t;
+    hitPos.y = origin.y + dir.y * t;
+    hitPos.z = origin.z + dir.z * t;
+
+    if (t == tMin[minAxis])
+        hitNormal = normals[minAxis * 2];
+    else
+        hitNormal = normals[maxAxis * 2 + 1];
+
+    return true;
 }

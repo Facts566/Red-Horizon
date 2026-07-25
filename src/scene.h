@@ -16,6 +16,16 @@ struct SceneObject {
     bool addCollision;
     BoxCollider collider;
     bool isLamp;
+    bool active;
+    bool destructible;
+};
+
+struct Particle {
+    Vector3 position;
+    Vector3 velocity;
+    float lifetime;
+    float maxLifetime;
+    Texture2D texture;
 };
 
 struct Scene {
@@ -31,6 +41,9 @@ struct Scene {
 
     Zombie zombies[SCENE_MAX_ZOMBIES];
     int zombieCount;
+
+    Particle particles[MAX_PARTICLES];
+    int particleCount;
 };
 
 void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart, Texture2D greenTex, Texture2D wallTex, Texture2D shotholeTex, Texture2D whiteTex);
@@ -42,3 +55,7 @@ bool CheckBoxCollision(BoxCollider box, float x, float z, float radius);
 BoxCollider GetCollider(Scene &scene, int index);
 bool CheckSceneCollision(Scene &scene, float x, float z, float radius);
 bool CheckZombieCollision(Scene &scene, float x, float z, float radius, float oldX, float oldZ);
+void SpawnBoxParticles(Scene &scene, Vector3 pos, Texture2D tex);
+void UpdateParticles(Scene &scene, float dt);
+void DrawParticles(Scene &scene, Camera3D camera);
+bool RayBoxIntersect(BoxCollider box, Vector3 origin, Vector3 dir, float maxDist, Vector3 &hitPos, Vector3 &hitNormal);

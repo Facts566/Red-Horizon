@@ -72,3 +72,10 @@ constexpr int   MAX_DOORS             = 8;
 constexpr int   SCENE_MAX_OBJECTS     = 64;
 constexpr int   SCENE_MAX_ZOMBIES     = 64;
 constexpr int   WEAPON_COUNT          = 3;
+
+constexpr int   BOX_PARTICLE_COUNT    = 10;
+constexpr float BOX_PARTICLE_SPEED    = 15.0f;
+constexpr float BOX_PARTICLE_LIFETIME = 0.8f;
+constexpr float BOX_PARTICLE_SIZE     = 1.2f;
+constexpr float BOX_PARTICLE_GRAVITY  = 25.0f;
+constexpr int   MAX_PARTICLES         = 64;

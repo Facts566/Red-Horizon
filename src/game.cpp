@@ -65,6 +65,18 @@ static void ProcessShot(Game &game)
     if (!shotFired) return;
 
     Vector3 forward = Vector3Normalize(Vector3Subtract(game.camera.target, game.camera.position));
+
+    for (int i = 0; i < game.scene.objectCount; i++) {
+        if (!game.scene.objects[i].active || !game.scene.objects[i].destructible) continue;
+        Vector3 hitPos, hitNorm;
+        if (RayBoxIntersect(game.scene.objects[i].collider, game.camera.position, forward, 100.0f, hitPos, hitNorm)) {
+            SpawnBoxParticles(game.scene, hitPos, game.scene.objects[i].texture);
+            game.scene.objects[i].active = false;
+            game.scene.objects[i].addCollision = false;
+            break;
+        }
+    }
+
     float closestDist = 1e9f;
     int closestIdx = -1;
 
@@ -330,6 +342,7 @@ void UpdateGame(Game &game)
 
     ProcessZombieTouchDamage(game, dt);
     UpdateBonuses(game.bonuses, game.bonusCount, game.camera.position, game.health, game.maxHealth, game.hasKey);
+    UpdateParticles(game.scene, dt);
     UpdateLighting(game);
 }
 
@@ -341,9 +354,10 @@ void DrawGame(Game &game)
     Camera3D shakeCam = ApplyShake(game, game.camera);
 
     BeginMode3D(shakeCam);
-    DrawLevel(game.level);
-    DrawScene(game.scene, shakeCam, game.shader, game.bonuses, game.bonusCount);
-    DrawWeaponDecals(game.wallHoles, game.weapons[game.currentWeapon].decalModel);
+        DrawLevel(game.level);
+        DrawScene(game.scene, shakeCam, game.shader, game.bonuses, game.bonusCount);
+        DrawParticles(game.scene, shakeCam);
+        DrawWeaponDecals(game.wallHoles, game.weapons[game.currentWeapon].decalModel);
     EndMode3D();
 
     DrawWeaponHUD(game.weapons[game.currentWeapon], (int)game.health, game.maxHealth);
