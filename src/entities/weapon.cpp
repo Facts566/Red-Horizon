@@ -272,21 +272,20 @@ void DrawWeaponHUD(WeaponState &w, int health, int maxHealth)
     const char *ammoText = TextFormat("%i / %i", w.currentAmmo, w.maxAmmo);
     int ammoFontSize = 40;
     int ammoTextWidth = MeasureText(ammoText, ammoFontSize);
-    DrawText(ammoText, GetScreenWidth() / 2 - ammoTextWidth / 2, GetScreenHeight() - 120, ammoFontSize, WHITE);
+    DrawText(ammoText, GetScreenWidth() - ammoTextWidth - 30, GetScreenHeight() - 50, ammoFontSize, WHITE);
 
     if (w.isReloading)
     {
         const char *reloadText = "RELOADING...";
         int reloadFontSize = 24;
         int reloadTextWidth = MeasureText(reloadText, reloadFontSize);
-        int reloadY = GetScreenHeight() - 80;
-        DrawText(reloadText, GetScreenWidth() / 2 - reloadTextWidth / 2, reloadY, reloadFontSize, YELLOW);
+        DrawText(reloadText, GetScreenWidth() - reloadTextWidth - 30, GetScreenHeight() - 90, reloadFontSize, YELLOW);
 
         float reloadProgress = 1.0f - w.reloadTimer / w.reloadTime;
         int barWidth = 200;
         int barHeight = 8;
-        int barX = GetScreenWidth() / 2 - barWidth / 2;
-        int barY = reloadY + 30;
+        int barX = GetScreenWidth() - barWidth - 30;
+        int barY = GetScreenHeight() - 110;
         DrawRectangle(barX, barY, barWidth, barHeight, DARKGRAY);
         DrawRectangle(barX, barY, (int)(barWidth * reloadProgress), barHeight, YELLOW);
     }
@@ -304,7 +303,7 @@ void DrawWeaponHUD(WeaponState &w, int health, int maxHealth)
 
     if (w.name) {
         int nameWidth = MeasureText(w.name, 20);
-        DrawText(w.name, GetScreenWidth() / 2 - nameWidth / 2, GetScreenHeight() - 150, 20, LIGHTGRAY);
+        DrawText(w.name, GetScreenWidth() - nameWidth - 30, GetScreenHeight() - 70, 20, LIGHTGRAY);
     }
 
     DrawFPS(10, 10);
