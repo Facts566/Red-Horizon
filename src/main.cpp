@@ -5,29 +5,62 @@
 int main()
 {
     InitWindow(GetScreenWidth(), GetScreenHeight(), "FactsEngine");
+    SetExitKey(KEY_NULL);
 
-    Game game = { 0 };
-    InitGame(game);
+    Game game = {};
+    game.state = GAME_MENU;
+    game.exitGame = false;
+    bool gameLoaded = false;
 
-    while (!WindowShouldClose())
+    while (!WindowShouldClose() && !game.exitGame)
     {
-        if (game.gameOver) {
-            if (IsKeyPressed(KEY_R))
-                ResetGame(game);
+        if (game.state == GAME_MENU && IsKeyPressed(KEY_ESCAPE))
+            game.exitGame = true;
 
-            BeginDrawing();
-            ClearBackground(BLACK);
-            DrawText("YOU DIED", GetScreenWidth()/2 - MeasureText("YOU DIED", 80)/2, GetScreenHeight()/2 - 80, 80, RED);
-            DrawText("Press R to restart", GetScreenWidth()/2 - MeasureText("Press R to restart", 30)/2, GetScreenHeight()/2 + 20, 30, GRAY);
-            EndDrawing();
-            continue;
+        switch (game.state)
+        {
+            case GAME_MENU:
+                DrawMenu(game);
+                if (game.state == GAME_PLAYING) {
+                    if (!gameLoaded) {
+                        InitGame(game);
+                        gameLoaded = true;
+                    } else {
+                        ResetGame(game);
+                        DisableCursor();
+                    }
+                }
+                break;
+
+            case GAME_PLAYING:
+                if (!game.gameOver)
+                {
+                    UpdateGame(game);
+                    DrawGame(game);
+                }
+                else
+                {
+                    if (IsKeyPressed(KEY_R))
+                        ResetGame(game);
+
+                    if (IsKeyPressed(KEY_ESCAPE)) {
+                        EnableCursor();
+                        game.state = GAME_MENU;
+                    }
+
+                    BeginDrawing();
+                    ClearBackground(BLACK);
+                    DrawText("YOU DIED", GetScreenWidth()/2 - MeasureText("YOU DIED", 80)/2, GetScreenHeight()/2 - 100, 80, RED);
+                    DrawText("Press R to restart", GetScreenWidth()/2 - MeasureText("Press R to restart", 30)/2, GetScreenHeight()/2 + 10, 30, GRAY);
+                    DrawText("Press ESC for menu", GetScreenWidth()/2 - MeasureText("Press ESC for menu", 30)/2, GetScreenHeight()/2 + 50, 30, GRAY);
+                    EndDrawing();
+                }
+                break;
         }
-
-        UpdateGame(game);
-        DrawGame(game);
     }
 
-    UnloadGame(game);
+    if (gameLoaded)
+        UnloadGame(game);
     CloseWindow();
     return 0;
 }

@@ -8,7 +8,11 @@
 #include "spawn.h"
 #include "bonus.h"
 
+enum GameState { GAME_MENU, GAME_PLAYING, GAME_OVER };
+
 struct Game {
+    GameState state;
+    bool exitGame;
     Level level;
     Scene scene;
     Camera3D camera;
@@ -50,4 +54,5 @@ void InitGame(Game &game);
 void ResetGame(Game &game);
 void UpdateGame(Game &game);
 void DrawGame(Game &game);
+void DrawMenu(Game &game);
 void UnloadGame(Game &game);

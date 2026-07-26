@@ -207,6 +207,53 @@ static void DrawHitFlash(Game &game)
     if (game.hitFlash < 0.0f) game.hitFlash = 0.0f;
 }
 
+void DrawMenu(Game &game)
+{
+    BeginDrawing();
+    ClearBackground(BLACK);
+
+    int sw = GetScreenWidth();
+    int sh = GetScreenHeight();
+
+    const char *title = "RED HORIZON";
+    int titleSize = 80;
+    int titleW = MeasureText(title, titleSize);
+    DrawText(title, sw/2 - titleW/2, sh/2 - 120, titleSize, RED);
+
+    Rectangle playBtn = {(float)sw/2 - 120, (float)sh/2, 240, 60};
+    Rectangle exitBtn = {(float)sw/2 - 120, (float)sh/2 + 80, 240, 60};
+
+    Vector2 mouse = GetMousePosition();
+    bool playHover = CheckCollisionPointRec(mouse, playBtn);
+    bool exitHover = CheckCollisionPointRec(mouse, exitBtn);
+
+    Color playColor = playHover ? DARKBLUE : DARKGRAY;
+    Color exitColor = exitHover ? (Color){150, 30, 30, 255} : DARKGRAY;
+
+    DrawRectangleRec(playBtn, playColor);
+    DrawRectangleLinesEx(playBtn, 2, playHover ? YELLOW : WHITE);
+    const char *playText = "PLAY";
+    int playTextW = MeasureText(playText, 30);
+    DrawText(playText, sw/2 - playTextW/2, sh/2 + 18, 30, WHITE);
+
+    DrawRectangleRec(exitBtn, exitColor);
+    DrawRectangleLinesEx(exitBtn, 2, exitHover ? YELLOW : WHITE);
+    const char *exitText = "EXIT";
+    int exitTextW = MeasureText(exitText, 30);
+    DrawText(exitText, sw/2 - exitTextW/2, sh/2 + 98, 30, WHITE);
+
+    if (playHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        EnableCursor();
+        game.state = GAME_PLAYING;
+    }
+
+    if (exitHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        game.exitGame = true;
+    }
+
+    EndDrawing();
+}
+
 void InitGame(Game &game)
 {
     game.floorTex     = LoadTexRepeat("tex/map/floor.png");
@@ -267,6 +314,7 @@ void InitGame(Game &game)
     game.lightAmbLoc   = GetShaderLocation(game.shader, "ambientStrength");
     game.lightPosLoc   = GetShaderLocation(game.shader, "lightPosition");
 
+    game.state = GAME_PLAYING;
     DisableCursor();
     rlDisableBackfaceCulling();
 }

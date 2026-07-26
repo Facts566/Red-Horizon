@@ -178,4 +178,5 @@ void UnloadDoors()
     UnloadModel(doorCapLeft);
     UnloadModel(doorCapRight);
     UnloadModel(doorDecalModel);
+    doorModelsLoaded = false;
 }
