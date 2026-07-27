@@ -9,6 +9,7 @@
 #include "bonus.h"
 
 enum GameState { GAME_MENU, GAME_PLAYING, GAME_OVER };
+enum TransitionPhase { TRANS_NONE, TRANS_FADE_OUT, TRANS_LOADING, TRANS_FADE_IN };
 
 struct Game {
     GameState state;
@@ -30,6 +31,10 @@ struct Game {
     int bonusCount;
 
     bool hasKey;
+    int currentLevel;
+    TransitionPhase transPhase;
+    float transTimer;
+    int transNextLevel;
     float yaw;
 
     int maxHealth;
@@ -51,6 +56,7 @@ struct Game {
 };
 
 void InitGame(Game &game);
+void LoadLevelByIndex(Game &game, int levelIndex);
 void ResetGame(Game &game);
 void UpdateGame(Game &game);
 void DrawGame(Game &game);

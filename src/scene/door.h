@@ -14,6 +14,7 @@ struct Door {
     float rotationAngle;
     bool isOpen;
     bool isLocked;
+    bool isExit;
     float triggerRadius;
     Texture2D closedTex;
     Texture2D openTex;
@@ -22,9 +23,10 @@ struct Door {
     std::vector<BulletHole> bulletHoles;
 };
 
-Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Texture2D closedTex, Texture2D openTex, Texture2D capLeftTex, Texture2D capRightTex, Shader shader, Texture2D shotholeTex, bool isLocked = false);
+Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Texture2D closedTex, Texture2D openTex, Texture2D capLeftTex, Texture2D capRightTex, Shader shader, Texture2D shotholeTex, bool isLocked = false, bool isExit = false);
 void UpdateDoors(Door doors[], int count, Vector3 positions[], int posCount, bool hasKey);
 void DrawDoors(Door doors[], int count);
 bool CheckAnyDoorCollision(Door doors[], int count, float x, float z, float radius);
 bool RayDoorIntersect(Door door, Vector3 origin, Vector3 dir, float maxDist, Vector3 &hitPos, Vector3 &hitNormal);
+bool CheckExitDoorTrigger(Door doors[], int count, Vector3 playerPos);
 void UnloadDoors();

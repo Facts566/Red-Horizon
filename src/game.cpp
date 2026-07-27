@@ -27,9 +27,9 @@ static Texture2D LoadTexPoint(const char *path)
     return tex;
 }
 
-static void SpawnZombies(Game &game)
+static void SpawnZombies(Game &game, const char *path)
 {
-    game.zombieSpawnCount = LoadZombieSpawns("map/enemy.txt", game.zombieSpawns, MAX_ZOMBIE_SPAWNS);
+    game.zombieSpawnCount = LoadZombieSpawns(path, game.zombieSpawns, MAX_ZOMBIE_SPAWNS);
     if (game.zombieSpawnCount > SCENE_MAX_ZOMBIES) game.zombieSpawnCount = SCENE_MAX_ZOMBIES;
     game.scene.zombieCount = game.zombieSpawnCount;
     for (int i = 0; i < game.zombieSpawnCount; i++) {
@@ -46,9 +46,9 @@ static void SpawnZombies(Game &game)
     }
 }
 
-static void SpawnBonuses(Game &game)
+static void SpawnBonuses(Game &game, const char *path)
 {
-    game.bonusCount = LoadBonusSpawns("map/enemy.txt", game.bonusSpawns, MAX_BONUSES);
+    game.bonusCount = LoadBonusSpawns(path, game.bonusSpawns, MAX_BONUSES);
     InitBonuses(game.bonuses, game.bonusSpawns, game.bonusCount, game.medicTex, game.keyTex, TILE_SIZE);
 }
 
@@ -277,59 +277,78 @@ void InitGame(Game &game)
     game.keyTex      = LoadTexPoint("tex/bonus/key.png");
 
     game.shader = LoadLightShader();
-    game.level = LoadLevel("map/map.txt", TILE_SIZE, WALL_HEIGHT,
-                           game.floorTex, game.planksTex, game.wallTex, game.greenTex, game.whiteWallTex, game.shader);
+    game.currentLevel = 1;
 
     LoadPistol(game.weapons[0], game.shader, game.shotholeTex);
     LoadWeapon(game.weapons[1], game.shader, game.shotholeTex, "tex/weapons/gun.png");
     LoadDoubleBarreledShotgun(game.weapons[2], game.shader, game.shotholeTex);
+    for (int i = 0; i < WEAPON_COUNT; i++)
+        game.weapons[i].unlocked = true;
     game.currentWeapon = 0;
 
     game.camera = { 0 };
-    game.camera.position = game.level.playerStart;
-    game.camera.target = (Vector3){game.camera.position.x, game.camera.position.y, game.camera.position.z - 1};
     game.camera.up = (Vector3){0.0f, 1.0f, 0.0f};
     game.camera.fovy = CAMERA_FOVY;
     game.camera.projection = CAMERA_PERSPECTIVE;
 
-    LoadScene(game.scene, game.shader, TILE_SIZE, game.camera.position,
-              game.greenTex, game.wallTex, game.shotholeTex, game.whiteWallTex);
-
-    InitZombieModel(game.shader);
-    SpawnZombies(game);
-    SpawnBonuses(game);
-
-    game.hasKey = false;
-    game.yaw = 0.0f;
     game.maxHealth = HEALTH_MAX;
     game.health = (float)HEALTH_MAX;
+    game.yaw = 0.0f;
     game.hitFlash = 0.0f;
     game.hitShakeTime = 0.0f;
     game.touchTimer = 0.0f;
     game.gameOver = false;
     game.showWeaponPanel = false;
+    game.hasKey = false;
+    game.transPhase = TRANS_NONE;
+    game.transTimer = 0.0f;
+    game.transNextLevel = 0;
+
+    InitZombieModel(game.shader);
 
     SetLightUniforms(game.shader, game.camera.position, {1,1,1}, LIGHT_RANGE, LIGHT_AMBIENT);
     game.lightRangeLoc = GetShaderLocation(game.shader, "lightRange");
     game.lightAmbLoc   = GetShaderLocation(game.shader, "ambientStrength");
     game.lightPosLoc   = GetShaderLocation(game.shader, "lightPosition");
 
+    LoadLevelByIndex(game, game.currentLevel);
+
     game.state = GAME_PLAYING;
     DisableCursor();
     rlDisableBackfaceCulling();
 }
 
-void ResetGame(Game &game)
+void LoadLevelByIndex(Game &game, int levelIndex)
 {
-    game.health = (float)game.maxHealth;
+    char mapPath[64];
+    char enemyPath[64];
+    snprintf(mapPath, sizeof(mapPath), "map/level_%d/map.txt", levelIndex);
+    snprintf(enemyPath, sizeof(enemyPath), "map/level_%d/enemy.txt", levelIndex);
+
+    UnloadLevel(game.level);
+    UnloadScene(game.scene);
+
+    game.level = LoadLevel(mapPath, TILE_SIZE, WALL_HEIGHT,
+                           game.floorTex, game.planksTex, game.wallTex, game.greenTex, game.whiteWallTex, game.shader);
+
     game.camera.position = game.level.playerStart;
     game.camera.target = (Vector3){game.camera.position.x, game.camera.position.y, game.camera.position.z - 1};
     game.yaw = 0.0f;
+
+    LoadScene(game.scene, game.shader, TILE_SIZE, game.camera.position,
+              game.greenTex, game.wallTex, game.shotholeTex, game.whiteWallTex, levelIndex);
+
+    SpawnZombies(game, enemyPath);
+    SpawnBonuses(game, enemyPath);
+
+    game.wallHoles.clear();
+    game.hasKey = false;
+    game.currentLevel = levelIndex;
+
     game.hitFlash = 0.0f;
     game.hitShakeTime = 0.0f;
     game.touchTimer = 0.0f;
-
-    SpawnZombies(game);
+    game.gameOver = false;
 
     for (int i = 0; i < WEAPON_COUNT; i++) {
         game.weapons[i].currentAmmo = game.weapons[i].maxAmmo;
@@ -337,21 +356,40 @@ void ResetGame(Game &game)
         game.weapons[i].reloadTimer = 0.0f;
         game.weapons[i].fireCooldown = 0.0f;
     }
-
-    game.wallHoles.clear();
-
-    for (int i = 0; i < game.scene.doorCount; i++) {
-        game.scene.doors[i].isOpen = false;
-        game.scene.doors[i].bulletHoles.clear();
-    }
-
-    SpawnBonuses(game);
-    game.hasKey = false;
-    game.gameOver = false;
 }
+
+void ResetGame(Game &game)
+{
+    LoadLevelByIndex(game, game.currentLevel);
+    game.health = (float)game.maxHealth;
+    game.currentWeapon = 0;
+    for (int i = 0; i < WEAPON_COUNT; i++)
+        game.weapons[i].unlocked = true;
+}
+
+constexpr float TRANS_FADE_DURATION = 0.4f;
 
 void UpdateGame(Game &game)
 {
+    float dt = GetFrameTime();
+
+    if (game.transPhase != TRANS_NONE)
+    {
+        game.transTimer += dt;
+        if (game.transPhase == TRANS_FADE_OUT && game.transTimer >= TRANS_FADE_DURATION)
+        {
+            LoadLevelByIndex(game, game.transNextLevel);
+            game.transPhase = TRANS_FADE_IN;
+            game.transTimer = 0.0f;
+        }
+        else if (game.transPhase == TRANS_FADE_IN && game.transTimer >= TRANS_FADE_DURATION)
+        {
+            game.transPhase = TRANS_NONE;
+            game.transTimer = 0.0f;
+        }
+        return;
+    }
+
     UpdatePlayer(&game.camera, &game.yaw, game.level, game.scene.doors, game.scene.doorCount, game.scene);
 
     if (IsKeyPressed(KEY_F))
@@ -373,8 +411,6 @@ void UpdateGame(Game &game)
 
     ProcessShot(game);
 
-    float dt = GetFrameTime();
-
     Vector3 doorPositions[SCENE_MAX_ZOMBIES + 1];
     int doorPosCount = 0;
     doorPositions[doorPosCount++] = game.camera.position;
@@ -383,6 +419,26 @@ void UpdateGame(Game &game)
             doorPositions[doorPosCount++] = game.scene.zombies[i].position;
     }
     UpdateDoors(game.scene.doors, game.scene.doorCount, doorPositions, doorPosCount, game.hasKey);
+
+    if (CheckExitDoorTrigger(game.scene.doors, game.scene.doorCount, game.camera.position))
+    {
+        char nextMapPath[64];
+        snprintf(nextMapPath, sizeof(nextMapPath), "map/level_%d/map.txt", game.currentLevel + 1);
+        FILE *f = fopen(nextMapPath, "r");
+        if (f)
+        {
+            fclose(f);
+            game.transPhase = TRANS_FADE_OUT;
+            game.transTimer = 0.0f;
+            game.transNextLevel = game.currentLevel + 1;
+        }
+        else
+        {
+            game.state = GAME_MENU;
+            EnableCursor();
+        }
+        return;
+    }
 
     for (int i = 0; i < game.scene.zombieCount; i++)
         UpdateZombie(game.scene.zombies[i], game.level, game.scene.doors, game.scene.doorCount,
@@ -414,6 +470,22 @@ void DrawGame(Game &game)
         DrawWeaponPanel(game.weapons, WEAPON_COUNT, game.currentWeapon);
 
     DrawHitFlash(game);
+
+    if (game.transPhase != TRANS_NONE)
+    {
+        int sw = GetScreenWidth();
+        int sh = GetScreenHeight();
+        float t;
+        if (game.transPhase == TRANS_FADE_OUT)
+            t = game.transTimer / TRANS_FADE_DURATION;
+        else
+            t = 1.0f - game.transTimer / TRANS_FADE_DURATION;
+        if (t < 0.0f) t = 0.0f;
+        if (t > 1.0f) t = 1.0f;
+        unsigned char alpha = (unsigned char)(t * 255);
+        DrawRectangle(0, 0, sw, sh, (Color){0, 0, 0, alpha});
+    }
+
     EndDrawing();
 }
 

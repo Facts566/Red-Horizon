@@ -10,7 +10,7 @@ static Model doorCapRight = { 0 };
 static Model doorDecalModel = { 0 };
 static bool doorModelsLoaded = false;
 
-Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Texture2D closedTex, Texture2D openTex, Texture2D capLeftTex, Texture2D capRightTex, Shader shader, Texture2D shotholeTex, bool isLocked)
+Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Texture2D closedTex, Texture2D openTex, Texture2D capLeftTex, Texture2D capRightTex, Shader shader, Texture2D shotholeTex, bool isLocked, bool isExit)
 {
     if (!doorModelsLoaded)
     {
@@ -42,6 +42,7 @@ Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Tex
     door.rotationAngle = rotationAngle;
     door.isOpen = false;
     door.isLocked = isLocked;
+    door.isExit = isExit;
     door.triggerRadius = DOOR_TRIGGER_RADIUS;
     door.closedTex = closedTex;
     door.openTex = openTex;
@@ -171,8 +172,22 @@ bool RayDoorIntersect(Door door, Vector3 origin, Vector3 dir, float maxDist, Vec
     return false;
 }
 
+bool CheckExitDoorTrigger(Door doors[], int count, Vector3 playerPos)
+{
+    for (int i = 0; i < count; i++)
+    {
+        if (!doors[i].isExit || !doors[i].isOpen) continue;
+        float dx = playerPos.x - doors[i].position.x;
+        float dz = playerPos.z - doors[i].position.z;
+        if (dx * dx + dz * dz < DOOR_TRIGGER_RADIUS * DOOR_TRIGGER_RADIUS)
+            return true;
+    }
+    return false;
+}
+
 void UnloadDoors()
 {
+    if (!doorModelsLoaded) return;
     UnloadModel(doorModelClosed);
     UnloadModel(doorModelOpen);
     UnloadModel(doorCapLeft);
