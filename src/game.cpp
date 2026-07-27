@@ -244,11 +244,71 @@ void DrawMenu(Game &game)
 
     if (playHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         EnableCursor();
-        game.state = GAME_PLAYING;
+        game.state = GAME_LEVEL_SELECT;
     }
 
     if (exitHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         game.exitGame = true;
+    }
+
+    EndDrawing();
+}
+
+void DrawLevelSelect(Game &game)
+{
+    BeginDrawing();
+    ClearBackground(BLACK);
+
+    int sw = GetScreenWidth();
+    int sh = GetScreenHeight();
+
+    const char *title = "SELECT LEVEL";
+    int titleSize = 60;
+    int titleW = MeasureText(title, titleSize);
+    DrawText(title, sw/2 - titleW/2, sh/2 - 200, titleSize, RED);
+
+    int levelCount = 0;
+    bool levelExists[8] = {};
+    for (int i = 1; i <= 8; i++) {
+        char path[64];
+        snprintf(path, sizeof(path), "map/level_%d/map.txt", i);
+        FILE *f = fopen(path, "r");
+        if (f) {
+            fclose(f);
+            levelExists[i - 1] = true;
+            levelCount++;
+        }
+    }
+
+    Vector2 mouse = GetMousePosition();
+    for (int i = 0; i < levelCount; i++) {
+        Rectangle btn = {(float)sw/2 - 120, (float)sh/2 - 80 + i * 70, 240, 55};
+        bool hover = CheckCollisionPointRec(mouse, btn);
+        Color btnColor = hover ? DARKBLUE : DARKGRAY;
+        DrawRectangleRec(btn, btnColor);
+        DrawRectangleLinesEx(btn, 2, hover ? YELLOW : WHITE);
+        char label[32];
+        snprintf(label, sizeof(label), "Level %d", i + 1);
+        int labelW = MeasureText(label, 30);
+        DrawText(label, sw/2 - labelW/2, (int)btn.y + 16, 30, WHITE);
+
+        if (hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            game.currentLevel = i + 1;
+            game.state = GAME_PLAYING;
+        }
+    }
+
+    Rectangle backBtn = {(float)sw/2 - 120, (float)sh/2 - 80 + levelCount * 70 + 20, 240, 55};
+    bool backHover = CheckCollisionPointRec(mouse, backBtn);
+    Color backColor = backHover ? (Color){150, 30, 30, 255} : DARKGRAY;
+    DrawRectangleRec(backBtn, backColor);
+    DrawRectangleLinesEx(backBtn, 2, backHover ? YELLOW : WHITE);
+    const char *backText = "BACK";
+    int backTextW = MeasureText(backText, 30);
+    DrawText(backText, sw/2 - backTextW/2, (int)backBtn.y + 16, 30, WHITE);
+
+    if (backHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        game.state = GAME_MENU;
     }
 
     EndDrawing();
@@ -311,10 +371,6 @@ void InitGame(Game &game)
     game.lightAmbLoc   = GetShaderLocation(game.shader, "ambientStrength");
     game.lightPosLoc   = GetShaderLocation(game.shader, "lightPosition");
 
-    LoadLevelByIndex(game, game.currentLevel);
-
-    game.state = GAME_PLAYING;
-    DisableCursor();
     rlDisableBackfaceCulling();
 }
 

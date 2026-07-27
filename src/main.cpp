@@ -21,14 +21,20 @@ int main()
         {
             case GAME_MENU:
                 DrawMenu(game);
-                if (game.state == GAME_PLAYING) {
+                if (game.state == GAME_LEVEL_SELECT) {
                     if (!gameLoaded) {
                         InitGame(game);
                         gameLoaded = true;
-                    } else {
-                        ResetGame(game);
-                        DisableCursor();
                     }
+                }
+                break;
+
+            case GAME_LEVEL_SELECT:
+                DrawLevelSelect(game);
+                if (game.state == GAME_PLAYING) {
+                    LoadLevelByIndex(game, game.currentLevel);
+                    DisableCursor();
+                    gameLoaded = true;
                 }
                 break;
 

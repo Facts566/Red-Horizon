@@ -8,7 +8,7 @@
 #include "spawn.h"
 #include "bonus.h"
 
-enum GameState { GAME_MENU, GAME_PLAYING, GAME_OVER };
+enum GameState { GAME_MENU, GAME_LEVEL_SELECT, GAME_PLAYING, GAME_OVER };
 enum TransitionPhase { TRANS_NONE, TRANS_FADE_OUT, TRANS_LOADING, TRANS_FADE_IN };
 
 struct Game {
@@ -61,4 +61,5 @@ void ResetGame(Game &game);
 void UpdateGame(Game &game);
 void DrawGame(Game &game);
 void DrawMenu(Game &game);
+void DrawLevelSelect(Game &game);
 void UnloadGame(Game &game);

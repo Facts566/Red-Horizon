@@ -242,12 +242,12 @@ void DrawScene(Scene &scene, Camera3D camera, Shader shader, Bonus bonuses[], in
 void UnloadScene(Scene &scene)
 {
     UnloadDoors();
-    UnloadTexture(scene.doorTexClosed);
-    UnloadTexture(scene.doorTexOpen);
+    if (scene.doorTexClosed.id != 0) UnloadTexture(scene.doorTexClosed);
+    if (scene.doorTexOpen.id != 0) UnloadTexture(scene.doorTexOpen);
 
     for (int i = 0; i < scene.objectCount; i++) {
         UnloadModel(scene.objects[i].model);
-        UnloadTexture(scene.objects[i].texture);
+        if (scene.objects[i].texture.id != 0) UnloadTexture(scene.objects[i].texture);
     }
 
     for (int i = 0; i < scene.zombieCount; i++)
