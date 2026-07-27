@@ -6,7 +6,11 @@
 #include <raymath.h>
 #include <algorithm>
 
-void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart, Texture2D greenTex, Texture2D wallTex, Texture2D shotholeTex, Texture2D whiteTex, int levelIndex)
+static Vector3 TilePos(float col, float row, float y = 0.0f) {
+    return {col * TILE_SIZE + TILE_SIZE / 2.0f, y, row * TILE_SIZE + TILE_SIZE / 2.0f};
+}
+
+void LoadScene(Scene &scene, Shader shader, float tileSize, Texture2D greenTex, Texture2D wallTex, Texture2D shotholeTex, Texture2D whiteTex, int levelIndex)
 {
     scene.tileSize = tileSize;
     scene.objectCount = 0;
@@ -29,38 +33,36 @@ void LoadScene(Scene &scene, Shader shader, float tileSize, Vector3 playerStart,
 
     if (levelIndex == 1)
     {
-        //level 1 decor
-        AddObject(scene, "sofa", {playerStart.x + 0.0f, 0.7f * tileSize, playerStart.z + -84.0f}, 0.0f, 4.0f, true, shader);
-        AddObject(scene, "sofa", {playerStart.x + 82.5f, 0.7f * tileSize, playerStart.z + 14.0f}, 180.0f, 4.0f, true, shader);
-        AddObject(scene, "blood", {playerStart.x + 40.0f, 0.1f, playerStart.z}, 0.0f, 6.0f, false, shader);
-        AddObject(scene, "blood", {playerStart.x + -20.0f, 0.1f, playerStart.z + 10.0f}, 0.0f, 6.0f, false, shader);
-        AddObject(scene, "blood", {playerStart.x + 0.0f, 0.1f, playerStart.z + -30.0f}, 0.0f, 6.0f, false, shader);
-        AddObject(scene, "blood", {playerStart.x + 0.0f, 0.1f, playerStart.z + -70.0f}, 0.0f, 6.0f, false, shader);
-        AddObject(scene, "lamp", {playerStart.x + 80.0f, 19.0f, playerStart.z + 2.0f}, 0.0f, 0.5f, false, shader);
-        AddObject(scene, "lamp", {playerStart.x + 2.0f, 19.0f, playerStart.z + -70.0f}, 0.0f, 0.5f, false, shader);
-        AddObject(scene, "trash", {playerStart.x + -40.0f, 3.0f, playerStart.z + -18.0f}, 45.0f, 3.0f, true, shader);
-        AddObject(scene, "trash", {playerStart.x + 28.0f, 3.0f, playerStart.z + -35.0f}, 45.0f, 3.0f, true, shader);
-        AddObject(scene, "trash", {playerStart.x + 38.0f, 3.0f, playerStart.z + -35.0f}, 0.0f, 3.0f, true, shader);
-        AddObject(scene, "trash", {playerStart.x + 48.0f, 3.0f, playerStart.z + -35.0f}, -25.0f, 3.0f, true, shader);
-        AddObject(scene, "box", {playerStart.x + 30.0f, 2.5f, playerStart.z + -20.0f}, 15.0f, 5.0f, true, shader);
+        AddObject(scene, "sofa", TilePos(10.0f, 1.2f, 0.7f * tileSize), 0.0f, 4.0f, true, shader);
+        AddObject(scene, "sofa", TilePos(26.5f, 20.8f, 0.7f * tileSize), 180.0f, 4.0f, true, shader);
+        AddObject(scene, "blood", TilePos(18.0f, 18.0f, 0.1f), 0.0f, 6.0f, false, shader);
+        AddObject(scene, "blood", TilePos(6.0f, 20.0f, 0.1f), 0.0f, 6.0f, false, shader);
+        AddObject(scene, "blood", TilePos(10.0f, 12.0f, 0.1f), 0.0f, 6.0f, false, shader);
+        AddObject(scene, "blood", TilePos(10.0f, 4.0f, 0.1f), 0.0f, 6.0f, false, shader);
+        AddObject(scene, "lamp", TilePos(26.0f, 18.4f, 19.0f), 0.0f, 0.5f, false, shader);
+        AddObject(scene, "lamp", TilePos(10.4f, 4.0f, 19.0f), 0.0f, 0.5f, false, shader);
+        AddObject(scene, "trash", TilePos(2.0f, 14.4f, 3.0f), 45.0f, 3.0f, true, shader);
+        AddObject(scene, "trash", TilePos(15.6f, 11.0f, 3.0f), 45.0f, 3.0f, true, shader);
+        AddObject(scene, "trash", TilePos(17.6f, 11.0f, 3.0f), 0.0f, 3.0f, true, shader);
+        AddObject(scene, "trash", TilePos(19.6f, 11.0f, 3.0f), -25.0f, 3.0f, true, shader);
+        AddObject(scene, "box", TilePos(16.0f, 14.0f, 2.5f), 15.0f, 5.0f, true, shader);
 
-        AddDoor(scene, (Vector3){playerStart.x + 7.5f, 0, playerStart.z + -47.5f}, 0.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
-        AddDoor(scene, (Vector3){playerStart.x + 7.5f, 0, playerStart.z + 22.5f}, 180.0f, scene.doorTexClosed, scene.doorTexOpen, whiteTex, wallTex, shader, shotholeTex);
-        AddDoor(scene, (Vector3){playerStart.x + 57.5f, 0, playerStart.z + -7.5f}, 270.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
-        AddDoor(scene, (Vector3){playerStart.x + 107.5f, 0, playerStart.z + -7.5f}, 90.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
-        AddDoor(scene, (Vector3){playerStart.x + 132.5f, 0, playerStart.z + -72.5f}, 90.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
-        AddDoor(scene, (Vector3){playerStart.x + -47.5f, 0, playerStart.z + -2.5f}, 90.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex, true, true);
+        AddDoor(scene, TilePos(11.5f, 8.5f), 0.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
+        AddDoor(scene, TilePos(11.5f, 22.5f), 180.0f, scene.doorTexClosed, scene.doorTexOpen, whiteTex, wallTex, shader, shotholeTex);
+        AddDoor(scene, TilePos(21.5f, 16.5f), 270.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
+        AddDoor(scene, TilePos(31.5f, 16.5f), 90.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
+        AddDoor(scene, TilePos(36.5f, 3.5f), 90.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
+        AddDoor(scene, TilePos(0.5f, 17.5f), 90.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex, true, true);
     }
     else if (levelIndex == 2)
     {
-        //level 2 decor
-        AddObject(scene, "lamp", {playerStart.x + 30.0f, 19.0f, playerStart.z + 0.0f}, 0.0f, 0.5f, false, shader);
-        AddObject(scene, "lamp", {playerStart.x + -20.0f, 19.0f, playerStart.z + 0.0f}, 0.0f, 0.5f, false, shader);
-        AddObject(scene, "trash", {playerStart.x + 10.0f, 3.0f, playerStart.z + -5.0f}, 0.0f, 3.0f, true, shader);
-        AddObject(scene, "trash", {playerStart.x + -10.0f, 3.0f, playerStart.z + 5.0f}, 90.0f, 3.0f, true, shader);
-        AddObject(scene, "sofa", {playerStart.x + 50.0f, 0.7f * tileSize, playerStart.z + -20.0f}, 0.0f, 4.0f, true, shader);
-        AddObject(scene, "blood", {playerStart.x + 0.0f, 0.1f, playerStart.z + -10.0f}, 0.0f, 6.0f, false, shader);
-        AddObject(scene, "blood", {playerStart.x + 20.0f, 0.1f, playerStart.z + 10.0f}, 0.0f, 6.0f, false, shader);
+        AddObject(scene, "lamp", TilePos(14.5f, 4.0f, 19.0f), 0.0f, 0.5f, false, shader);
+        AddObject(scene, "lamp", TilePos(2.5f, 4.0f, 19.0f), 0.0f, 0.5f, false, shader);
+        AddObject(scene, "trash", TilePos(10.5f, 3.0f, 3.0f), 0.0f, 3.0f, true, shader);
+        AddObject(scene, "trash", TilePos(2.5f, 6.0f, 3.0f), 90.0f, 3.0f, true, shader);
+        AddObject(scene, "sofa", TilePos(10.5f, 0.0f, 0.7f * tileSize), 0.0f, 4.0f, true, shader);
+        AddObject(scene, "blood", TilePos(6.5f, 4.0f, 0.1f), 0.0f, 6.0f, false, shader);
+        AddObject(scene, "blood", TilePos(14.5f, 8.0f, 0.1f), 0.0f, 6.0f, false, shader);
     }
 }
 

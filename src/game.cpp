@@ -391,7 +391,7 @@ void LoadLevelByIndex(Game &game, int levelIndex)
     game.camera.target = (Vector3){game.camera.position.x, game.camera.position.y, game.camera.position.z - 1};
     game.yaw = 0.0f;
 
-    LoadScene(game.scene, game.shader, TILE_SIZE, game.camera.position,
+    LoadScene(game.scene, game.shader, TILE_SIZE,
               game.greenTex, game.wallTex, game.shotholeTex, game.whiteWallTex, levelIndex);
 
     SpawnZombies(game, enemyPath);
