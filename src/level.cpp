@@ -48,10 +48,6 @@ Level LoadLevel(const char *path, float tileSize, float wallHeight, Texture2D fl
             col = 0;
         } else if (buf[i] != ' ') {
             level.data[row * maxW + col] = buf[i];
-            if (buf[i] == 'P') {
-                level.playerStart.x = col * tileSize + tileSize / 2.0f;
-                level.playerStart.z = row * tileSize + tileSize / 2.0f;
-            }
             col++;
         }
     }

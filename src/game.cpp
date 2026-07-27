@@ -387,7 +387,7 @@ void LoadLevelByIndex(Game &game, int levelIndex)
     game.level = LoadLevel(mapPath, TILE_SIZE, WALL_HEIGHT,
                            game.floorTex, game.planksTex, game.wallTex, game.greenTex, game.whiteWallTex, game.shader);
 
-    game.camera.position = game.level.playerStart;
+    game.camera.position = LoadPlayerSpawn(enemyPath, TILE_SIZE, WALL_HEIGHT);
     game.camera.target = (Vector3){game.camera.position.x, game.camera.position.y, game.camera.position.z - 1};
     game.yaw = 0.0f;
 

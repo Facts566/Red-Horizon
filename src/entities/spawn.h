@@ -1,4 +1,5 @@
 #pragma once
+#include <raylib.h>
 #include "config.h"
 
 struct ZombieSpawn {
@@ -18,3 +19,5 @@ struct BonusSpawn {
 };
 
 int LoadBonusSpawns(const char *path, BonusSpawn *spawns, int maxSpawns);
+
+Vector3 LoadPlayerSpawn(const char *path, float tileSize, float wallHeight);

@@ -96,3 +96,46 @@ int LoadBonusSpawns(const char *path, BonusSpawn *spawns, int maxSpawns)
     free(buf);
     return count;
 }
+
+Vector3 LoadPlayerSpawn(const char *path, float tileSize, float wallHeight)
+{
+    Vector3 pos = {0, wallHeight / 2.0f, 0};
+
+    FILE *f = fopen(path, "r");
+    if (!f) return pos;
+
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    char *buf = (char *)malloc(size + 1);
+    fread(buf, 1, size, f);
+    buf[size] = '\0';
+    fclose(f);
+
+    int col = 0, row = 0;
+    bool inToken = false;
+
+    for (long i = 0; i <= size; i++) {
+        char c = buf[i];
+        if (c == '\n' || c == '\0') {
+            row++;
+            col = 0;
+            inToken = false;
+        } else if (c == ' ') {
+            inToken = false;
+        } else {
+            if (!inToken) {
+                if (c == 'P' || c == 'p') {
+                    pos.x = col * tileSize + tileSize / 2.0f;
+                    pos.z = row * tileSize + tileSize / 2.0f;
+                }
+                col++;
+                inToken = true;
+            }
+        }
+    }
+
+    free(buf);
+    return pos;
+}
