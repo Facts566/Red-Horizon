@@ -119,17 +119,23 @@ bool CheckAnyDoorCollision(Door doors[], int count, float x, float z, float radi
     {
         if (doors[i].isOpen) continue;
 
+        float rad = doors[i].rotationAngle * 3.14159f / 180.0f;
+        float cosA = cosf(rad);
+        float sinA = sinf(rad);
+        float px = x - doors[i].position.x;
+        float pz = z - doors[i].position.z;
+
+        float localX = px * cosA + pz * sinA;
+        float localZ = -px * sinA + pz * cosA;
+
         float hw = TILE_SIZE;
-        float left = doors[i].position.x - hw;
-        float right = doors[i].position.x + hw;
-        float top = doors[i].position.z - TILE_SIZE / 2.0f;
-        float bottom = doors[i].position.z + TILE_SIZE / 2.0f;
+        float hd = 1.0f;
 
-        float closestX = (x < left) ? left : (x > right) ? right : x;
-        float closestZ = (z < top) ? top : (z > bottom) ? bottom : z;
+        float closestX = (localX < -hw) ? -hw : (localX > hw) ? hw : localX;
+        float closestZ = (localZ < -hd) ? -hd : (localZ > hd) ? hd : localZ;
 
-        float dx = x - closestX;
-        float dz = z - closestZ;
+        float dx = localX - closestX;
+        float dz = localZ - closestZ;
 
         if (dx * dx + dz * dz < radius * radius)
             return true;
