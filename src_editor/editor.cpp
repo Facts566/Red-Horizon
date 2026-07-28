@@ -644,7 +644,25 @@ int main(int argc, char *argv[]) {
 
     char mapPath[256];
     sprintf(mapPath, "map/level_%d/map.txt", levelIndex);
-    Shader shader = LoadShader(NULL, NULL);
+
+    const char *vsrc = "#version 330\n"
+        "in vec3 vertexPosition;\n"
+        "in vec2 vertexTexCoord;\n"
+        "uniform mat4 mvp;\n"
+        "out vec2 fragTexCoord;\n"
+        "void main() {\n"
+        "    fragTexCoord = vertexTexCoord;\n"
+        "    gl_Position = mvp * vec4(vertexPosition, 1.0);\n"
+        "}\n";
+    const char *fsrc = "#version 330\n"
+        "in vec2 fragTexCoord;\n"
+        "uniform sampler2D texture0;\n"
+        "out vec4 finalColor;\n"
+        "void main() {\n"
+        "    finalColor = texture(texture0, fragTexCoord);\n"
+        "}\n";
+    Shader shader = LoadShaderFromMemory(vsrc, fsrc);
+
     Level level = LoadLevel(mapPath, TILE_SIZE, WALL_HEIGHT, floorTex, planksTex, wallTex, greenTex, whiteTex, shader);
 
     EditorState state = {};
