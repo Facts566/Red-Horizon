@@ -53,6 +53,7 @@ struct PaletteItem {
 
 struct EditorModels {
     Model sofa, lamp, blood, trash, box;
+    Model doorBox;
     Texture2D sofaTex, lampTex, bloodTex, trashTex, boxTex;
 };
 
@@ -125,6 +126,18 @@ static Vector3 SnapToTile(Vector3 hit) {
     return TilePos((float)col, (float)row, hit.y);
 }
 
+static Vector3 SnapDoor(Vector3 hit) {
+    int col = (int)floorf(hit.x / TILE_SIZE);
+    int row = (int)floorf(hit.z / TILE_SIZE);
+    return TilePos((float)col + 0.5f, (float)row + 0.5f);
+}
+
+static Vector3 SnapFine(Vector3 hit, float step = 0.5f) {
+    float col = roundf(hit.x / step) * step;
+    float row = roundf(hit.z / step) * step;
+    return {col, hit.y, row};
+}
+
 static Model *GetModel(EditorModels &m, const char *type) {
     if (strcmp(type, "sofa") == 0) return &m.sofa;
     if (strcmp(type, "lamp") == 0) return &m.lamp;
@@ -165,6 +178,14 @@ static void LoadEditorModels(EditorModels &m, Shader shader) {
     SetTextureFilter(m.boxTex, TEXTURE_FILTER_POINT);
     m.box.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = m.boxTex;
     m.box.materials[0].shader = shader;
+
+    Mesh doorMesh = GenMeshCube(1.0f, 1.0f, 1.0f);
+    float *v = doorMesh.vertices;
+    for (int i = 0; i < doorMesh.vertexCount * 3; i += 3)
+        v[i] += 0.5f;
+    UploadMesh(&doorMesh, false);
+    m.doorBox = LoadModelFromMesh(doorMesh);
+    m.doorBox.materials[0].shader = shader;
 }
 
 static void UnloadEditorModels(EditorModels &m) {
@@ -173,6 +194,7 @@ static void UnloadEditorModels(EditorModels &m) {
     UnloadModel(m.blood); UnloadTexture(m.bloodTex);
     UnloadModel(m.trash); UnloadTexture(m.trashTex);
     UnloadModel(m.box); UnloadTexture(m.boxTex);
+    UnloadModel(m.doorBox);
 }
 
 static void LoadDecorFile(EditorState *s, int lvl) {
@@ -325,8 +347,11 @@ static void PlaceObject(EditorState *s) {
         strcpy(s->statusMsg, TextFormat("Placed %s", item->name));
     } else {
         if (s->objectCount >= MAX_EDITOR_OBJECTS) return;
-        bool snap = item->isDoor;
-        Vector3 pos = snap ? SnapToTile(hit) : hit;
+        Vector3 pos;
+        if (item->isDoor)
+            pos = SnapDoor(hit);
+        else
+            pos = SnapFine(hit, 0.5f);
         EditorObject &o = s->objects[s->objectCount++];
         strcpy(o.type, item->name);
         o.col = (pos.x - TILE_SIZE / 2.0f) / TILE_SIZE;
@@ -417,8 +442,11 @@ static void MoveSelectedToCrosshair(EditorState *s) {
     if (!GetFloorHit(s->camera, &hit)) return;
     if (s->selectedObjIdx >= 0) {
         EditorObject &o = s->objects[s->selectedObjIdx];
-        bool snap = o.isDoor;
-        Vector3 pos = snap ? SnapToTile(hit) : hit;
+        Vector3 pos;
+        if (o.isDoor)
+            pos = SnapDoor(hit);
+        else
+            pos = SnapFine(hit, 0.5f);
         o.col = (pos.x - TILE_SIZE / 2.0f) / TILE_SIZE;
         o.row = (pos.z - TILE_SIZE / 2.0f) / TILE_SIZE;
     } else if (s->selectedEnemyIdx >= 0) {
@@ -513,11 +541,21 @@ static void HandleInput(EditorState *s, int lvl) {
 
 static void DrawGridOverlay(Level level) {
     float ts = level.tileSize;
-    Color c = ColorAlpha(GREEN, 0.3f);
-    for (int row = 0; row <= level.height; row++)
-        DrawLine3D({0, GRID_Y, row * ts}, {level.width * ts, GRID_Y, row * ts}, c);
-    for (int col = 0; col <= level.width; col++)
-        DrawLine3D({col * ts, GRID_Y, 0}, {col * ts, GRID_Y, level.height * ts}, c);
+    float w = level.width * ts;
+    float h = level.height * ts;
+    float step = 0.5f;
+
+    Color fine = ColorAlpha(WHITE, 0.08f);
+    Color tile = ColorAlpha(GREEN, 0.3f);
+
+    for (float x = 0; x <= w; x += step) {
+        Color c = (fmodf(x, ts) < 0.01f) ? tile : fine;
+        DrawLine3D({x, GRID_Y, 0}, {x, GRID_Y, h}, c);
+    }
+    for (float z = 0; z <= h; z += step) {
+        Color c = (fmodf(z, ts) < 0.01f) ? tile : fine;
+        DrawLine3D({0, GRID_Y, z}, {w, GRID_Y, z}, c);
+    }
 }
 
 static void DrawEditorObjects(EditorState *s) {
@@ -528,14 +566,14 @@ static void DrawEditorObjects(EditorState *s) {
         if (o.isDoor) {
             Color dc = o.isExit ? GREEN : (o.isLocked ? RED : BLUE);
             if (IsSelectedObj(s, i)) dc = YELLOW;
-            DrawCube({pos.x, pos.y + 7.5f, pos.z}, 5.0f, 15.0f, 1.0f, dc);
+            DrawModelEx(s->models.doorBox, pos, {0,1,0}, o.rotation, {5.0f, 15.0f, 1.0f}, dc);
         } else {
             Model *mdl = GetModel(s->models, o.type);
             if (mdl) DrawModelEx(*mdl, pos, {0, 1, 0}, o.rotation,
                                  {o.scale, o.scale, o.scale}, tint);
         }
         if (IsSelectedObj(s, i)) {
-            DrawCubeWires({pos.x, pos.y + 7.5f, pos.z}, 6.0f, 16.0f, 1.0f, YELLOW);
+            DrawModelEx(s->models.doorBox, pos, {0,1,0}, o.rotation, {6.0f, 16.0f, 2.0f}, YELLOW);
         }
     }
     for (int i = 0; i < s->enemyCount; i++) {
@@ -563,14 +601,19 @@ static void DrawGhost(EditorState *s) {
     Vector3 hit;
     if (!GetFloorHit(s->camera, &hit)) return;
     PaletteItem *item = CurrentItem(s);
-    bool snap = (item->enemyChar != 0) || item->isDoor;
-    Vector3 pos = snap ? SnapToTile(hit) : hit;
+    Vector3 pos;
+    if (item->enemyChar != 0)
+        pos = SnapToTile(hit);
+    else if (item->isDoor)
+        pos = SnapDoor(hit);
+    else
+        pos = SnapFine(hit, 0.5f);
     pos.y = item->defaultY + s->previewYOffset;
     Color tint = ColorAlpha(item->color, 0.7f);
     if (item->enemyChar != 0) {
         DrawSphere(pos, 2.0f, tint);
     } else if (item->isDoor) {
-        DrawCube({pos.x, pos.y + 7.5f, pos.z}, 5.0f, 15.0f, 1.0f, tint);
+        DrawModelEx(s->models.doorBox, pos, {0,1,0}, s->previewRotation, {5.0f, 15.0f, 1.0f}, tint);
     } else {
         Model *mdl = GetModel(s->models, item->name);
         if (mdl) {
