@@ -44,6 +44,7 @@ struct Game {
     float touchTimer;
     bool gameOver;
     bool showWeaponPanel;
+    bool paused;
 
     int lightRangeLoc;
     int lightAmbLoc;
@@ -53,6 +54,13 @@ struct Game {
     Texture2D milIdle, milWalk1, milWalk2, milDead;
     Texture2D shotholeTex, medicTex, keyTex;
     Texture2D floorTex, wallTex, greenTex, planksTex, whiteWallTex;
+
+    Sound stepSound;
+    float stepTimer;
+    Sound zombieDeathSound;
+    Sound hitSound;
+    Sound damageSound;
+    Sound itemSound;
 };
 
 void InitGame(Game &game);

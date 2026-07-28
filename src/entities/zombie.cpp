@@ -203,7 +203,7 @@ static int FindPath(Level level, float startX, float startZ, float endX, float e
     return count;
 }
 
-void InitZombie(Zombie &zombie, Vector3 pos, Texture2D idle, Texture2D walk1, Texture2D walk2, Texture2D dead)
+void InitZombie(Zombie &zombie, Vector3 pos, Texture2D idle, Texture2D walk1, Texture2D walk2, Texture2D dead, Sound deathSound)
 {
     zombie.position = pos;
     zombie.health = ZOMBIE_HEALTH;
@@ -226,6 +226,8 @@ void InitZombie(Zombie &zombie, Vector3 pos, Texture2D idle, Texture2D walk1, Te
     zombie.isMilitary = false;
     zombie.shootTimer = 0.0f;
     zombie.wantsToShoot = false;
+    zombie.deathSound = deathSound;
+    zombie.deathSoundPlayed = false;
 }
 
 void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, Scene &scene, Vector3 playerPos, float dt)

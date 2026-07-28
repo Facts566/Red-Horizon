@@ -4,7 +4,8 @@
 
 int main()
 {
-    InitWindow(GetScreenWidth(), GetScreenHeight(), "FactsEngine");
+    InitWindow(GetScreenWidth(), GetScreenHeight(), "Red Horizon");
+    InitAudioDevice();
     SetExitKey(KEY_NULL);
 
     Game game = {};
@@ -67,6 +68,7 @@ int main()
 
     if (gameLoaded)
         UnloadGame(game);
+    CloseAudioDevice();
     CloseWindow();
     return 0;
 }

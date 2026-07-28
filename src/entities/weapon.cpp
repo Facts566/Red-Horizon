@@ -4,7 +4,7 @@
 #include <raymath.h>
 #include <cmath>
 
-void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char *gunPath)
+void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char *gunPath, const char *shootPath, const char *reloadPath)
 {
     w.gunTex = LoadTexture(gunPath);
     SetTextureFilter(w.gunTex, TEXTURE_FILTER_POINT);
@@ -12,6 +12,15 @@ void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char
     w.shotholeTex = shotholeTex;
     w.decalModel = MakeWall(WEAPON_DECAL_SIZE, WEAPON_DECAL_SIZE, 1.0f, 1.0f, w.shotholeTex);
     w.decalModel.materials[0].shader = shader;
+
+    if (shootPath)
+        w.shootSound = LoadSound(shootPath);
+    else
+        w.shootSound = {0};
+    if (reloadPath)
+        w.reloadSound = LoadSound(reloadPath);
+    else
+        w.reloadSound = {0};
 
     w.shakeTime = 0.0f;
     w.flashTime = 0.0f;
@@ -46,7 +55,7 @@ void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char
 
 void LoadPistol(WeaponState &w, Shader shader, Texture2D shotholeTex)
 {
-    LoadWeapon(w, shader, shotholeTex, "tex/weapons/gun_2.png");
+    LoadWeapon(w, shader, shotholeTex, "tex/weapons/gun_2.png", "sounds/ShotPistol.mp3", "sounds/ReloadPistol.mp3");
 
     w.maxAmmo = 16;
     w.currentAmmo = w.maxAmmo;
@@ -68,7 +77,7 @@ void LoadPistol(WeaponState &w, Shader shader, Texture2D shotholeTex)
 
 void LoadDoubleBarreledShotgun(WeaponState &w, Shader shader, Texture2D shotholeTex)
 {
-    LoadWeapon(w, shader, shotholeTex, "tex/weapons/gun_1.png");
+    LoadWeapon(w, shader, shotholeTex, "tex/weapons/gun_1.png", "sounds/ShotShotgun.mp3", "sounds/ReloadShotgun2.mp3");
 
     w.maxAmmo = 2;
     w.currentAmmo = w.maxAmmo;
@@ -128,6 +137,8 @@ void ShootWeapon(WeaponState &w, Camera3D camera, Level level, Door doors[], int
     {
         w.isReloading = true;
         w.reloadTimer = w.reloadTime;
+        if (w.reloadSound.frameCount > 0)
+            PlaySound(w.reloadSound);
     }
 
     if ((IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_SPACE)) && w.fireCooldown <= 0.0f && !w.isReloading && w.currentAmmo > 0)
@@ -137,6 +148,9 @@ void ShootWeapon(WeaponState &w, Camera3D camera, Level level, Door doors[], int
         w.shakeTime = w.shakeDuration;
         w.flashTime = w.flashDuration;
         w.flashRotation = (float)GetRandomValue(0, 3600) / 10.0f;
+
+        if (w.shootSound.frameCount > 0)
+            PlaySound(w.shootSound);
 
         Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
         Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, (Vector3){0, 1, 0}));
@@ -235,6 +249,10 @@ void UnloadWeapon(WeaponState &w)
     UnloadTexture(w.gunTex);
     UnloadTexture(w.muzzleTex);
     UnloadModel(w.decalModel);
+    if (w.shootSound.frameCount > 0)
+        UnloadSound(w.shootSound);
+    if (w.reloadSound.frameCount > 0)
+        UnloadSound(w.reloadSound);
 }
 
 void DrawWeaponHUD(WeaponState &w, int health, int maxHealth)

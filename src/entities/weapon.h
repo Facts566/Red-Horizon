@@ -39,11 +39,14 @@ struct WeaponState {
     float bobOffsetX;
     float bobOffsetY;
 
+    Sound shootSound;
+    Sound reloadSound;
+
     const char *name;
     bool unlocked;
 };
 
-void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char *gunPath);
+void LoadWeapon(WeaponState &w, Shader shader, Texture2D shotholeTex, const char *gunPath, const char *shootPath = nullptr, const char *reloadPath = nullptr);
 void LoadPistol(WeaponState &w, Shader shader, Texture2D shotholeTex);
 void LoadDoubleBarreledShotgun(WeaponState &w, Shader shader, Texture2D shotholeTex);
 void UpdateWeapon(WeaponState &w);

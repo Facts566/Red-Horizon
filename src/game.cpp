@@ -37,11 +37,11 @@ static void SpawnZombies(Game &game, const char *path)
         float wz = (float)game.zombieSpawns[i].row * TILE_SIZE + TILE_SIZE / 2.0f;
         if (game.zombieSpawns[i].isMilitary) {
             InitZombie(game.scene.zombies[i], (Vector3){wx, ZOMBIE_SPAWN_Y, wz},
-                       game.milIdle, game.milWalk1, game.milWalk2, game.milDead);
+                       game.milIdle, game.milWalk1, game.milWalk2, game.milDead, game.zombieDeathSound);
             game.scene.zombies[i].isMilitary = true;
         } else {
             InitZombie(game.scene.zombies[i], (Vector3){wx, ZOMBIE_SPAWN_Y, wz},
-                       game.zombiIdle, game.zombiWalk1, game.zombiWalk2, game.zombiDead);
+                       game.zombiIdle, game.zombiWalk1, game.zombiWalk2, game.zombiDead, game.zombieDeathSound);
         }
     }
 }
@@ -99,6 +99,13 @@ static void ProcessShot(Game &game)
             float damage = game.currentWeapon == 2 ? 100.0f : (game.currentWeapon == 1 ? 50.0f : 25.0f);
             game.scene.zombies[closestIdx].health -= damage;
             game.scene.zombies[closestIdx].hitTime = ZOMBIE_HIT_TIME;
+            if (game.hitSound.frameCount > 0)
+                PlaySound(game.hitSound);
+            if (game.scene.zombies[closestIdx].health <= 0.0f && !game.scene.zombies[closestIdx].deathSoundPlayed) {
+                game.scene.zombies[closestIdx].deathSoundPlayed = true;
+                if (game.scene.zombies[closestIdx].deathSound.frameCount > 0)
+                    PlaySound(game.scene.zombies[closestIdx].deathSound);
+            }
         }
     }
 }
@@ -122,6 +129,8 @@ static void ProcessZombieTouchDamage(Game &game, float dt)
             game.touchTimer -= TOUCH_INTERVAL;
             game.hitFlash = HIT_FLASH_DURATION;
             game.hitShakeTime = HIT_SHAKE_DURATION;
+            if (game.damageSound.frameCount > 0)
+                PlaySound(game.damageSound);
         }
     } else {
         game.touchTimer = 0.0f;
@@ -133,6 +142,8 @@ static void ProcessZombieTouchDamage(Game &game, float dt)
             game.scene.zombies[i].wantsToShoot = false;
             game.hitFlash = HIT_FLASH_DURATION;
             game.hitShakeTime = HIT_SHAKE_DURATION;
+            if (game.damageSound.frameCount > 0)
+                PlaySound(game.damageSound);
         }
     }
 
@@ -340,7 +351,7 @@ void InitGame(Game &game)
     game.currentLevel = 1;
 
     LoadPistol(game.weapons[0], game.shader, game.shotholeTex);
-    LoadWeapon(game.weapons[1], game.shader, game.shotholeTex, "tex/weapons/gun.png");
+    LoadWeapon(game.weapons[1], game.shader, game.shotholeTex, "tex/weapons/gun.png", "sounds/ShotShotgun.mp3", "sounds/ReloadShotgun.mp3");
     LoadDoubleBarreledShotgun(game.weapons[2], game.shader, game.shotholeTex);
     for (int i = 0; i < WEAPON_COUNT; i++)
         game.weapons[i].unlocked = true;
@@ -360,6 +371,7 @@ void InitGame(Game &game)
     game.gameOver = false;
     game.showWeaponPanel = false;
     game.hasKey = false;
+    game.paused = false;
     game.transPhase = TRANS_NONE;
     game.transTimer = 0.0f;
     game.transNextLevel = 0;
@@ -372,6 +384,14 @@ void InitGame(Game &game)
     game.lightPosLoc   = GetShaderLocation(game.shader, "lightPosition");
 
     rlDisableBackfaceCulling();
+
+    game.stepSound = LoadSound("sounds/Step.mp3");
+    SetSoundVolume(game.stepSound, 0.4f);
+    game.stepTimer = 0.0f;
+    game.zombieDeathSound = LoadSound("sounds/ZombieDeath.mp3");
+    game.hitSound = LoadSound("sounds/Hit.mp3");
+    game.damageSound = LoadSound("sounds/DamageToPlayer.mp3");
+    game.itemSound = LoadSound("sounds/Item.mp3");
 }
 
 void LoadLevelByIndex(Game &game, int levelIndex)
@@ -446,6 +466,25 @@ void UpdateGame(Game &game)
         return;
     }
 
+    if (IsKeyPressed(KEY_ESCAPE) && !game.paused) {
+        game.paused = true;
+        EnableCursor();
+        return;
+    }
+
+    if (game.paused) {
+        if (IsKeyPressed(KEY_E)) {
+            game.paused = false;
+            DisableCursor();
+        }
+        if (IsKeyPressed(KEY_ESCAPE)) {
+            game.paused = false;
+            EnableCursor();
+            game.state = GAME_MENU;
+        }
+        return;
+    }
+
     UpdatePlayer(&game.camera, &game.yaw, game.level, game.scene.doors, game.scene.doorCount, game.scene);
 
     if (IsKeyPressed(KEY_F))
@@ -464,6 +503,18 @@ void UpdateGame(Game &game)
                     IsKeyDown(KEY_UP) || IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_RIGHT);
     bool isSprinting = isMoving && IsKeyDown(KEY_LEFT_SHIFT);
     UpdateWeaponBob(game.weapons[game.currentWeapon], isMoving, isSprinting);
+
+    if (isMoving) {
+        game.stepTimer -= dt;
+        if (game.stepTimer <= 0.0f) {
+            float stepInterval = isSprinting ? 0.28f : 0.4f;
+            game.stepTimer = stepInterval;
+            if (game.stepSound.frameCount > 0)
+                PlaySound(game.stepSound);
+        }
+    } else {
+        game.stepTimer = 0.0f;
+    }
 
     ProcessShot(game);
 
@@ -501,7 +552,7 @@ void UpdateGame(Game &game)
                      game.scene, game.camera.position, dt);
 
     ProcessZombieTouchDamage(game, dt);
-    UpdateBonuses(game.bonuses, game.bonusCount, game.camera.position, game.health, game.maxHealth, game.hasKey);
+    UpdateBonuses(game.bonuses, game.bonusCount, game.camera.position, game.health, game.maxHealth, game.hasKey, game.itemSound);
     UpdateParticles(game.scene, dt);
     UpdateLighting(game);
 }
@@ -526,6 +577,25 @@ void DrawGame(Game &game)
         DrawWeaponPanel(game.weapons, WEAPON_COUNT, game.currentWeapon);
 
     DrawHitFlash(game);
+
+    if (game.paused) {
+        int sw = GetScreenWidth();
+        int sh = GetScreenHeight();
+        DrawRectangle(0, 0, sw, sh, ColorAlpha(BLACK, 0.7f));
+
+        const char *title = "PAUSED";
+        int titleSize = 60;
+        int titleW = MeasureText(title, titleSize);
+        DrawText(title, sw/2 - titleW/2, sh/2 - 100, titleSize, WHITE);
+
+        const char *continueText = "[E] Continue";
+        int continueW = MeasureText(continueText, 30);
+        DrawText(continueText, sw/2 - continueW/2, sh/2, 30, GREEN);
+
+        const char *menuText = "[ESC] Menu";
+        int menuW = MeasureText(menuText, 30);
+        DrawText(menuText, sw/2 - menuW/2, sh/2 + 50, 30, RED);
+    }
 
     if (game.transPhase != TRANS_NONE)
     {
@@ -570,4 +640,9 @@ void UnloadGame(Game &game)
     UnloadTexture(game.shotholeTex);
     UnloadTexture(game.medicTex);
     UnloadTexture(game.keyTex);
+    UnloadSound(game.stepSound);
+    UnloadSound(game.zombieDeathSound);
+    UnloadSound(game.hitSound);
+    UnloadSound(game.damageSound);
+    UnloadSound(game.itemSound);
 }

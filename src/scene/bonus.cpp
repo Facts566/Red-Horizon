@@ -17,7 +17,7 @@ void InitBonuses(Bonus bonuses[], BonusSpawn spawns[], int count, Texture2D medi
     }
 }
 
-void UpdateBonuses(Bonus bonuses[], int count, Vector3 playerPos, float &health, int maxHealth, bool &hasKey)
+void UpdateBonuses(Bonus bonuses[], int count, Vector3 playerPos, float &health, int maxHealth, bool &hasKey, Sound itemSound)
 {
     float dt = GetFrameTime();
     for (int i = 0; i < count; i++) {
@@ -26,10 +26,15 @@ void UpdateBonuses(Bonus bonuses[], int count, Vector3 playerPos, float &health,
         float dx = playerPos.x - bonuses[i].position.x;
         float dz = playerPos.z - bonuses[i].position.z;
         if (dx * dx + dz * dz < BONUS_PICKUP_RADIUS * BONUS_PICKUP_RADIUS) {
-            bonuses[i].active = false;
             if (bonuses[i].type == BONUS_KEY) {
+                bonuses[i].active = false;
+                if (itemSound.frameCount > 0)
+                    PlaySound(itemSound);
                 hasKey = true;
-            } else {
+            } else if (health < (float)maxHealth) {
+                bonuses[i].active = false;
+                if (itemSound.frameCount > 0)
+                    PlaySound(itemSound);
                 health += BONUS_HEALTH_AMOUNT;
                 if (health > (float)maxHealth) health = (float)maxHealth;
             }

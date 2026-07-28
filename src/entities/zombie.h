@@ -31,11 +31,14 @@ struct Zombie {
     bool isMilitary;
     float shootTimer;
     bool wantsToShoot;
+
+    Sound deathSound;
+    bool deathSoundPlayed;
 };
 
 struct Scene;
 
-void InitZombie(Zombie &zombie, Vector3 pos, Texture2D idle, Texture2D walk1, Texture2D walk2, Texture2D dead);
+void InitZombie(Zombie &zombie, Vector3 pos, Texture2D idle, Texture2D walk1, Texture2D walk2, Texture2D dead, Sound deathSound);
 void UpdateZombie(Zombie &zombie, Level level, Door doors[], int doorCount, Scene &scene, Vector3 playerPos, float dt);
 void InitZombieModel(Shader shader);
 void DrawZombie(Zombie &zombie, Camera3D camera, Shader shader);
