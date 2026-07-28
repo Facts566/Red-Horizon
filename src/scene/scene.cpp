@@ -2,12 +2,41 @@
 #include "config.h"
 #include <rlgl.h>
 #include <cstring>
+#include <cstdio>
 #include <cmath>
 #include <raymath.h>
 #include <algorithm>
 
 static Vector3 TilePos(float col, float row, float y = 0.0f) {
     return {col * TILE_SIZE + TILE_SIZE / 2.0f, y, row * TILE_SIZE + TILE_SIZE / 2.0f};
+}
+
+void LoadDecor(Scene &scene, const char *decorPath, Shader shader, Texture2D greenTex, Texture2D wallTex, Texture2D shotholeTex, Texture2D whiteTex)
+{
+    FILE *f = fopen(decorPath, "r");
+    if (!f) return;
+
+    char line[256];
+    while (fgets(line, sizeof(line), f)) {
+        if (line[0] == '#' || line[0] == '\n') continue;
+
+        char type[32];
+        if (sscanf(line, "obj %31s", type) == 1) {
+            float col, row, y, rot, scale;
+            int collision;
+            if (sscanf(line, "obj %31s %f %f %f %f %f %d", type, &col, &row, &y, &rot, &scale, &collision) == 7) {
+                AddObject(scene, type, TilePos(col, row, y), rot, scale, collision != 0, shader);
+            }
+        } else if (strncmp(line, "door", 4) == 0) {
+            float col, row, rot;
+            int locked, exit;
+            if (sscanf(line, "door %f %f %f %d %d", &col, &row, &rot, &locked, &exit) == 5) {
+                Texture2D capTex = exit ? whiteTex : greenTex;
+                AddDoor(scene, TilePos(col, row), rot, scene.doorTexClosed, scene.doorTexOpen, capTex, wallTex, shader, shotholeTex, locked != 0, exit != 0);
+            }
+        }
+    }
+    fclose(f);
 }
 
 void LoadScene(Scene &scene, Shader shader, float tileSize, Texture2D greenTex, Texture2D wallTex, Texture2D shotholeTex, Texture2D whiteTex, int levelIndex)
@@ -31,39 +60,9 @@ void LoadScene(Scene &scene, Shader shader, float tileSize, Texture2D greenTex, 
     scene.doorCount = 0;
     scene.particleCount = 0;
 
-    if (levelIndex == 1)
-    {
-        AddObject(scene, "sofa", TilePos(10.0f, 1.2f, 0.7f * tileSize), 0.0f, 4.0f, true, shader);
-        AddObject(scene, "sofa", TilePos(26.5f, 20.8f, 0.7f * tileSize), 180.0f, 4.0f, true, shader);
-        AddObject(scene, "blood", TilePos(18.0f, 18.0f, 0.1f), 0.0f, 6.0f, false, shader);
-        AddObject(scene, "blood", TilePos(6.0f, 20.0f, 0.1f), 0.0f, 6.0f, false, shader);
-        AddObject(scene, "blood", TilePos(10.0f, 12.0f, 0.1f), 0.0f, 6.0f, false, shader);
-        AddObject(scene, "blood", TilePos(10.0f, 4.0f, 0.1f), 0.0f, 6.0f, false, shader);
-        AddObject(scene, "lamp", TilePos(26.0f, 18.4f, 19.0f), 0.0f, 0.5f, false, shader);
-        AddObject(scene, "lamp", TilePos(10.4f, 4.0f, 19.0f), 0.0f, 0.5f, false, shader);
-        AddObject(scene, "trash", TilePos(2.0f, 14.4f, 3.0f), 45.0f, 3.0f, true, shader);
-        AddObject(scene, "trash", TilePos(15.6f, 11.0f, 3.0f), 45.0f, 3.0f, true, shader);
-        AddObject(scene, "trash", TilePos(17.6f, 11.0f, 3.0f), 0.0f, 3.0f, true, shader);
-        AddObject(scene, "trash", TilePos(19.6f, 11.0f, 3.0f), -25.0f, 3.0f, true, shader);
-        AddObject(scene, "box", TilePos(16.0f, 14.0f, 2.5f), 15.0f, 5.0f, true, shader);
-
-        AddDoor(scene, TilePos(11.5f, 8.5f), 0.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
-        AddDoor(scene, TilePos(11.5f, 22.5f), 180.0f, scene.doorTexClosed, scene.doorTexOpen, whiteTex, wallTex, shader, shotholeTex);
-        AddDoor(scene, TilePos(21.5f, 16.5f), 270.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
-        AddDoor(scene, TilePos(31.5f, 16.5f), 90.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
-        AddDoor(scene, TilePos(36.5f, 3.5f), 90.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex);
-        AddDoor(scene, TilePos(0.5f, 17.5f), 90.0f, scene.doorTexClosed, scene.doorTexOpen, greenTex, wallTex, shader, shotholeTex, true, true);
-    }
-    else if (levelIndex == 2)
-    {
-        AddObject(scene, "lamp", TilePos(14.5f, 4.0f, 19.0f), 0.0f, 0.5f, false, shader);
-        AddObject(scene, "lamp", TilePos(2.5f, 4.0f, 19.0f), 0.0f, 0.5f, false, shader);
-        AddObject(scene, "trash", TilePos(10.5f, 3.0f, 3.0f), 0.0f, 3.0f, true, shader);
-        AddObject(scene, "trash", TilePos(2.5f, 6.0f, 3.0f), 90.0f, 3.0f, true, shader);
-        AddObject(scene, "sofa", TilePos(10.5f, 0.0f, 0.7f * tileSize), 0.0f, 4.0f, true, shader);
-        AddObject(scene, "blood", TilePos(6.5f, 4.0f, 0.1f), 0.0f, 6.0f, false, shader);
-        AddObject(scene, "blood", TilePos(14.5f, 8.0f, 0.1f), 0.0f, 6.0f, false, shader);
-    }
+    char decorPath[256];
+    sprintf(decorPath, "map/level_%d/decor.txt", levelIndex);
+    LoadDecor(scene, decorPath, shader, greenTex, wallTex, shotholeTex, whiteTex);
 }
 
 static void LoadObjectModel(SceneObject &obj, const char *name, Shader shader)

@@ -7,3 +7,16 @@ all:
 		src/level.cpp \
 		-o main -lraylib -lX11 -lXi -lXrandr -lXinerama -lXcursor -lGL -lm
 	./main
+
+editor:
+	g++ -Isrc -Isrc/core -Isrc_editor \
+		src_editor/editor.cpp \
+		src/core/map.cpp \
+		src/level.cpp \
+		-o editor -lraylib -lX11 -lXi -lXrandr -lXinerama -lXcursor -lGL -lm
+
+run_editor:
+	./editor $(LEVEL)
+
+clean:
+	rm -f main editor
