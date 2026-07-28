@@ -72,6 +72,8 @@ struct EditorState {
     EditorModels models;
     char statusMsg[128];
     float statusTimer;
+    int selectedObjIdx;
+    int selectedEnemyIdx;
 };
 
 static const char *categoryNames[] = {
@@ -335,37 +337,130 @@ static void PlaceObject(EditorState *s) {
     s->statusTimer = 1.5f;
 }
 
-static void DeleteAtCrosshair(EditorState *s) {
-    Vector3 hit;
-    if (!GetFloorHit(s->camera, &hit)) return;
-    float bestDist = 8.0f * 8.0f;
-    int bestType = -1, bestIdx = -1;
+static void FindClosest(EditorState *s, Vector3 hit, float maxDist2, int &outType, int &outIdx) {
+    outType = -1;
+    outIdx = -1;
+    float best = maxDist2;
     for (int i = 0; i < s->objectCount; i++) {
-        EditorObject &o = s->objects[i];
-        Vector3 pos = TilePos(o.col, o.row, o.y);
+        Vector3 pos = TilePos(s->objects[i].col, s->objects[i].row, s->objects[i].y);
         float d = Vector3DistanceSqr(pos, hit);
-        if (d < bestDist) { bestDist = d; bestType = 0; bestIdx = i; }
+        if (d < best) { best = d; outType = 0; outIdx = i; }
     }
     for (int i = 0; i < s->enemyCount; i++) {
         EnemyPlacement &e = s->enemies[i];
         Vector3 pos = {(float)e.col * TILE_SIZE + TILE_SIZE / 2.0f, ZOMBIE_SPAWN_Y, (float)e.row * TILE_SIZE + TILE_SIZE / 2.0f};
         float d = Vector3DistanceSqr(pos, hit);
-        if (d < bestDist) { bestDist = d; bestType = 1; bestIdx = i; }
+        if (d < best) { best = d; outType = 1; outIdx = i; }
     }
-    if (bestType == 0 && bestIdx >= 0) {
-        s->objects[bestIdx] = s->objects[s->objectCount - 1];
-        s->objectCount--;
-        strcpy(s->statusMsg, "Deleted object");
-        s->statusTimer = 1.0f;
-    } else if (bestType == 1 && bestIdx >= 0) {
-        s->enemies[bestIdx] = s->enemies[s->enemyCount - 1];
-        s->enemyCount--;
-        strcpy(s->statusMsg, "Deleted enemy");
+}
+
+static bool IsSelectedObj(EditorState *s, int idx) {
+    return s->selectedObjIdx == idx;
+}
+
+static bool IsSelectedEnemy(EditorState *s, int idx) {
+    return s->selectedEnemyIdx == idx;
+}
+
+static void SelectAtCrosshair(EditorState *s) {
+    Vector3 hit;
+    if (!GetFloorHit(s->camera, &hit)) return;
+    int type, idx;
+    FindClosest(s, hit, 8.0f * 8.0f, type, idx);
+    s->selectedObjIdx = -1;
+    s->selectedEnemyIdx = -1;
+    if (type == 0 && idx >= 0) {
+        s->selectedObjIdx = idx;
+        EditorObject &o = s->objects[idx];
+        strcpy(s->statusMsg, TextFormat("Selected: %s (%.1f, %.1f)", o.type, o.col, o.row));
+        s->statusTimer = 2.0f;
+    } else if (type == 1 && idx >= 0) {
+        s->selectedEnemyIdx = idx;
+        EnemyPlacement &e = s->enemies[idx];
+        strcpy(s->statusMsg, TextFormat("Selected: %c (%d, %d)", e.type, e.col, e.row));
+        s->statusTimer = 2.0f;
+    } else {
+        strcpy(s->statusMsg, "Nothing selected");
         s->statusTimer = 1.0f;
     }
 }
 
+static void Deselect(EditorState *s) {
+    s->selectedObjIdx = -1;
+    s->selectedEnemyIdx = -1;
+}
+
+static void DeleteSelected(EditorState *s) {
+    if (s->selectedObjIdx >= 0) {
+        s->objects[s->selectedObjIdx] = s->objects[s->objectCount - 1];
+        s->objectCount--;
+        strcpy(s->statusMsg, "Deleted object");
+        s->statusTimer = 1.0f;
+        s->selectedObjIdx = -1;
+    } else if (s->selectedEnemyIdx >= 0) {
+        s->enemies[s->selectedEnemyIdx] = s->enemies[s->enemyCount - 1];
+        s->enemyCount--;
+        strcpy(s->statusMsg, "Deleted enemy");
+        s->statusTimer = 1.0f;
+        s->selectedEnemyIdx = -1;
+    }
+}
+
+static void MoveSelectedToCrosshair(EditorState *s) {
+    Vector3 hit;
+    if (!GetFloorHit(s->camera, &hit)) return;
+    if (s->selectedObjIdx >= 0) {
+        EditorObject &o = s->objects[s->selectedObjIdx];
+        bool snap = o.isDoor;
+        Vector3 pos = snap ? SnapToTile(hit) : hit;
+        o.col = (pos.x - TILE_SIZE / 2.0f) / TILE_SIZE;
+        o.row = (pos.z - TILE_SIZE / 2.0f) / TILE_SIZE;
+    } else if (s->selectedEnemyIdx >= 0) {
+        EnemyPlacement &e = s->enemies[s->selectedEnemyIdx];
+        Vector3 pos = SnapToTile(hit);
+        e.col = (int)((pos.x - TILE_SIZE / 2.0f) / TILE_SIZE + 0.5f);
+        e.row = (int)((pos.z - TILE_SIZE / 2.0f) / TILE_SIZE + 0.5f);
+    }
+}
+
 static void HandleInput(EditorState *s, int lvl) {
+    bool hasSelection = (s->selectedObjIdx >= 0 || s->selectedEnemyIdx >= 0);
+
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        if (hasSelection) {
+            Deselect(s);
+            strcpy(s->statusMsg, "Deselected");
+            s->statusTimer = 1.0f;
+        }
+        return;
+    }
+
+    if (hasSelection) {
+        MoveSelectedToCrosshair(s);
+
+        float wheel = GetMouseWheelMove();
+        if (s->selectedObjIdx >= 0) {
+            EditorObject &o = s->objects[s->selectedObjIdx];
+            if (IsKeyDown(KEY_LEFT_SHIFT)) {
+                o.y += wheel * 2.0f;
+            } else if (IsKeyDown(KEY_LEFT_CONTROL)) {
+                o.scale += wheel * 0.1f;
+                if (o.scale < 0.1f) o.scale = 0.1f;
+            } else {
+                o.rotation += wheel * 15.0f;
+            }
+        }
+        if (IsKeyPressed(KEY_DELETE) || IsKeyPressed(KEY_BACKSPACE)) {
+            DeleteSelected(s);
+        }
+        if (IsKeyPressed(KEY_ENTER)) {
+            Deselect(s);
+            strcpy(s->statusMsg, "Confirmed");
+            s->statusTimer = 1.0f;
+        }
+        return;
+    }
+
     if (IsKeyPressed(KEY_TAB)) {
         s->category = (s->category + 1) % CAT_COUNT;
         s->selection = 0;
@@ -392,7 +487,25 @@ static void HandleInput(EditorState *s, int lvl) {
         s->previewRotation += wheel * 15.0f;
     }
     if (IsKeyPressed(KEY_E)) PlaceObject(s);
-    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) DeleteAtCrosshair(s);
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) SelectAtCrosshair(s);
+    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+        int type, idx;
+        Vector3 hit;
+        if (GetFloorHit(s->camera, &hit)) {
+            FindClosest(s, hit, 8.0f * 8.0f, type, idx);
+            if (type == 0 && idx >= 0) {
+                s->objects[idx] = s->objects[s->objectCount - 1];
+                s->objectCount--;
+                strcpy(s->statusMsg, "Deleted object");
+                s->statusTimer = 1.0f;
+            } else if (type == 1 && idx >= 0) {
+                s->enemies[idx] = s->enemies[s->enemyCount - 1];
+                s->enemyCount--;
+                strcpy(s->statusMsg, "Deleted enemy");
+                s->statusTimer = 1.0f;
+            }
+        }
+    }
     if (IsKeyPressed(KEY_ENTER)) {
         SaveDecorFile(s, lvl);
         SaveEnemyFile(s, lvl);
@@ -414,13 +527,18 @@ static void DrawEditorObjects(EditorState *s) {
     for (int i = 0; i < s->objectCount; i++) {
         EditorObject &o = s->objects[i];
         Vector3 pos = TilePos(o.col, o.row, o.y);
+        Color tint = IsSelectedObj(s, i) ? YELLOW : WHITE;
         if (o.isDoor) {
             Color dc = o.isExit ? GREEN : (o.isLocked ? RED : BLUE);
+            if (IsSelectedObj(s, i)) dc = YELLOW;
             DrawCube({pos.x, pos.y + 7.5f, pos.z}, 5.0f, 15.0f, 1.0f, dc);
         } else {
             Model *mdl = GetModel(s->models, o.type);
             if (mdl) DrawModelEx(*mdl, pos, {0, 1, 0}, o.rotation,
-                                 {o.scale, o.scale, o.scale}, WHITE);
+                                 {o.scale, o.scale, o.scale}, tint);
+        }
+        if (IsSelectedObj(s, i)) {
+            DrawCubeWires({pos.x, pos.y + 7.5f, pos.z}, 6.0f, 16.0f, 1.0f, YELLOW);
         }
     }
     for (int i = 0; i < s->enemyCount; i++) {
@@ -438,6 +556,9 @@ static void DrawEditorObjects(EditorState *s) {
             default: ec = WHITE; break;
         }
         DrawSphere(pos, 2.0f, ec);
+        if (IsSelectedEnemy(s, i)) {
+            DrawSphereWires(pos, 3.0f, 8, 8, YELLOW);
+        }
     }
 }
 
@@ -464,20 +585,32 @@ static void DrawGhost(EditorState *s) {
 
 static void DrawHUD(EditorState *s) {
     int x = 10, y = 10, lh = 20;
+    bool hasSel = (s->selectedObjIdx >= 0 || s->selectedEnemyIdx >= 0);
+
     DrawText("RED HORIZON - LEVEL EDITOR", x, y, 20, WHITE); y += lh + 10;
-    DrawText(TextFormat("Category: %s", categoryNames[s->category]), x, y, 16, YELLOW); y += lh;
-    PaletteItem *item = CurrentItem(s);
-    DrawText(TextFormat("Selected: %s", item->name), x, y, 16, GREEN); y += lh;
-    DrawText(TextFormat("Objects: %d | Enemies: %d", s->objectCount, s->enemyCount), x, y, 16, LIGHTGRAY); y += lh + 10;
-    DrawText("CONTROLS:", x, y, 16, WHITE); y += lh;
-    DrawText("WASD/Space/Shift - Move camera", x, y, 14, LIGHTGRAY); y += lh - 2;
-    DrawText("Mouse - Look around", x, y, 14, LIGHTGRAY); y += lh - 2;
-    DrawText("Tab - Cycle category", x, y, 14, LIGHTGRAY); y += lh - 2;
-    DrawText("1-9 - Select item in category", x, y, 14, LIGHTGRAY); y += lh - 2;
-    DrawText("E - Place object", x, y, 14, LIGHTGRAY); y += lh - 2;
-    DrawText("Right Click - Delete", x, y, 14, LIGHTGRAY); y += lh - 2;
-    DrawText("Wheel - Rotate | Shift+Wheel - Y | Ctrl+Wheel - Scale", x, y, 14, LIGHTGRAY); y += lh - 2;
-    DrawText("G - Toggle grid | Enter - Save | Esc - Save & Quit", x, y, 14, LIGHTGRAY);
+
+    if (hasSel) {
+        DrawText("[ MOVING MODE ]", x, y, 18, YELLOW); y += lh;
+        DrawText("Object follows crosshair", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("Wheel - rotate | Shift+Wheel - Y | Ctrl+Wheel - scale", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("Enter - confirm | Esc - cancel | Del - delete", x, y, 14, LIGHTGRAY); y += lh + 10;
+    } else {
+        DrawText(TextFormat("Category: %s", categoryNames[s->category]), x, y, 16, YELLOW); y += lh;
+        PaletteItem *item = CurrentItem(s);
+        DrawText(TextFormat("Selected: %s", item->name), x, y, 16, GREEN); y += lh;
+        DrawText(TextFormat("Objects: %d | Enemies: %d", s->objectCount, s->enemyCount), x, y, 16, LIGHTGRAY); y += lh + 10;
+        DrawText("CONTROLS:", x, y, 16, WHITE); y += lh;
+        DrawText("WASD/Space/Shift - Move camera", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("Mouse - Look around", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("Tab - Cycle category", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("1-9 - Select item in palette", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("E - Place new object", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("Left Click - Select existing object", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("Right Click - Delete under crosshair", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("Wheel - rotate | Shift+Wheel - Y | Ctrl+Wheel - scale", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("G - Toggle grid | Enter - Save", x, y, 14, LIGHTGRAY);
+    }
+
     if (s->statusTimer > 0) {
         int tw = MeasureText(s->statusMsg, 30);
         DrawText(s->statusMsg, GetScreenWidth() / 2 - tw / 2, 60, 30, GREEN);
@@ -537,7 +670,8 @@ int main(int argc, char *argv[]) {
         DrawLevel(level);
         DrawEditorObjects(&state);
         if (state.showGrid) DrawGridOverlay(level);
-        DrawGhost(&state);
+        if (state.selectedObjIdx < 0 && state.selectedEnemyIdx < 0)
+            DrawGhost(&state);
         EndMode3D();
 
         int cx = GetScreenWidth() / 2, cy = GetScreenHeight() / 2;
