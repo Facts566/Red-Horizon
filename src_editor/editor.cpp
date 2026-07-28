@@ -133,32 +133,37 @@ static Model *GetModel(EditorModels &m, const char *type) {
     return NULL;
 }
 
-static void LoadEditorModels(EditorModels &m) {
+static void LoadEditorModels(EditorModels &m, Shader shader) {
     m.sofa = LoadModel("models/sofa.obj");
     m.sofaTex = LoadTexture("tex/decor/sofa.png");
     SetTextureFilter(m.sofaTex, TEXTURE_FILTER_POINT);
     m.sofa.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = m.sofaTex;
+    m.sofa.materials[0].shader = shader;
 
     m.lamp = LoadModel("models/lamp.obj");
     m.lampTex = LoadTexture("tex/decor/lamp.png");
     SetTextureFilter(m.lampTex, TEXTURE_FILTER_POINT);
     m.lamp.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = m.lampTex;
+    m.lamp.materials[0].shader = shader;
 
     m.blood = LoadModel("models/blood.obj");
     m.bloodTex = LoadTexture("tex/decor/blood.png");
     SetTextureFilter(m.bloodTex, TEXTURE_FILTER_POINT);
     m.blood.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = m.bloodTex;
+    m.blood.materials[0].shader = shader;
 
     m.trash = LoadModel("models/trash.obj");
     m.trashTex = LoadTexture("tex/decor/trash.png");
     SetTextureFilter(m.trashTex, TEXTURE_FILTER_POINT);
     m.trash.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = m.trashTex;
+    m.trash.materials[0].shader = shader;
 
     Mesh cube = GenMeshCube(1.0f, 1.0f, 1.0f);
     m.box = LoadModelFromMesh(cube);
     m.boxTex = LoadTexture("tex/decor/box.png");
     SetTextureFilter(m.boxTex, TEXTURE_FILTER_POINT);
     m.box.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = m.boxTex;
+    m.box.materials[0].shader = shader;
 }
 
 static void UnloadEditorModels(EditorModels &m) {
@@ -639,8 +644,8 @@ int main(int argc, char *argv[]) {
 
     char mapPath[256];
     sprintf(mapPath, "map/level_%d/map.txt", levelIndex);
-    Shader dummy = {0};
-    Level level = LoadLevel(mapPath, TILE_SIZE, WALL_HEIGHT, floorTex, planksTex, wallTex, greenTex, whiteTex, dummy);
+    Shader shader = LoadShader(NULL, NULL);
+    Level level = LoadLevel(mapPath, TILE_SIZE, WALL_HEIGHT, floorTex, planksTex, wallTex, greenTex, whiteTex, shader);
 
     EditorState state = {};
     state.level = level;
@@ -648,7 +653,7 @@ int main(int argc, char *argv[]) {
     state.previewScale = 1.0f;
     state.selectedObjIdx = -1;
     state.selectedEnemyIdx = -1;
-    LoadEditorModels(state.models);
+    LoadEditorModels(state.models, shader);
     LoadDecorFile(&state, levelIndex);
     LoadEnemyFile(&state, levelIndex);
 
