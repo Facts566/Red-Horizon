@@ -432,15 +432,6 @@ static void MoveSelectedToCrosshair(EditorState *s) {
 static void HandleInput(EditorState *s, int lvl) {
     bool hasSelection = (s->selectedObjIdx >= 0 || s->selectedEnemyIdx >= 0);
 
-    if (IsKeyPressed(KEY_ESCAPE)) {
-        if (hasSelection) {
-            Deselect(s);
-            strcpy(s->statusMsg, "Deselected");
-            s->statusTimer = 1.0f;
-        }
-        return;
-    }
-
     if (hasSelection) {
         MoveSelectedToCrosshair(s);
 
@@ -673,7 +664,16 @@ int main(int argc, char *argv[]) {
     state.yaw = 0;
     state.pitch = -0.5f;
 
-    while (!WindowShouldClose()) {
+    while (true) {
+        if (WindowShouldClose()) {
+            if (state.selectedObjIdx >= 0 || state.selectedEnemyIdx >= 0) {
+                Deselect(&state);
+                strcpy(state.statusMsg, "Deselected (Esc to quit)");
+                state.statusTimer = 1.0f;
+            } else {
+                break;
+            }
+        }
         float dt = GetFrameTime();
         UpdateCamera(&state, dt);
         HandleInput(&state, levelIndex);
