@@ -500,7 +500,7 @@ void UpdateGame(Game &game)
     UpdateWeapon(game.weapons[game.currentWeapon]);
 
     bool isMoving = IsKeyDown(KEY_W) || IsKeyDown(KEY_S) || IsKeyDown(KEY_A) || IsKeyDown(KEY_D) ||
-                    IsKeyDown(KEY_UP) || IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_RIGHT);
+                    IsKeyDown(KEY_UP) || IsKeyDown(KEY_DOWN);
     bool isSprinting = isMoving && IsKeyDown(KEY_LEFT_SHIFT);
     UpdateWeaponBob(game.weapons[game.currentWeapon], isMoving, isSprinting);
 
