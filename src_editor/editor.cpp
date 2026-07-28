@@ -646,6 +646,8 @@ int main(int argc, char *argv[]) {
     state.level = level;
     state.showGrid = true;
     state.previewScale = 1.0f;
+    state.selectedObjIdx = -1;
+    state.selectedEnemyIdx = -1;
     LoadEditorModels(state.models);
     LoadDecorFile(&state, levelIndex);
     LoadEnemyFile(&state, levelIndex);
