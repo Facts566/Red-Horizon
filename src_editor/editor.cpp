@@ -631,17 +631,22 @@ int main(int argc, char *argv[]) {
     InitWindow(1280, 720, "Red Horizon - Level Editor");
     SetTargetFPS(60);
     DisableCursor();
+    rlDisableBackfaceCulling();
 
-    Texture2D floorTex = LoadTexture("tex/map/floor.png");
-    SetTextureFilter(floorTex, TEXTURE_FILTER_POINT);
-    Texture2D planksTex = LoadTexture("tex/map/planks.png");
-    SetTextureFilter(planksTex, TEXTURE_FILTER_POINT);
-    Texture2D wallTex = LoadTexture("tex/map/wall.png");
-    SetTextureFilter(wallTex, TEXTURE_FILTER_POINT);
-    Texture2D greenTex = LoadTexture("tex/map/green.png");
-    SetTextureFilter(greenTex, TEXTURE_FILTER_POINT);
-    Texture2D whiteTex = LoadTexture("tex/map/white.png");
-    SetTextureFilter(whiteTex, TEXTURE_FILTER_POINT);
+    auto LoadTexRepeat = [](const char *path) -> Texture2D {
+        Texture2D tex = LoadTexture(path);
+        SetTextureFilter(tex, TEXTURE_FILTER_POINT);
+        SetTextureWrap(tex, TEXTURE_WRAP_REPEAT);
+        rlTextureParameters(tex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
+        rlTextureParameters(tex.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
+        return tex;
+    };
+
+    Texture2D floorTex = LoadTexRepeat("tex/map/floor.png");
+    Texture2D planksTex = LoadTexRepeat("tex/map/planks.png");
+    Texture2D wallTex = LoadTexRepeat("tex/map/bricks.png");
+    Texture2D greenTex = LoadTexRepeat("tex/map/green_wall.png");
+    Texture2D whiteTex = LoadTexRepeat("tex/map/white_wall.png");
 
     char mapPath[256];
     sprintf(mapPath, "map/level_%d/map.txt", levelIndex);
@@ -680,7 +685,7 @@ int main(int argc, char *argv[]) {
         SetLightUniforms(shader, state.camera.position, {1, 1, 1}, LIGHT_RANGE, ambient);
 
         BeginMode3D(state.camera);
-        DrawLevel(level);
+        DrawLevel(level, false);
         DrawEditorObjects(&state);
         if (state.showGrid) DrawGridOverlay(level);
         if (state.selectedObjIdx < 0 && state.selectedEnemyIdx < 0)

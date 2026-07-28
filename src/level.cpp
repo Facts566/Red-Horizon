@@ -140,7 +140,7 @@ bool CheckWallCollision(Level level, float x, float z, float radius)
     return false;
 }
 
-void DrawLevel(Level level)
+void DrawLevel(Level level, bool drawCeiling)
 {
     float ts = level.tileSize;
     LevelModels &m = level.models;
@@ -157,7 +157,7 @@ void DrawLevel(Level level)
             if (c == '0')
                 DrawModel(m.planks, (Vector3){cx, 0, cz}, 1.0f, WHITE);
 
-            if (c == '@' || c == '0') {
+            if (drawCeiling && (c == '@' || c == '0')) {
                 DrawModelEx(m.ceiling, (Vector3){cx, level.wallHeight, cz}, (Vector3){1,0,0}, 180.0f, (Vector3){1,1,1}, WHITE);
             }
 
