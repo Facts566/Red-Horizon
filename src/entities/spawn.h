@@ -6,6 +6,7 @@ struct ZombieSpawn {
     int col;
     int row;
     bool isMilitary;
+    bool isFast;
 };
 
 int LoadZombieSpawns(const char *path, ZombieSpawn *spawns, int maxSpawns);

@@ -31,10 +31,11 @@ int LoadZombieSpawns(const char *path, ZombieSpawn *spawns, int maxSpawns)
             inToken = false;
         } else {
             if (!inToken) {
-                if (c == 'Z' || c == 'z' || c == 'M' || c == 'm') {
+                if (c == 'Z' || c == 'z' || c == 'M' || c == 'm' || c == 'F' || c == 'f') {
                     spawns[count].col = col;
                     spawns[count].row = row;
                     spawns[count].isMilitary = (c == 'M' || c == 'm');
+                    spawns[count].isFast = (c == 'F' || c == 'f');
                     count++;
                 }
                 col++;

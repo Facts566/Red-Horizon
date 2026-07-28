@@ -39,6 +39,12 @@ static void SpawnZombies(Game &game, const char *path)
             InitZombie(game.scene.zombies[i], (Vector3){wx, ZOMBIE_SPAWN_Y, wz},
                        game.milIdle, game.milWalk1, game.milWalk2, game.milDead, game.zombieDeathSound);
             game.scene.zombies[i].isMilitary = true;
+        } else if (game.zombieSpawns[i].isFast) {
+            InitZombie(game.scene.zombies[i], (Vector3){wx, ZOMBIE_SPAWN_Y, wz},
+                       game.fastIdle, game.fastWalk1, game.fastWalk2, game.fastDead, game.zombieDeathSound);
+            game.scene.zombies[i].isFast = true;
+            game.scene.zombies[i].health = FAST_ZOMBIE_HEALTH;
+            game.scene.zombies[i].speed = FAST_ZOMBIE_SPEED;
         } else {
             InitZombie(game.scene.zombies[i], (Vector3){wx, ZOMBIE_SPAWN_Y, wz},
                        game.zombiIdle, game.zombiWalk1, game.zombiWalk2, game.zombiDead, game.zombieDeathSound);
@@ -112,20 +118,27 @@ static void ProcessShot(Game &game)
 
 static void ProcessZombieTouchDamage(Game &game, float dt)
 {
-    bool touching = false;
+    float closestTouchDist = 1e9f;
+    int closestTouchIdx = -1;
     for (int i = 0; i < game.scene.zombieCount; i++) {
         if (!game.scene.zombies[i].active || game.scene.zombies[i].health <= 0.0f) continue;
         float dx = game.camera.position.x - game.scene.zombies[i].position.x;
         float dz = game.camera.position.z - game.scene.zombies[i].position.z;
         float touchDist = PLAYER_RADIUS + game.scene.zombies[i].radius * 2;
-        if (dx * dx + dz * dz < touchDist * touchDist)
-            touching = true;
+        if (dx * dx + dz * dz < touchDist * touchDist) {
+            float dist = dx * dx + dz * dz;
+            if (dist < closestTouchDist) {
+                closestTouchDist = dist;
+                closestTouchIdx = i;
+            }
+        }
     }
 
-    if (touching) {
+    if (closestTouchIdx >= 0) {
+        float damage = game.scene.zombies[closestTouchIdx].isFast ? FAST_TOUCH_DAMAGE : TOUCH_DAMAGE;
         game.touchTimer += dt;
         while (game.touchTimer >= TOUCH_INTERVAL) {
-            game.health -= TOUCH_DAMAGE;
+            game.health -= damage;
             game.touchTimer -= TOUCH_INTERVAL;
             game.hitFlash = HIT_FLASH_DURATION;
             game.hitShakeTime = HIT_SHAKE_DURATION;
@@ -342,6 +355,11 @@ void InitGame(Game &game)
     game.milWalk1 = LoadTexPoint("tex/zombie_military/zombie_military_walk.png");
     game.milWalk2 = LoadTexPoint("tex/zombie_military/zombie_military_walk_1.png");
     game.milDead  = LoadTexPoint("tex/zombie_military/zombie_military_kill.png");
+
+    game.fastIdle  = LoadTexPoint("tex/zombi_fast/zombi_fast.png");
+    game.fastWalk1 = LoadTexPoint("tex/zombi_fast/zombi_fast_walk.png");
+    game.fastWalk2 = LoadTexPoint("tex/zombi_fast/zombi_fast_walk_1.png");
+    game.fastDead  = LoadTexPoint("tex/zombi_fast/zombi_fast_kill.png");
 
     game.shotholeTex = LoadTexPoint("tex/weapons/shothole.png");
     game.medicTex    = LoadTexPoint("tex/bonus/medic.png");
@@ -637,6 +655,10 @@ void UnloadGame(Game &game)
     UnloadTexture(game.milWalk1);
     UnloadTexture(game.milWalk2);
     UnloadTexture(game.milDead);
+    UnloadTexture(game.fastIdle);
+    UnloadTexture(game.fastWalk1);
+    UnloadTexture(game.fastWalk2);
+    UnloadTexture(game.fastDead);
     UnloadTexture(game.shotholeTex);
     UnloadTexture(game.medicTex);
     UnloadTexture(game.keyTex);

@@ -224,6 +224,7 @@ void InitZombie(Zombie &zombie, Vector3 pos, Texture2D idle, Texture2D walk1, Te
     zombie.triggered = false;
     zombie.hitTime = 0.0f;
     zombie.isMilitary = false;
+    zombie.isFast = false;
     zombie.shootTimer = 0.0f;
     zombie.wantsToShoot = false;
     zombie.deathSound = deathSound;

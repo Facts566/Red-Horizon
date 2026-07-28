@@ -13,6 +13,7 @@ constexpr float PLAYER_SPRINT_MULT    = 1.5f;
 
 constexpr int   HEALTH_MAX            = 100;
 constexpr float TOUCH_DAMAGE          = 10.0f;
+constexpr float FAST_TOUCH_DAMAGE     = 5.0f;
 constexpr float TOUCH_INTERVAL        = 0.3f;
 constexpr float HIT_FLASH_DURATION    = 0.2f;
 constexpr float HIT_SHAKE_DURATION    = 0.15f;
@@ -23,6 +24,8 @@ constexpr float ZOMBIE_MODEL_SIZE     = 5.4f;
 constexpr float ZOMBIE_BILLBOARD_SIZE = 10.8f;
 constexpr float ZOMBIE_HEALTH         = 100.0f;
 constexpr float ZOMBIE_SPEED          = 12.0f;
+constexpr float FAST_ZOMBIE_HEALTH    = 100.0f;
+constexpr float FAST_ZOMBIE_SPEED     = 24.0f;
 constexpr float ZOMBIE_RADIUS         = 1.5f;
 constexpr float ZOMBIE_PATH_RECALC    = 0.3f;
 constexpr float ZOMBIE_ANIM_INTERVAL  = 0.3f;

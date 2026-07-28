@@ -29,6 +29,7 @@ struct Zombie {
     float hitTime;
 
     bool isMilitary;
+    bool isFast;
     float shootTimer;
     bool wantsToShoot;
 
