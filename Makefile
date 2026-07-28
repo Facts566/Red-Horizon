@@ -11,7 +11,7 @@ all:
 editor:
 	g++ -Isrc -Isrc/core -Isrc_editor \
 		src_editor/editor.cpp \
-		src/core/map.cpp \
+		src/core/map.cpp src/core/light.cpp \
 		src/level.cpp \
 		-o editor -lraylib -lX11 -lXi -lXrandr -lXinerama -lXcursor -lGL -lm
 

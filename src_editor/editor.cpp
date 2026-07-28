@@ -7,6 +7,7 @@
 #include "config.h"
 #include "level.h"
 #include "map.h"
+#include "light.h"
 
 #define MAX_EDITOR_OBJECTS 256
 #define MAX_ENEMIES 256
@@ -645,25 +646,10 @@ int main(int argc, char *argv[]) {
     char mapPath[256];
     sprintf(mapPath, "map/level_%d/map.txt", levelIndex);
 
-    const char *vsrc = "#version 330\n"
-        "in vec3 vertexPosition;\n"
-        "in vec2 vertexTexCoord;\n"
-        "uniform mat4 mvp;\n"
-        "out vec2 fragTexCoord;\n"
-        "void main() {\n"
-        "    fragTexCoord = vertexTexCoord;\n"
-        "    gl_Position = mvp * vec4(vertexPosition, 1.0);\n"
-        "}\n";
-    const char *fsrc = "#version 330\n"
-        "in vec2 fragTexCoord;\n"
-        "uniform sampler2D texture0;\n"
-        "out vec4 finalColor;\n"
-        "void main() {\n"
-        "    finalColor = texture(texture0, fragTexCoord);\n"
-        "}\n";
-    Shader shader = LoadShaderFromMemory(vsrc, fsrc);
-
+    Shader shader = LoadLightShader();
     Level level = LoadLevel(mapPath, TILE_SIZE, WALL_HEIGHT, floorTex, planksTex, wallTex, greenTex, whiteTex, shader);
+    float ambient = 1.0f;
+    SetLightUniforms(shader, {0, 0, 0}, {1, 1, 1}, LIGHT_RANGE, ambient);
 
     EditorState state = {};
     state.level = level;
@@ -690,6 +676,8 @@ int main(int argc, char *argv[]) {
 
         BeginDrawing();
         ClearBackground({20, 20, 30, 255});
+
+        SetLightUniforms(shader, state.camera.position, {1, 1, 1}, LIGHT_RANGE, ambient);
 
         BeginMode3D(state.camera);
         DrawLevel(level);
