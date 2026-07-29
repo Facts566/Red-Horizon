@@ -57,7 +57,10 @@ struct PaletteItem {
 struct EditorModels {
     Model sofa, lamp, blood, trash, box;
     Model doorBox;
+    Model doorCap;
     Texture2D sofaTex, lampTex, bloodTex, trashTex, boxTex;
+    Texture2D doorTex;
+    Texture2D brickTex, greenWallTex, whiteWallTex;
 };
 
 struct EditorState {
@@ -161,6 +164,15 @@ static Model *GetModel(EditorModels &m, const char *type) {
     return NULL;
 }
 
+static Texture2D LoadTexRepeat(const char *path) {
+    Texture2D tex = LoadTexture(path);
+    SetTextureFilter(tex, TEXTURE_FILTER_POINT);
+    SetTextureWrap(tex, TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(tex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
+    rlTextureParameters(tex.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
+    return tex;
+}
+
 static void LoadEditorModels(EditorModels &m, Shader shader) {
     m.sofa = LoadModel("models/sofa.obj");
     m.sofaTex = LoadTexture("tex/decor/sofa.png");
@@ -199,7 +211,19 @@ static void LoadEditorModels(EditorModels &m, Shader shader) {
         v[i] += 0.5f;
     UploadMesh(&doorMesh, false);
     m.doorBox = LoadModelFromMesh(doorMesh);
+    m.doorTex = LoadTexture("tex/decor/door_1.png");
+    SetTextureFilter(m.doorTex, TEXTURE_FILTER_POINT);
+    m.doorBox.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = m.doorTex;
     m.doorBox.materials[0].shader = shader;
+
+    Mesh capMesh = GenMeshCube(TILE_SIZE * 2, TILE_SIZE, TILE_SIZE);
+    m.doorCap = LoadModelFromMesh(capMesh);
+    m.doorCap.materials[0].shader = shader;
+
+    m.brickTex = LoadTexRepeat("tex/map/bricks.png");
+    m.greenWallTex = LoadTexRepeat("tex/map/green_wall.png");
+    m.whiteWallTex = LoadTexRepeat("tex/map/white_wall.png");
+    m.doorCap.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = m.brickTex;
 }
 
 static void UnloadEditorModels(EditorModels &m) {
@@ -208,7 +232,9 @@ static void UnloadEditorModels(EditorModels &m) {
     UnloadModel(m.blood); UnloadTexture(m.bloodTex);
     UnloadModel(m.trash); UnloadTexture(m.trashTex);
     UnloadModel(m.box); UnloadTexture(m.boxTex);
-    UnloadModel(m.doorBox);
+    UnloadModel(m.doorBox); UnloadTexture(m.doorTex);
+    UnloadModel(m.doorCap);
+    UnloadTexture(m.brickTex); UnloadTexture(m.greenWallTex); UnloadTexture(m.whiteWallTex);
 }
 
 static void LoadDecorFile(EditorState *s, int lvl) {
@@ -694,6 +720,29 @@ static void DrawTerrainHighlight(EditorState *s) {
     DrawCubeWires({cx, 0.3f, cz}, ts + 0.1f, 0.5f, ts + 0.1f, hc);
 }
 
+static Texture2D GetCapTexture(EditorModels &m, const char *wt) {
+    if (strcmp(wt, "green") == 0) return m.greenWallTex;
+    if (strcmp(wt, "white") == 0) return m.whiteWallTex;
+    return m.brickTex;
+}
+
+static void DrawDoorCaps(EditorState *s, Vector3 doorPos, float rotation, const char *leftTex, const char *rightTex, Color tint) {
+    float rad = rotation * 3.14159f / 180.0f;
+    float sx = sinf(rad);
+    float sz = cosf(rad);
+    float hw = TILE_SIZE / 2.0f;
+
+    Model capL = s->models.doorCap;
+    capL.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = GetCapTexture(s->models, leftTex);
+    Vector3 capLPos = {doorPos.x - sx * hw, DOOR_CAP_Y_MULT * TILE_SIZE, doorPos.z - sz * hw};
+    DrawModelEx(capL, capLPos, {0,1,0}, rotation, {1,1,1}, tint);
+
+    Model capR = s->models.doorCap;
+    capR.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = GetCapTexture(s->models, rightTex);
+    Vector3 capRPos = {doorPos.x + sx * hw, DOOR_CAP_Y_MULT * TILE_SIZE, doorPos.z + sz * hw};
+    DrawModelEx(capR, capRPos, {0,1,0}, rotation, {1,1,1}, tint);
+}
+
 static void DrawEditorObjects(EditorState *s) {
     for (int i = 0; i < s->objectCount; i++) {
         EditorObject &o = s->objects[i];
@@ -703,6 +752,7 @@ static void DrawEditorObjects(EditorState *s) {
             Color dc = o.isExit ? GREEN : (o.isLocked ? RED : BLUE);
             if (IsSelectedObj(s, i)) dc = YELLOW;
             DrawModelEx(s->models.doorBox, pos, {0,1,0}, o.rotation, {5.0f, 15.0f, 1.0f}, dc);
+            DrawDoorCaps(s, pos, o.rotation, o.wallTexTypeLeft, o.wallTexTypeRight, WHITE);
         } else {
             Model *mdl = GetModel(s->models, o.type);
             if (mdl) DrawModelEx(*mdl, pos, {0, 1, 0}, o.rotation,
@@ -751,6 +801,9 @@ static void DrawGhost(EditorState *s) {
         DrawSphere(pos, 2.0f, tint);
     } else if (item->isDoor) {
         DrawModelEx(s->models.doorBox, pos, {0,1,0}, s->previewRotation, {5.0f, 15.0f, 1.0f}, tint);
+        const char *lName = doorWallTexNames[s->doorWallTexLeft];
+        const char *rName = doorWallTexNames[s->doorWallTexRight];
+        DrawDoorCaps(s, pos, s->previewRotation, lName, rName, ColorAlpha(WHITE, 0.7f));
     } else {
         Model *mdl = GetModel(s->models, item->name);
         if (mdl) {
@@ -823,15 +876,6 @@ int main(int argc, char *argv[]) {
     SetTargetFPS(60);
     DisableCursor();
     rlDisableBackfaceCulling();
-
-    auto LoadTexRepeat = [](const char *path) -> Texture2D {
-        Texture2D tex = LoadTexture(path);
-        SetTextureFilter(tex, TEXTURE_FILTER_POINT);
-        SetTextureWrap(tex, TEXTURE_WRAP_REPEAT);
-        rlTextureParameters(tex.id, RL_TEXTURE_WRAP_S, RL_TEXTURE_WRAP_REPEAT);
-        rlTextureParameters(tex.id, RL_TEXTURE_WRAP_T, RL_TEXTURE_WRAP_REPEAT);
-        return tex;
-    };
 
     Texture2D floorTex = LoadTexRepeat("tex/map/floor.png");
     Texture2D planksTex = LoadTexRepeat("tex/map/planks.png");
