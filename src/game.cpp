@@ -55,7 +55,7 @@ static void SpawnZombies(Game &game, const char *path)
 static void SpawnBonuses(Game &game, const char *path)
 {
     game.bonusCount = LoadBonusSpawns(path, game.bonusSpawns, MAX_BONUSES);
-    InitBonuses(game.bonuses, game.bonusSpawns, game.bonusCount, game.medicTex, game.keyTex, TILE_SIZE);
+    InitBonuses(game.bonuses, game.bonusSpawns, game.bonusCount, game.medicTex, game.keyTex, game.weaponTex, TILE_SIZE);
 }
 
 static void ProcessShot(Game &game)
@@ -341,7 +341,7 @@ void DrawLevelSelect(Game &game)
 void UpdateWeaponUnlocks(Game &game)
 {
     for (int i = 0; i < WEAPON_COUNT; i++)
-        game.weapons[i].unlocked = (game.currentLevel >= 2) || (i == 0);
+        game.weapons[i].unlocked = (i == 0);
 }
 
 void InitGame(Game &game)
@@ -370,6 +370,7 @@ void InitGame(Game &game)
     game.shotholeTex = LoadTexPoint("tex/weapons/shothole.png");
     game.medicTex    = LoadTexPoint("tex/bonus/medic.png");
     game.keyTex      = LoadTexPoint("tex/bonus/key.png");
+    game.weaponTex   = LoadTexPoint("tex/weapons/gun.png");
 
     game.shader = LoadLightShader();
     game.currentLevel = 1;
@@ -574,7 +575,7 @@ void UpdateGame(Game &game)
                      game.scene, game.camera.position, dt);
 
     ProcessZombieTouchDamage(game, dt);
-    UpdateBonuses(game.bonuses, game.bonusCount, game.camera.position, game.health, game.maxHealth, game.hasKey, game.itemSound);
+    UpdateBonuses(game.bonuses, game.bonusCount, game.camera.position, game.health, game.maxHealth, game.hasKey, game.weapons, WEAPON_COUNT, game.itemSound);
     UpdateParticles(game.scene, dt);
     UpdateLighting(game);
 }
@@ -666,6 +667,7 @@ void UnloadGame(Game &game)
     UnloadTexture(game.shotholeTex);
     UnloadTexture(game.medicTex);
     UnloadTexture(game.keyTex);
+    UnloadTexture(game.weaponTex);
     UnloadSound(game.stepSound);
     UnloadSound(game.zombieDeathSound);
     UnloadSound(game.hitSound);

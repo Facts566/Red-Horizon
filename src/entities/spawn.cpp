@@ -81,11 +81,25 @@ int LoadBonusSpawns(const char *path, BonusSpawn *spawns, int maxSpawns)
                     spawns[count].col = col;
                     spawns[count].row = row;
                     spawns[count].type = BONUS_HEALTH;
+                    spawns[count].weaponIndex = 0;
                     count++;
                 } else if (c == 'K' || c == 'k') {
                     spawns[count].col = col;
                     spawns[count].row = row;
                     spawns[count].type = BONUS_KEY;
+                    spawns[count].weaponIndex = 0;
+                    count++;
+                } else if (c == 'W' || c == 'w') {
+                    spawns[count].col = col;
+                    spawns[count].row = row;
+                    spawns[count].type = BONUS_WEAPON;
+                    spawns[count].weaponIndex = 1;
+                    count++;
+                } else if (c == 'D' || c == 'd') {
+                    spawns[count].col = col;
+                    spawns[count].row = row;
+                    spawns[count].type = BONUS_WEAPON;
+                    spawns[count].weaponIndex = 2;
                     count++;
                 }
                 col++;

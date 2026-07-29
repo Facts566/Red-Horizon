@@ -4,20 +4,26 @@
 #include <raymath.h>
 #include <cmath>
 
-void InitBonuses(Bonus bonuses[], BonusSpawn spawns[], int count, Texture2D medicTex, Texture2D keyTex, float tileSize)
+void InitBonuses(Bonus bonuses[], BonusSpawn spawns[], int count, Texture2D medicTex, Texture2D keyTex, Texture2D weaponTex, float tileSize)
 {
     for (int i = 0; i < count; i++) {
         bonuses[i].position.x = (float)spawns[i].col * tileSize + tileSize / 2.0f;
         bonuses[i].position.y = 0.0f;
         bonuses[i].position.z = (float)spawns[i].row * tileSize + tileSize / 2.0f;
-        bonuses[i].texture = (spawns[i].type == BONUS_KEY) ? keyTex : medicTex;
+        if (spawns[i].type == BONUS_KEY)
+            bonuses[i].texture = keyTex;
+        else if (spawns[i].type == BONUS_WEAPON)
+            bonuses[i].texture = weaponTex;
+        else
+            bonuses[i].texture = medicTex;
         bonuses[i].active = true;
         bonuses[i].bobTimer = (float)GetRandomValue(0, 100) * 0.1f;
         bonuses[i].type = spawns[i].type;
+        bonuses[i].weaponIndex = spawns[i].weaponIndex;
     }
 }
 
-void UpdateBonuses(Bonus bonuses[], int count, Vector3 playerPos, float &health, int maxHealth, bool &hasKey, Sound itemSound)
+void UpdateBonuses(Bonus bonuses[], int count, Vector3 playerPos, float &health, int maxHealth, bool &hasKey, WeaponState weapons[], int weaponCount, Sound itemSound)
 {
     float dt = GetFrameTime();
     for (int i = 0; i < count; i++) {
@@ -31,6 +37,13 @@ void UpdateBonuses(Bonus bonuses[], int count, Vector3 playerPos, float &health,
                 if (itemSound.frameCount > 0)
                     PlaySound(itemSound);
                 hasKey = true;
+            } else if (bonuses[i].type == BONUS_WEAPON) {
+                if (bonuses[i].weaponIndex >= 0 && bonuses[i].weaponIndex < weaponCount && !weapons[bonuses[i].weaponIndex].unlocked) {
+                    bonuses[i].active = false;
+                    if (itemSound.frameCount > 0)
+                        PlaySound(itemSound);
+                    weapons[bonuses[i].weaponIndex].unlocked = true;
+                }
             } else if (health < (float)maxHealth) {
                 bonuses[i].active = false;
                 if (itemSound.frameCount > 0)

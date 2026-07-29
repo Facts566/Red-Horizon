@@ -85,7 +85,7 @@ struct EditorState {
     int doorWallTexLeft;
     int doorWallTexRight;
     Texture2D texZombie, texMilitary, texFast;
-    Texture2D texHealth, texKey;
+    Texture2D texHealth, texKey, texWeapon, texWeapon2;
 };
 
 static const char *categoryNames[] = {
@@ -106,6 +106,8 @@ static PaletteItem allItems[] = {
     {"fast",     NULL, NULL, ZOMBIE_SPAWN_Y, 1.0f, false, {255,150,0,255},  false, false, false, 'F'},
     {"health",   NULL, NULL, BONUS_Y_HEIGHT, 1.0f, false, {255,255,0,255},  false, false, false, 'H'},
     {"key",      NULL, NULL, BONUS_Y_HEIGHT, 1.0f, false, {255,215,0,255},  false, false, false, 'K'},
+    {"weapon",   NULL, NULL, BONUS_Y_HEIGHT, 1.0f, false, {0,150,255,255},  false, false, false, 'W'},
+    {"double",   NULL, NULL, BONUS_Y_HEIGHT, 1.0f, false, {0,200,200,255},  false, false, false, 'D'},
     {"player",   NULL, NULL, ZOMBIE_SPAWN_Y, 1.0f, false, {0,255,0,255},    false, false, false, 'P'},
     {"brick",    NULL, NULL, 0.0f, 0.0f, false, {139,90,43,255},   false, false, false, 0},
     {"green",    NULL, NULL, 0.0f, 0.0f, false, {0,150,0,255},     false, false, false, 0},
@@ -116,8 +118,8 @@ static PaletteItem allItems[] = {
 };
 
 static const char terrainChars[] = {'&', '@', '#', '0', '.', ' '};
-static int categoryStart[] = {0, 5, 8, 11, 13, 14};
-static int categoryCount[] = {5, 3, 3, 2, 1, 6};
+static int categoryStart[] = {0, 5, 8, 11, 15, 16};
+static int categoryCount[] = {5, 3, 3, 4, 1, 6};
 static const char *doorWallTexNames[] = {"brick", "green", "white"};
 static const int DOOR_WALL_TEX_COUNT = 3;
 
@@ -307,7 +309,7 @@ static void LoadEnemyFile(EditorState *s, int lvl) {
                 if (!inToken) {
                     char c = line[i];
                     if ((c == 'Z' || c == 'M' || c == 'F' ||
-                         c == 'H' || c == 'K' || c == 'P') &&
+                         c == 'H' || c == 'K' || c == 'P' || c == 'W' || c == 'D') &&
                         s->enemyCount < MAX_ENEMIES) {
                         s->enemies[s->enemyCount].col = col;
                         s->enemies[s->enemyCount].row = row;
@@ -788,6 +790,8 @@ static Texture2D GetEnemyTexture(EditorState *s, char type) {
         case 'F': return s->texFast;
         case 'H': return s->texHealth;
         case 'K': return s->texKey;
+        case 'W': return s->texWeapon;
+        case 'D': return s->texWeapon2;
         default: return s->texZombie;
     }
 }
@@ -953,11 +957,15 @@ int main(int argc, char *argv[]) {
     state.texFast = LoadTexture("tex/zombi_fast/zombi_fast.png");
     state.texHealth = LoadTexture("tex/bonus/medic.png");
     state.texKey = LoadTexture("tex/bonus/key.png");
+    state.texWeapon = LoadTexture("tex/weapons/gun.png");
+    state.texWeapon2 = LoadTexture("tex/weapons/gun_1.png");
     SetTextureFilter(state.texZombie, TEXTURE_FILTER_POINT);
     SetTextureFilter(state.texMilitary, TEXTURE_FILTER_POINT);
     SetTextureFilter(state.texFast, TEXTURE_FILTER_POINT);
     SetTextureFilter(state.texHealth, TEXTURE_FILTER_POINT);
     SetTextureFilter(state.texKey, TEXTURE_FILTER_POINT);
+    SetTextureFilter(state.texWeapon, TEXTURE_FILTER_POINT);
+    SetTextureFilter(state.texWeapon2, TEXTURE_FILTER_POINT);
     LoadEditorModels(state.models, shader);
     LoadDecorFile(&state, levelIndex);
     LoadEnemyFile(&state, levelIndex);
@@ -1011,7 +1019,7 @@ int main(int argc, char *argv[]) {
 
     UnloadEditorModels(state.models);
     UnloadTexture(state.texZombie); UnloadTexture(state.texMilitary); UnloadTexture(state.texFast);
-    UnloadTexture(state.texHealth); UnloadTexture(state.texKey);
+    UnloadTexture(state.texHealth); UnloadTexture(state.texKey); UnloadTexture(state.texWeapon); UnloadTexture(state.texWeapon2);
     UnloadLevel(level);
     UnloadTexture(floorTex); UnloadTexture(planksTex);
     UnloadTexture(wallTex); UnloadTexture(greenTex); UnloadTexture(whiteTex);

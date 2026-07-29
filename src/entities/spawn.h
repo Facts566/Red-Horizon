@@ -11,12 +11,13 @@ struct ZombieSpawn {
 
 int LoadZombieSpawns(const char *path, ZombieSpawn *spawns, int maxSpawns);
 
-enum BonusType { BONUS_HEALTH, BONUS_KEY };
+enum BonusType { BONUS_HEALTH, BONUS_KEY, BONUS_WEAPON };
 
 struct BonusSpawn {
     int col;
     int row;
     BonusType type;
+    int weaponIndex;
 };
 
 int LoadBonusSpawns(const char *path, BonusSpawn *spawns, int maxSpawns);

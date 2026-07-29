@@ -53,7 +53,7 @@ struct Game {
     Texture2D zombiIdle, zombiWalk1, zombiWalk2, zombiDead;
     Texture2D milIdle, milWalk1, milWalk2, milDead;
     Texture2D fastIdle, fastWalk1, fastWalk2, fastDead;
-    Texture2D shotholeTex, medicTex, keyTex;
+    Texture2D shotholeTex, medicTex, keyTex, weaponTex;
     Texture2D floorTex, wallTex, greenTex, planksTex, whiteWallTex;
 
     Sound stepSound;
