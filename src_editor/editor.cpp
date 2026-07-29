@@ -84,6 +84,8 @@ struct EditorState {
     int selectedEnemyIdx;
     int doorWallTexLeft;
     int doorWallTexRight;
+    Texture2D texZombie, texMilitary, texFast;
+    Texture2D texHealth, texKey;
 };
 
 static const char *categoryNames[] = {
@@ -743,6 +745,36 @@ static void DrawDoorCaps(EditorState *s, Vector3 doorPos, float rotation, const 
     DrawModelEx(capR, capRPos, {0,1,0}, rotation, {1,1,1}, tint);
 }
 
+static void DrawEditorBillboard(Camera3D camera, Vector3 pos, Texture2D tex, float size, Color tint) {
+    Vector3 forward = Vector3Normalize(Vector3Subtract(camera.position, pos));
+    Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, {0, 1.0f, 0.0f}));
+    Vector3 up = {0, 1.0f, 0};
+    Vector3 bl = Vector3Subtract(pos, Vector3Add(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
+    Vector3 br = Vector3Add(pos, Vector3Subtract(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
+    Vector3 tr = Vector3Add(pos, Vector3Add(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
+    Vector3 tl = Vector3Add(pos, Vector3Subtract(Vector3Scale(up, size * 0.5f), Vector3Scale(right, size * 0.5f)));
+    rlSetTexture(tex.id);
+    rlBegin(RL_QUADS);
+        rlColor4ub(tint.r, tint.g, tint.b, tint.a);
+        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(bl.x, bl.y, bl.z);
+        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(br.x, br.y, br.z);
+        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(tr.x, tr.y, tr.z);
+        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(tl.x, tl.y, tl.z);
+    rlEnd();
+    rlSetTexture(0);
+}
+
+static Texture2D GetEnemyTexture(EditorState *s, char type) {
+    switch (type) {
+        case 'Z': return s->texZombie;
+        case 'M': return s->texMilitary;
+        case 'F': return s->texFast;
+        case 'H': return s->texHealth;
+        case 'K': return s->texKey;
+        default: return s->texZombie;
+    }
+}
+
 static void DrawEditorObjects(EditorState *s) {
     for (int i = 0; i < s->objectCount; i++) {
         EditorObject &o = s->objects[i];
@@ -766,17 +798,8 @@ static void DrawEditorObjects(EditorState *s) {
         EnemyPlacement &e = s->enemies[i];
         Vector3 pos = {(float)e.col * TILE_SIZE + TILE_SIZE / 2.0f, ZOMBIE_SPAWN_Y,
                        (float)e.row * TILE_SIZE + TILE_SIZE / 2.0f};
-        Color ec;
-        switch (e.type) {
-            case 'Z': ec = RED; break;
-            case 'M': ec = DARKGRAY; break;
-            case 'F': ec = ORANGE; break;
-            case 'H': ec = YELLOW; break;
-            case 'K': ec = GOLD; break;
-            case 'P': ec = GREEN; break;
-            default: ec = WHITE; break;
-        }
-        DrawSphere(pos, 2.0f, ec);
+        Texture2D tex = GetEnemyTexture(s, e.type);
+        DrawEditorBillboard(s->camera, pos, tex, ZOMBIE_BILLBOARD_SIZE, WHITE);
         if (IsSelectedEnemy(s, i)) {
             DrawSphereWires(pos, 3.0f, 8, 8, YELLOW);
         }
@@ -798,7 +821,8 @@ static void DrawGhost(EditorState *s) {
     pos.y = item->defaultY + s->previewYOffset;
     Color tint = ColorAlpha(item->color, 0.7f);
     if (item->enemyChar != 0) {
-        DrawSphere(pos, 2.0f, tint);
+        Texture2D tex = GetEnemyTexture(s, item->enemyChar);
+        DrawEditorBillboard(s->camera, pos, tex, ZOMBIE_BILLBOARD_SIZE, ColorAlpha(WHITE, 0.7f));
     } else if (item->isDoor) {
         DrawModelEx(s->models.doorBox, pos, {0,1,0}, s->previewRotation, {5.0f, 15.0f, 1.0f}, tint);
         const char *lName = doorWallTexNames[s->doorWallTexLeft];
@@ -899,6 +923,16 @@ int main(int argc, char *argv[]) {
     state.selectedEnemyIdx = -1;
     state.doorWallTexLeft = 0;
     state.doorWallTexRight = 0;
+    state.texZombie = LoadTexture("tex/zombi/zombi.png");
+    state.texMilitary = LoadTexture("tex/zombie_military/zombie_military.png");
+    state.texFast = LoadTexture("tex/zombi_fast/zombi_fast.png");
+    state.texHealth = LoadTexture("tex/bonus/medic.png");
+    state.texKey = LoadTexture("tex/bonus/key.png");
+    SetTextureFilter(state.texZombie, TEXTURE_FILTER_POINT);
+    SetTextureFilter(state.texMilitary, TEXTURE_FILTER_POINT);
+    SetTextureFilter(state.texFast, TEXTURE_FILTER_POINT);
+    SetTextureFilter(state.texHealth, TEXTURE_FILTER_POINT);
+    SetTextureFilter(state.texKey, TEXTURE_FILTER_POINT);
     LoadEditorModels(state.models, shader);
     LoadDecorFile(&state, levelIndex);
     LoadEnemyFile(&state, levelIndex);
@@ -951,6 +985,8 @@ int main(int argc, char *argv[]) {
     SaveEnemyFile(&state, levelIndex);
 
     UnloadEditorModels(state.models);
+    UnloadTexture(state.texZombie); UnloadTexture(state.texMilitary); UnloadTexture(state.texFast);
+    UnloadTexture(state.texHealth); UnloadTexture(state.texKey);
     UnloadLevel(level);
     UnloadTexture(floorTex); UnloadTexture(planksTex);
     UnloadTexture(wallTex); UnloadTexture(greenTex); UnloadTexture(whiteTex);
