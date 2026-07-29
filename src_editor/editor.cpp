@@ -837,7 +837,6 @@ int main(int argc, char *argv[]) {
 
     SaveDecorFile(&state, levelIndex);
     SaveEnemyFile(&state, levelIndex);
-    SaveMapFile(&state, levelIndex);
 
     UnloadEditorModels(state.models);
     UnloadLevel(level);
