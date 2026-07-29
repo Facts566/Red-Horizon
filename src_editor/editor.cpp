@@ -558,8 +558,8 @@ static void HandleInput(EditorState *s, int lvl) {
     } else {
         s->previewRotation += wheel * 15.0f;
     }
-    if (IsKeyPressed(KEY_E)) PlaceObject(s);
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) SelectAtCrosshair(s);
+    if (IsKeyPressed(KEY_E)) SelectAtCrosshair(s);
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) PlaceObject(s);
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
         int type, idx;
         Vector3 hit;
@@ -735,8 +735,8 @@ static void DrawHUD(EditorState *s) {
         DrawText("Mouse - Look around", x, y, 14, LIGHTGRAY); y += lh - 2;
         DrawText("Tab - Cycle category", x, y, 14, LIGHTGRAY); y += lh - 2;
         DrawText("1-9 - Select item in palette", x, y, 14, LIGHTGRAY); y += lh - 2;
-        DrawText("E - Place new object", x, y, 14, LIGHTGRAY); y += lh - 2;
-        DrawText("Left Click - Select existing object", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("E - Select object", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("Left Click - Place new object", x, y, 14, LIGHTGRAY); y += lh - 2;
         DrawText("Right Click - Delete under crosshair", x, y, 14, LIGHTGRAY); y += lh - 2;
         DrawText("Wheel - rotate | Shift+Wheel - Y | Ctrl+Wheel - scale", x, y, 14, LIGHTGRAY); y += lh - 2;
         DrawText("G - Toggle grid | Enter - Save", x, y, 14, LIGHTGRAY);
