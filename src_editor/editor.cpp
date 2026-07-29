@@ -18,6 +18,7 @@
 enum EditorCategory {
     CAT_DECOR = 0,
     CAT_DOORS,
+    CAT_KEYDOOR,
     CAT_ENEMIES,
     CAT_BONUSES,
     CAT_PLAYER,
@@ -89,7 +90,7 @@ struct EditorState {
 };
 
 static const char *categoryNames[] = {
-    "DECOR", "DOORS", "ENEMIES", "BONUSES", "PLAYER", "TERRAIN"
+    "DECOR", "DOORS", "KEYDOOR", "ENEMIES", "BONUSES", "PLAYER", "TERRAIN"
 };
 
 static PaletteItem allItems[] = {
@@ -99,8 +100,8 @@ static PaletteItem allItems[] = {
     {"trash",    "models/trash.obj", "tex/decor/trash.png", 3.0f,  3.0f,  true,  {128,128,128,255}, false, false, false, 0},
     {"box",      NULL,               "tex/decor/box.png",   2.5f,  5.0f,  true,  {200,150,50,255},  false, false, false, 0},
     {"door",     NULL, NULL, 0.0f, 1.0f, false, {0,100,255,255},  true, false, false, 0},
-    {"door",     NULL, NULL, 0.0f, 1.0f, false, {255,50,50,255},  true, true,  false, 0},
     {"door",     NULL, NULL, 0.0f, 1.0f, false, {50,255,50,255},  true, false, true,  0},
+    {"door",     NULL, NULL, 0.0f, 1.0f, false, {255,50,50,255},  true, true,  false, 0},
     {"zombie",   NULL, NULL, ZOMBIE_SPAWN_Y, 1.0f, false, {255,50,50,255},  false, false, false, 'Z'},
     {"military", NULL, NULL, ZOMBIE_SPAWN_Y, 1.0f, false, {80,80,80,255},   false, false, false, 'M'},
     {"fast",     NULL, NULL, ZOMBIE_SPAWN_Y, 1.0f, false, {255,150,0,255},  false, false, false, 'F'},
@@ -118,8 +119,8 @@ static PaletteItem allItems[] = {
 };
 
 static const char terrainChars[] = {'&', '@', '#', '0', '.', ' '};
-static int categoryStart[] = {0, 5, 8, 11, 15, 16};
-static int categoryCount[] = {5, 3, 3, 4, 1, 6};
+static int categoryStart[] = {0, 5, 7, 8, 11, 15, 16};
+static int categoryCount[] = {5, 2, 1, 3, 4, 1, 6};
 static const char *doorWallTexNames[] = {"brick", "green", "white"};
 static const int DOOR_WALL_TEX_COUNT = 3;
 
@@ -612,7 +613,7 @@ static void HandleInput(EditorState *s, int lvl) {
         s->previewScale = 1.0f;
     }
 
-    if (s->category == CAT_DOORS) {
+    if ((s->category == CAT_DOORS || s->category == CAT_KEYDOOR)) {
         for (int i = 0; i < DOOR_WALL_TEX_COUNT; i++) {
             if (IsKeyPressed(KEY_ONE + i)) {
                 if (IsKeyDown(KEY_LEFT_SHIFT)) {
@@ -894,7 +895,7 @@ static void DrawHUD(EditorState *s) {
         DrawText(TextFormat("Category: %s", categoryNames[s->category]), x, y, 16, YELLOW); y += lh;
         PaletteItem *item = CurrentItem(s);
         DrawText(TextFormat("Selected: %s", item->name), x, y, 16, GREEN); y += lh;
-        if (s->category == CAT_DOORS) {
+        if ((s->category == CAT_DOORS || s->category == CAT_KEYDOOR)) {
             DrawText(TextFormat("Left wall:  %s (1/2/3)", doorWallTexNames[s->doorWallTexLeft]), x, y, 16, SKYBLUE); y += lh;
             DrawText(TextFormat("Right wall: %s (Shift+1/2/3)", doorWallTexNames[s->doorWallTexRight]), x, y, 16, SKYBLUE); y += lh;
         }
@@ -908,7 +909,7 @@ static void DrawHUD(EditorState *s) {
         DrawText("Left Click - Place new object", x, y, 14, LIGHTGRAY); y += lh - 2;
         DrawText("Right Click - Delete under crosshair", x, y, 14, LIGHTGRAY); y += lh - 2;
         DrawText("Wheel - rotate | Shift+Wheel - Y | Ctrl+Wheel - scale", x, y, 14, LIGHTGRAY); y += lh - 2;
-        if (s->category == CAT_DOORS) {
+        if ((s->category == CAT_DOORS || s->category == CAT_KEYDOOR)) {
             DrawText("Alt+Wheel - left wall | Alt+Shift+Wheel - right wall", x, y, 14, SKYBLUE); y += lh - 2;
         }
         DrawText("G - Toggle grid | Enter - Save", x, y, 14, LIGHTGRAY);
