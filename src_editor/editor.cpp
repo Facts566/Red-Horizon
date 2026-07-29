@@ -322,9 +322,16 @@ static void SaveMapFile(EditorState *s, int lvl) {
     int w = s->level.width;
     int h = s->level.height;
     for (int r = 0; r < h; r++) {
+        int last = -1;
         for (int c = 0; c < w; c++) {
-            fprintf(f, "%c", s->level.data[r * w + c]);
-            if (c < w - 1) fprintf(f, " ");
+            char ch = s->level.data[r * w + c];
+            if (ch != ' ' && ch != '\0') last = c;
+        }
+        for (int c = 0; c <= last; c++) {
+            char ch = s->level.data[r * w + c];
+            if (ch == '\0') ch = ' ';
+            fprintf(f, "%c", ch);
+            if (c < last) fprintf(f, " ");
         }
         fprintf(f, "\n");
     }
@@ -542,6 +549,7 @@ static void HandleInput(EditorState *s, int lvl) {
         if (IsKeyPressed(KEY_ENTER)) {
             SaveDecorFile(s, lvl);
             SaveEnemyFile(s, lvl);
+            SaveMapFile(s, lvl);
             strcpy(s->statusMsg, "SAVED!");
             s->statusTimer = 2.0f;
         }

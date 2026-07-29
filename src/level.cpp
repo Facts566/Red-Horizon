@@ -52,6 +52,9 @@ Level LoadLevel(const char *path, float tileSize, float wallHeight, Texture2D fl
         }
     }
 
+    for (int i = 0; i < maxW * h; i++)
+        if (level.data[i] == '\0') level.data[i] = ' ';
+
     level.playerStart.y = wallHeight / 2.0f;
     free(buf);
 
