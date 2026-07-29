@@ -14,3 +14,8 @@ obj lamp 28.7 14.9 19.0 0 0.5 0
 door 21.5 14.5 -90 0 0 green brick
 obj lamp 13.4 4.1 19.0 0 0.5 0
 door 34.5 14.5 -270 0 0 green brick
+obj trash 17.4 10.8 3.0 -60 3.0 1
+obj trash 10.6 10.8 3.0 60 3.0 1
+obj trash 10.5 20.1 3.0 525 3.0 1
+door 19.5 5.5 -90 0 0 white green
+door 34.5 5.5 90 0 0 white brick
