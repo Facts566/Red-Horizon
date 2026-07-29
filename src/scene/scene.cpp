@@ -30,28 +30,16 @@ void LoadDecor(Scene &scene, const char *decorPath, Shader shader, Texture2D gre
         } else if (strncmp(line, "door", 4) == 0) {
             float col, row, rot;
             int locked, exit;
-            if (sscanf(line, "door %f %f %f %d %d", &col, &row, &rot, &locked, &exit) == 5) {
-                float rad = rot * 3.14159f / 180.0f;
-                float sx = sinf(rad);
-                float sz = cosf(rad);
-                int c = (int)roundf(col);
-                int r = (int)roundf(row);
-                int dcLeft = c - (int)roundf(sx);
-                int drLeft = r - (int)roundf(sz);
-                int dcRight = c + (int)roundf(sx);
-                int drRight = r + (int)roundf(sz);
-
-                auto getWallTex = [&](int tc, int tr) -> Texture2D {
-                    if (tc < 0 || tc >= level.width || tr < 0 || tr >= level.height) return wallTex;
-                    char ch = level.data[tr * level.width + tc];
-                    if (ch == '#') return whiteTex;
-                    if (ch == '@') return greenTex;
-                    return wallTex;
-                };
-
-                Texture2D capLeft = getWallTex(dcLeft, drLeft);
-                Texture2D capRight = getWallTex(dcRight, drRight);
-                AddDoor(scene, TilePos(col, row), rot, scene.doorTexClosed, scene.doorTexOpen, capLeft, capRight, shader, shotholeTex, locked != 0, exit != 0);
+            char wl[16] = "brick", wr[16] = "brick";
+            if (sscanf(line, "door %f %f %f %d %d %15s %15s", &col, &row, &rot, &locked, &exit, wl, wr) >= 5) {
+                Texture2D capLeftTex, capRightTex;
+                if (strcmp(wl, "green") == 0) capLeftTex = greenTex;
+                else if (strcmp(wl, "white") == 0) capLeftTex = whiteTex;
+                else capLeftTex = wallTex;
+                if (strcmp(wr, "green") == 0) capRightTex = greenTex;
+                else if (strcmp(wr, "white") == 0) capRightTex = whiteTex;
+                else capRightTex = wallTex;
+                AddDoor(scene, TilePos(col, row), rot, scene.doorTexClosed, scene.doorTexOpen, capLeftTex, capRightTex, shader, shotholeTex, locked != 0, exit != 0);
             }
         }
     }

@@ -31,6 +31,8 @@ struct EditorObject {
     bool collision;
     bool isDoor;
     bool isLocked, isExit;
+    char wallTexTypeLeft[16];
+    char wallTexTypeRight[16];
 };
 
 struct EnemyPlacement {
@@ -77,6 +79,8 @@ struct EditorState {
     float statusTimer;
     int selectedObjIdx;
     int selectedEnemyIdx;
+    int doorWallTexLeft;
+    int doorWallTexRight;
 };
 
 static const char *categoryNames[] = {
@@ -109,6 +113,8 @@ static PaletteItem allItems[] = {
 static const char terrainChars[] = {'&', '@', '#', '0', '.', ' '};
 static int categoryStart[] = {0, 5, 8, 11, 13, 14};
 static int categoryCount[] = {5, 3, 3, 2, 1, 6};
+static const char *doorWallTexNames[] = {"brick", "green", "white"};
+static const int DOOR_WALL_TEX_COUNT = 3;
 
 static Vector3 TilePos(float col, float row, float y = 0.0f) {
     return {col * TILE_SIZE + TILE_SIZE / 2.0f, y, row * TILE_SIZE + TILE_SIZE / 2.0f};
@@ -219,11 +225,16 @@ static void LoadDecorFile(EditorState *s, int lvl) {
                    &obj.rotation, &obj.scale, (int*)&obj.collision) == 7) {
             s->objects[s->objectCount++] = obj;
         } else if (strncmp(line, "door", 4) == 0) {
-            if (sscanf(line, "door %f %f %f %d %d",
+            char wl[16] = "brick", wr[16] = "brick";
+            if (sscanf(line, "door %f %f %f %d %d %15s %15s",
                       &obj.col, &obj.row, &obj.rotation,
-                      (int*)&obj.isLocked, (int*)&obj.isExit) == 5) {
+                      (int*)&obj.isLocked, (int*)&obj.isExit, wl, wr) >= 5) {
                 strcpy(obj.type, "door");
                 obj.isDoor = true;
+                strncpy(obj.wallTexTypeLeft, wl, sizeof(obj.wallTexTypeLeft) - 1);
+                obj.wallTexTypeLeft[sizeof(obj.wallTexTypeLeft) - 1] = '\0';
+                strncpy(obj.wallTexTypeRight, wr, sizeof(obj.wallTexTypeRight) - 1);
+                obj.wallTexTypeRight[sizeof(obj.wallTexTypeRight) - 1] = '\0';
                 s->objects[s->objectCount++] = obj;
             }
         }
@@ -239,8 +250,10 @@ static void SaveDecorFile(EditorState *s, int lvl) {
     for (int i = 0; i < s->objectCount; i++) {
         EditorObject &o = s->objects[i];
         if (o.isDoor) {
-            fprintf(f, "door %.1f %.1f %.0f %d %d\n",
-                    o.col, o.row, o.rotation, o.isLocked ? 1 : 0, o.isExit ? 1 : 0);
+            fprintf(f, "door %.1f %.1f %.0f %d %d %s %s\n",
+                    o.col, o.row, o.rotation, o.isLocked ? 1 : 0, o.isExit ? 1 : 0,
+                    o.wallTexTypeLeft[0] ? o.wallTexTypeLeft : "brick",
+                    o.wallTexTypeRight[0] ? o.wallTexTypeRight : "brick");
         } else {
             fprintf(f, "obj %s %.1f %.1f %.1f %.0f %.1f %d\n",
                     o.type, o.col, o.row, o.y, o.rotation, o.scale, o.collision ? 1 : 0);
@@ -395,6 +408,13 @@ static void PlaceObject(EditorState *s) {
         o.isDoor = item->isDoor;
         o.isLocked = item->isLocked;
         o.isExit = item->isExit;
+        if (o.isDoor) {
+            strncpy(o.wallTexTypeLeft, doorWallTexNames[s->doorWallTexLeft], sizeof(o.wallTexTypeLeft) - 1);
+            strncpy(o.wallTexTypeRight, doorWallTexNames[s->doorWallTexRight], sizeof(o.wallTexTypeRight) - 1);
+        } else {
+            o.wallTexTypeLeft[0] = '\0';
+            o.wallTexTypeRight[0] = '\0';
+        }
         strcpy(s->statusMsg, TextFormat("Placed %s", item->name));
     }
     s->statusTimer = 1.5f;
@@ -501,7 +521,20 @@ static void HandleInput(EditorState *s, int lvl) {
         float wheel = GetMouseWheelMove();
         if (s->selectedObjIdx >= 0) {
             EditorObject &o = s->objects[s->selectedObjIdx];
-            if (IsKeyDown(KEY_LEFT_SHIFT)) {
+            if (o.isDoor && IsKeyDown(KEY_LEFT_ALT)) {
+                bool right = IsKeyDown(KEY_LEFT_SHIFT);
+                char *wt = right ? o.wallTexTypeRight : o.wallTexTypeLeft;
+                wt[15] = '\0';
+                int cur = 0;
+                for (int i = 0; i < DOOR_WALL_TEX_COUNT; i++)
+                    if (strcmp(wt, doorWallTexNames[i]) == 0) { cur = i; break; }
+                if (wheel > 0) cur = (cur + 1) % DOOR_WALL_TEX_COUNT;
+                else if (wheel < 0) cur = (cur - 1 + DOOR_WALL_TEX_COUNT) % DOOR_WALL_TEX_COUNT;
+                strncpy(wt, doorWallTexNames[cur], 15);
+                wt[15] = '\0';
+                strcpy(s->statusMsg, TextFormat("Wall %s: %s", right ? "R" : "L", wt));
+                s->statusTimer = 1.5f;
+            } else if (IsKeyDown(KEY_LEFT_SHIFT)) {
                 o.y += wheel * 2.0f;
             } else if (IsKeyDown(KEY_LEFT_CONTROL)) {
                 o.scale += wheel * 0.1f;
@@ -528,12 +561,28 @@ static void HandleInput(EditorState *s, int lvl) {
         s->previewYOffset = 0;
         s->previewScale = 1.0f;
     }
-    for (int i = 0; i < 9; i++) {
-        if (IsKeyPressed(KEY_ONE + i) && i < categoryCount[s->category]) {
-            s->selection = i;
-            s->previewRotation = 0;
-            s->previewYOffset = 0;
-            s->previewScale = 1.0f;
+
+    if (s->category == CAT_DOORS) {
+        for (int i = 0; i < DOOR_WALL_TEX_COUNT; i++) {
+            if (IsKeyPressed(KEY_ONE + i)) {
+                if (IsKeyDown(KEY_LEFT_SHIFT)) {
+                    s->doorWallTexRight = i;
+                    strcpy(s->statusMsg, TextFormat("Right wall: %s", doorWallTexNames[i]));
+                } else {
+                    s->doorWallTexLeft = i;
+                    strcpy(s->statusMsg, TextFormat("Left wall: %s", doorWallTexNames[i]));
+                }
+                s->statusTimer = 1.5f;
+            }
+        }
+    } else {
+        for (int i = 0; i < 9; i++) {
+            if (IsKeyPressed(KEY_ONE + i) && i < categoryCount[s->category]) {
+                s->selection = i;
+                s->previewRotation = 0;
+                s->previewYOffset = 0;
+                s->previewScale = 1.0f;
+            }
         }
     }
     if (IsKeyPressed(KEY_G)) s->showGrid = !s->showGrid;
@@ -736,6 +785,10 @@ static void DrawHUD(EditorState *s) {
         DrawText(TextFormat("Category: %s", categoryNames[s->category]), x, y, 16, YELLOW); y += lh;
         PaletteItem *item = CurrentItem(s);
         DrawText(TextFormat("Selected: %s", item->name), x, y, 16, GREEN); y += lh;
+        if (s->category == CAT_DOORS) {
+            DrawText(TextFormat("Left wall:  %s (1/2/3)", doorWallTexNames[s->doorWallTexLeft]), x, y, 16, SKYBLUE); y += lh;
+            DrawText(TextFormat("Right wall: %s (Shift+1/2/3)", doorWallTexNames[s->doorWallTexRight]), x, y, 16, SKYBLUE); y += lh;
+        }
         DrawText(TextFormat("Objects: %d | Enemies: %d", s->objectCount, s->enemyCount), x, y, 16, LIGHTGRAY); y += lh + 10;
         DrawText("CONTROLS:", x, y, 16, WHITE); y += lh;
         DrawText("WASD/Space/Shift - Move camera", x, y, 14, LIGHTGRAY); y += lh - 2;
@@ -746,6 +799,9 @@ static void DrawHUD(EditorState *s) {
         DrawText("Left Click - Place new object", x, y, 14, LIGHTGRAY); y += lh - 2;
         DrawText("Right Click - Delete under crosshair", x, y, 14, LIGHTGRAY); y += lh - 2;
         DrawText("Wheel - rotate | Shift+Wheel - Y | Ctrl+Wheel - scale", x, y, 14, LIGHTGRAY); y += lh - 2;
+        if (s->category == CAT_DOORS) {
+            DrawText("Alt+Wheel - left wall | Alt+Shift+Wheel - right wall", x, y, 14, SKYBLUE); y += lh - 2;
+        }
         DrawText("G - Toggle grid | Enter - Save", x, y, 14, LIGHTGRAY);
     }
 
@@ -794,6 +850,8 @@ int main(int argc, char *argv[]) {
     state.previewScale = 1.0f;
     state.selectedObjIdx = -1;
     state.selectedEnemyIdx = -1;
+    state.doorWallTexLeft = 0;
+    state.doorWallTexRight = 0;
     LoadEditorModels(state.models, shader);
     LoadDecorFile(&state, levelIndex);
     LoadEnemyFile(&state, levelIndex);
