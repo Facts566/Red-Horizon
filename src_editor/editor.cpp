@@ -815,8 +815,12 @@ static void DrawEditorObjects(EditorState *s) {
         EnemyPlacement &e = s->enemies[i];
         Vector3 pos = {(float)e.col * TILE_SIZE + TILE_SIZE / 2.0f, ZOMBIE_SPAWN_Y,
                        (float)e.row * TILE_SIZE + TILE_SIZE / 2.0f};
-        Texture2D tex = GetEnemyTexture(s, e.type);
-        DrawEditorBillboard(s->camera, pos, tex, ZOMBIE_BILLBOARD_SIZE, WHITE);
+        if (e.type == 'P') {
+            DrawSphere(pos, 2.0f, GREEN);
+        } else {
+            Texture2D tex = GetEnemyTexture(s, e.type);
+            DrawEditorBillboard(s->camera, pos, tex, ZOMBIE_BILLBOARD_SIZE, WHITE);
+        }
         if (IsSelectedEnemy(s, i)) {
             DrawSphereWires(pos, 3.0f, 8, 8, YELLOW);
         }
@@ -838,8 +842,12 @@ static void DrawGhost(EditorState *s) {
     pos.y = item->defaultY + s->previewYOffset;
     Color tint = ColorAlpha(item->color, 0.7f);
     if (item->enemyChar != 0) {
-        Texture2D tex = GetEnemyTexture(s, item->enemyChar);
-        DrawEditorBillboard(s->camera, pos, tex, ZOMBIE_BILLBOARD_SIZE, ColorAlpha(WHITE, 0.7f));
+        if (item->enemyChar == 'P') {
+            DrawSphere(pos, 2.0f, ColorAlpha(GREEN, 0.7f));
+        } else {
+            Texture2D tex = GetEnemyTexture(s, item->enemyChar);
+            DrawEditorBillboard(s->camera, pos, tex, ZOMBIE_BILLBOARD_SIZE, ColorAlpha(WHITE, 0.7f));
+        }
     } else if (item->isDoor) {
         DrawModelEx(s->models.doorBox, pos, {0,1,0}, s->previewRotation, {5.0f, 15.0f, 1.0f}, tint);
         const char *lName = doorWallTexNames[s->doorWallTexLeft];
