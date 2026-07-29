@@ -21,6 +21,7 @@ enum EditorCategory {
     CAT_ENEMIES,
     CAT_BONUSES,
     CAT_PLAYER,
+    CAT_TERRAIN,
     CAT_COUNT
 };
 
@@ -79,7 +80,7 @@ struct EditorState {
 };
 
 static const char *categoryNames[] = {
-    "DECOR", "DOORS", "ENEMIES", "BONUSES", "PLAYER"
+    "DECOR", "DOORS", "ENEMIES", "BONUSES", "PLAYER", "TERRAIN"
 };
 
 static PaletteItem allItems[] = {
@@ -97,10 +98,17 @@ static PaletteItem allItems[] = {
     {"health",   NULL, NULL, BONUS_Y_HEIGHT, 1.0f, false, {255,255,0,255},  false, false, false, 'H'},
     {"key",      NULL, NULL, BONUS_Y_HEIGHT, 1.0f, false, {255,215,0,255},  false, false, false, 'K'},
     {"player",   NULL, NULL, ZOMBIE_SPAWN_Y, 1.0f, false, {0,255,0,255},    false, false, false, 'P'},
+    {"brick",    NULL, NULL, 0.0f, 0.0f, false, {139,90,43,255},   false, false, false, 0},
+    {"green",    NULL, NULL, 0.0f, 0.0f, false, {0,150,0,255},     false, false, false, 0},
+    {"white",    NULL, NULL, 0.0f, 0.0f, false, {200,200,200,255}, false, false, false, 0},
+    {"planks",   NULL, NULL, 0.0f, 0.0f, false, {160,120,60,255},  false, false, false, 0},
+    {"floor",    NULL, NULL, 0.0f, 0.0f, false, {100,100,100,255}, false, false, false, 0},
+    {"void",     NULL, NULL, 0.0f, 0.0f, false, {50,50,50,255},    false, false, false, 0},
 };
 
-static int categoryStart[] = {0, 5, 8, 11, 13};
-static int categoryCount[] = {5, 3, 3, 2, 1};
+static const char terrainChars[] = {'&', '@', '#', '0', '.', ' '};
+static int categoryStart[] = {0, 5, 8, 11, 13, 14};
+static int categoryCount[] = {5, 3, 3, 2, 1, 6};
 
 static Vector3 TilePos(float col, float row, float y = 0.0f) {
     return {col * TILE_SIZE + TILE_SIZE / 2.0f, y, row * TILE_SIZE + TILE_SIZE / 2.0f};
@@ -306,6 +314,23 @@ static void SaveEnemyFile(EditorState *s, int lvl) {
     free(grid);
 }
 
+static void SaveMapFile(EditorState *s, int lvl) {
+    char path[256];
+    sprintf(path, "map/level_%d/map.txt", lvl);
+    FILE *f = fopen(path, "w");
+    if (!f) return;
+    int w = s->level.width;
+    int h = s->level.height;
+    for (int r = 0; r < h; r++) {
+        for (int c = 0; c < w; c++) {
+            fprintf(f, "%c", s->level.data[r * w + c]);
+            if (c < w - 1) fprintf(f, " ");
+        }
+        fprintf(f, "\n");
+    }
+    fclose(f);
+}
+
 static void UpdateCamera(EditorState *s, float dt) {
     float speed = EDITOR_CAM_SPEED;
     if (IsKeyDown(KEY_LEFT_CONTROL)) speed *= 3.0f;
@@ -457,6 +482,9 @@ static void MoveSelectedToCrosshair(EditorState *s) {
     }
 }
 
+static void PaintTerrain(EditorState *s, char ch);
+static void DrawTerrainHighlight(EditorState *s);
+
 static void HandleInput(EditorState *s, int lvl) {
     bool hasSelection = (s->selectedObjIdx >= 0 || s->selectedEnemyIdx >= 0);
 
@@ -502,6 +530,25 @@ static void HandleInput(EditorState *s, int lvl) {
         }
     }
     if (IsKeyPressed(KEY_G)) s->showGrid = !s->showGrid;
+
+    if (s->category == CAT_TERRAIN) {
+        PaletteItem *item = CurrentItem(s);
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            PaintTerrain(s, terrainChars[s->selection]);
+        }
+        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+            PaintTerrain(s, ' ');
+        }
+        if (IsKeyPressed(KEY_ENTER)) {
+            SaveDecorFile(s, lvl);
+            SaveEnemyFile(s, lvl);
+            SaveMapFile(s, lvl);
+            strcpy(s->statusMsg, "SAVED!");
+            s->statusTimer = 2.0f;
+        }
+        return;
+    }
+
     float wheel = GetMouseWheelMove();
     if (IsKeyDown(KEY_LEFT_SHIFT)) {
         s->previewYOffset += wheel * 2.0f;
@@ -558,6 +605,36 @@ static void DrawGridOverlay(Level level) {
     }
 }
 
+static bool GetTerrainTileAtCursor(EditorState *s, int &outCol, int &outRow) {
+    Vector3 hit;
+    if (!GetFloorHit(s->camera, &hit)) return false;
+    int col = (int)floorf(hit.x / s->level.tileSize);
+    int row = (int)floorf(hit.z / s->level.tileSize);
+    if (col < 0 || col >= s->level.width || row < 0 || row >= s->level.height) return false;
+    outCol = col;
+    outRow = row;
+    return true;
+}
+
+static void PaintTerrain(EditorState *s, char ch) {
+    int col, row;
+    if (!GetTerrainTileAtCursor(s, col, row)) return;
+    s->level.data[row * s->level.width + col] = ch;
+}
+
+static void DrawTerrainHighlight(EditorState *s) {
+    int col, row;
+    if (!GetTerrainTileAtCursor(s, col, row)) return;
+    float ts = s->level.tileSize;
+    float cx = col * ts + ts / 2.0f;
+    float cz = row * ts + ts / 2.0f;
+    char cur = s->level.data[row * s->level.width + col];
+    PaletteItem *item = CurrentItem(s);
+    Color hc = YELLOW;
+    if (terrainChars[s->selection] == cur) hc = GREEN;
+    DrawCubeWires({cx, 0.3f, cz}, ts + 0.1f, 0.5f, ts + 0.1f, hc);
+}
+
 static void DrawEditorObjects(EditorState *s) {
     for (int i = 0; i < s->objectCount; i++) {
         EditorObject &o = s->objects[i];
@@ -598,6 +675,7 @@ static void DrawEditorObjects(EditorState *s) {
 }
 
 static void DrawGhost(EditorState *s) {
+    if (s->category == CAT_TERRAIN) return;
     Vector3 hit;
     if (!GetFloorHit(s->camera, &hit)) return;
     PaletteItem *item = CurrentItem(s);
@@ -634,6 +712,19 @@ static void DrawHUD(EditorState *s) {
         DrawText("Object follows crosshair", x, y, 14, LIGHTGRAY); y += lh - 2;
         DrawText("Wheel - rotate | Shift+Wheel - Y | Ctrl+Wheel - scale", x, y, 14, LIGHTGRAY); y += lh - 2;
         DrawText("Enter - confirm | Esc - cancel | Del - delete", x, y, 14, LIGHTGRAY); y += lh + 10;
+    } else if (s->category == CAT_TERRAIN) {
+        DrawText(TextFormat("Category: %s", categoryNames[s->category]), x, y, 16, YELLOW); y += lh;
+        PaletteItem *item = CurrentItem(s);
+        DrawText(TextFormat("Tool: %s (%c)", item->name, terrainChars[s->selection]), x, y, 16, GREEN); y += lh;
+        DrawText(TextFormat("Tile: %dx%d", s->level.width, s->level.height), x, y, 16, LIGHTGRAY); y += lh + 10;
+        DrawText("CONTROLS:", x, y, 16, WHITE); y += lh;
+        DrawText("WASD/Space/Shift - Move camera", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("Mouse - Look around", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("Tab - Cycle category", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("1-6 - Select terrain type", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("Left Click - Paint tile", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("Right Click - Erase (void)", x, y, 14, LIGHTGRAY); y += lh - 2;
+        DrawText("G - Toggle grid | Enter - Save all", x, y, 14, LIGHTGRAY);
     } else {
         DrawText(TextFormat("Category: %s", categoryNames[s->category]), x, y, 16, YELLOW); y += lh;
         PaletteItem *item = CurrentItem(s);
@@ -731,6 +822,7 @@ int main(int argc, char *argv[]) {
         DrawLevel(level, false);
         DrawEditorObjects(&state);
         if (state.showGrid) DrawGridOverlay(level);
+        if (state.category == CAT_TERRAIN) DrawTerrainHighlight(&state);
         if (state.selectedObjIdx < 0 && state.selectedEnemyIdx < 0)
             DrawGhost(&state);
         EndMode3D();
@@ -745,6 +837,7 @@ int main(int argc, char *argv[]) {
 
     SaveDecorFile(&state, levelIndex);
     SaveEnemyFile(&state, levelIndex);
+    SaveMapFile(&state, levelIndex);
 
     UnloadEditorModels(state.models);
     UnloadLevel(level);
