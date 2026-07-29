@@ -338,6 +338,12 @@ void DrawLevelSelect(Game &game)
     EndDrawing();
 }
 
+void UpdateWeaponUnlocks(Game &game)
+{
+    for (int i = 0; i < WEAPON_COUNT; i++)
+        game.weapons[i].unlocked = (game.currentLevel >= 2) || (i == 0);
+}
+
 void InitGame(Game &game)
 {
     game.floorTex     = LoadTexRepeat("tex/map/floor.png");
@@ -371,8 +377,7 @@ void InitGame(Game &game)
     LoadPistol(game.weapons[0], game.shader, game.shotholeTex);
     LoadWeapon(game.weapons[1], game.shader, game.shotholeTex, "tex/weapons/gun.png", "sounds/ShotShotgun.mp3", "sounds/ReloadShotgun.mp3");
     LoadDoubleBarreledShotgun(game.weapons[2], game.shader, game.shotholeTex);
-    for (int i = 0; i < WEAPON_COUNT; i++)
-        game.weapons[i].unlocked = true;
+    UpdateWeaponUnlocks(game);
     game.currentWeapon = 0;
 
     game.camera = { 0 };
@@ -438,6 +443,7 @@ void LoadLevelByIndex(Game &game, int levelIndex)
     game.wallHoles.clear();
     game.hasKey = false;
     game.currentLevel = levelIndex;
+    UpdateWeaponUnlocks(game);
 
     game.hitFlash = 0.0f;
     game.hitShakeTime = 0.0f;
@@ -457,8 +463,6 @@ void ResetGame(Game &game)
     LoadLevelByIndex(game, game.currentLevel);
     game.health = (float)game.maxHealth;
     game.currentWeapon = 0;
-    for (int i = 0; i < WEAPON_COUNT; i++)
-        game.weapons[i].unlocked = true;
 }
 
 constexpr float TRANS_FADE_DURATION = 0.4f;
