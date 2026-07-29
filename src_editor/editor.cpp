@@ -577,6 +577,23 @@ static void HandleInput(EditorState *s, int lvl) {
         if (IsKeyPressed(KEY_DELETE) || IsKeyPressed(KEY_BACKSPACE)) {
             DeleteSelected(s);
         }
+        if (s->selectedObjIdx >= 0 && s->objects[s->selectedObjIdx].isDoor) {
+            EditorObject &o = s->objects[s->selectedObjIdx];
+            for (int i = 0; i < DOOR_WALL_TEX_COUNT; i++) {
+                if (IsKeyPressed(KEY_ONE + i)) {
+                    if (IsKeyDown(KEY_LEFT_SHIFT)) {
+                        strncpy(o.wallTexTypeRight, doorWallTexNames[i], 15);
+                        o.wallTexTypeRight[15] = '\0';
+                        strcpy(s->statusMsg, TextFormat("Right wall: %s", o.wallTexTypeRight));
+                    } else {
+                        strncpy(o.wallTexTypeLeft, doorWallTexNames[i], 15);
+                        o.wallTexTypeLeft[15] = '\0';
+                        strcpy(s->statusMsg, TextFormat("Left wall: %s", o.wallTexTypeLeft));
+                    }
+                    s->statusTimer = 1.5f;
+                }
+            }
+        }
         if (IsKeyPressed(KEY_ENTER)) {
             Deselect(s);
             strcpy(s->statusMsg, "Confirmed");
