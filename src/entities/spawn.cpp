@@ -1,6 +1,7 @@
 #include "spawn.h"
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 int LoadZombieSpawns(const char *path, ZombieSpawn *spawns, int maxSpawns)
 {
@@ -82,24 +83,21 @@ int LoadBonusSpawns(const char *path, BonusSpawn *spawns, int maxSpawns)
                     spawns[count].row = row;
                     spawns[count].type = BONUS_HEALTH;
                     spawns[count].weaponIndex = 0;
-                    count++;
-                } else if (c == 'K' || c == 'k') {
-                    spawns[count].col = col;
-                    spawns[count].row = row;
-                    spawns[count].type = BONUS_KEY;
-                    spawns[count].weaponIndex = 0;
+                    spawns[count].keyId = 0;
                     count++;
                 } else if (c == 'W' || c == 'w') {
                     spawns[count].col = col;
                     spawns[count].row = row;
                     spawns[count].type = BONUS_WEAPON;
                     spawns[count].weaponIndex = 1;
+                    spawns[count].keyId = 0;
                     count++;
                 } else if (c == 'D' || c == 'd') {
                     spawns[count].col = col;
                     spawns[count].row = row;
                     spawns[count].type = BONUS_WEAPON;
                     spawns[count].weaponIndex = 2;
+                    spawns[count].keyId = 0;
                     count++;
                 }
                 col++;
@@ -109,6 +107,31 @@ int LoadBonusSpawns(const char *path, BonusSpawn *spawns, int maxSpawns)
     }
 
     free(buf);
+    return count;
+}
+
+int LoadKeySpawns(const char *path, KeySpawn *spawns, int maxSpawns)
+{
+    FILE *f = fopen(path, "r");
+    if (!f) return 0;
+
+    char line[256];
+    int count = 0;
+    while (fgets(line, sizeof(line), f) && count < maxSpawns) {
+        if (line[0] == '#' || line[0] == '\n') continue;
+        char type[32];
+        float col, row, y, rot, scale;
+        int collision, keyId = 0;
+        if (sscanf(line, "obj %31s %f %f %f %f %f %d %d", type, &col, &row, &y, &rot, &scale, &collision, &keyId) >= 7) {
+            if (strcmp(type, "key") == 0) {
+                spawns[count].col = (int)col;
+                spawns[count].row = (int)row;
+                spawns[count].keyId = keyId;
+                count++;
+            }
+        }
+    }
+    fclose(f);
     return count;
 }
 

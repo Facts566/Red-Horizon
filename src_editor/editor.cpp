@@ -34,6 +34,7 @@ struct EditorObject {
     bool isLocked, isExit;
     char wallTexTypeLeft[16];
     char wallTexTypeRight[16];
+    int keyId;
 };
 
 struct EnemyPlacement {
@@ -87,6 +88,8 @@ struct EditorState {
     int doorWallTexRight;
     Texture2D texZombie, texMilitary, texFast;
     Texture2D texHealth, texKey, texWeapon, texWeapon2;
+    bool editingKeyId;
+    char keyIdInput[8];
 };
 
 static const char *categoryNames[] = {
@@ -106,7 +109,7 @@ static PaletteItem allItems[] = {
     {"military", NULL, NULL, ZOMBIE_SPAWN_Y, 1.0f, false, {80,80,80,255},   false, false, false, 'M'},
     {"fast",     NULL, NULL, ZOMBIE_SPAWN_Y, 1.0f, false, {255,150,0,255},  false, false, false, 'F'},
     {"health",   NULL, NULL, BONUS_Y_HEIGHT, 1.0f, false, {255,255,0,255},  false, false, false, 'H'},
-    {"key",      NULL, NULL, BONUS_Y_HEIGHT, 1.0f, false, {255,215,0,255},  false, false, false, 'K'},
+    {"key",      NULL, NULL, BONUS_Y_HEIGHT, 1.0f, false, {255,215,0,255},  false, false, false, 0},
     {"weapon",   NULL, NULL, BONUS_Y_HEIGHT, 1.0f, false, {0,150,255,255},  false, false, false, 'W'},
     {"double",   NULL, NULL, BONUS_Y_HEIGHT, 1.0f, false, {0,200,200,255},  false, false, false, 'D'},
     {"player",   NULL, NULL, ZOMBIE_SPAWN_Y, 1.0f, false, {0,255,0,255},    false, false, false, 'P'},
@@ -251,15 +254,17 @@ static void LoadDecorFile(EditorState *s, int lvl) {
     while (fgets(line, sizeof(line), f) && s->objectCount < MAX_EDITOR_OBJECTS) {
         if (line[0] == '#' || line[0] == '\n') continue;
         EditorObject obj = {};
-        if (sscanf(line, "obj %31s %f %f %f %f %f %d",
+        if (sscanf(line, "obj %31s %f %f %f %f %f %d %d",
                    obj.type, &obj.col, &obj.row, &obj.y,
-                   &obj.rotation, &obj.scale, (int*)&obj.collision) == 7) {
+                   &obj.rotation, &obj.scale, (int*)&obj.collision, &obj.keyId) >= 7) {
+            if (obj.keyId < 0 || obj.keyId > 9) obj.keyId = 0;
             s->objects[s->objectCount++] = obj;
         } else if (strncmp(line, "door", 4) == 0) {
             char wl[16] = "brick", wr[16] = "brick";
-            if (sscanf(line, "door %f %f %f %d %d %15s %15s",
+            obj.keyId = 0;
+            if (sscanf(line, "door %f %f %f %d %d %15s %15s %d",
                       &obj.col, &obj.row, &obj.rotation,
-                      (int*)&obj.isLocked, (int*)&obj.isExit, wl, wr) >= 5) {
+                      (int*)&obj.isLocked, (int*)&obj.isExit, wl, wr, &obj.keyId) >= 5) {
                 strcpy(obj.type, "door");
                 obj.isDoor = true;
                 strncpy(obj.wallTexTypeLeft, wl, sizeof(obj.wallTexTypeLeft) - 1);
@@ -281,13 +286,26 @@ static void SaveDecorFile(EditorState *s, int lvl) {
     for (int i = 0; i < s->objectCount; i++) {
         EditorObject &o = s->objects[i];
         if (o.isDoor) {
-            fprintf(f, "door %.1f %.1f %.0f %d %d %s %s\n",
-                    o.col, o.row, o.rotation, o.isLocked ? 1 : 0, o.isExit ? 1 : 0,
-                    o.wallTexTypeLeft[0] ? o.wallTexTypeLeft : "brick",
-                    o.wallTexTypeRight[0] ? o.wallTexTypeRight : "brick");
+            if (o.isLocked) {
+                fprintf(f, "door %.1f %.1f %.0f %d %d %s %s %d\n",
+                        o.col, o.row, o.rotation, o.isLocked ? 1 : 0, o.isExit ? 1 : 0,
+                        o.wallTexTypeLeft[0] ? o.wallTexTypeLeft : "brick",
+                        o.wallTexTypeRight[0] ? o.wallTexTypeRight : "brick",
+                        o.keyId);
+            } else {
+                fprintf(f, "door %.1f %.1f %.0f %d %d %s %s\n",
+                        o.col, o.row, o.rotation, o.isLocked ? 1 : 0, o.isExit ? 1 : 0,
+                        o.wallTexTypeLeft[0] ? o.wallTexTypeLeft : "brick",
+                        o.wallTexTypeRight[0] ? o.wallTexTypeRight : "brick");
+            }
         } else {
-            fprintf(f, "obj %s %.1f %.1f %.1f %.0f %.1f %d\n",
-                    o.type, o.col, o.row, o.y, o.rotation, o.scale, o.collision ? 1 : 0);
+            if (strcmp(o.type, "key") == 0) {
+                fprintf(f, "obj %s %.1f %.1f %.1f %.0f %.1f %d %d\n",
+                        o.type, o.col, o.row, o.y, o.rotation, o.scale, o.collision ? 1 : 0, o.keyId);
+            } else {
+                fprintf(f, "obj %s %.1f %.1f %.1f %.0f %.1f %d\n",
+                        o.type, o.col, o.row, o.y, o.rotation, o.scale, o.collision ? 1 : 0);
+            }
         }
     }
     fclose(f);
@@ -310,7 +328,7 @@ static void LoadEnemyFile(EditorState *s, int lvl) {
                 if (!inToken) {
                     char c = line[i];
                     if ((c == 'Z' || c == 'M' || c == 'F' ||
-                         c == 'H' || c == 'K' || c == 'P' || c == 'W' || c == 'D') &&
+                         c == 'H' || c == 'P' || c == 'W' || c == 'D') &&
                         s->enemyCount < MAX_ENEMIES) {
                         s->enemies[s->enemyCount].col = col;
                         s->enemies[s->enemyCount].row = row;
@@ -439,6 +457,7 @@ static void PlaceObject(EditorState *s) {
         o.isDoor = item->isDoor;
         o.isLocked = item->isLocked;
         o.isExit = item->isExit;
+        o.keyId = (strcmp(item->name, "key") == 0 || o.isLocked) ? 1 : 0;
         if (o.isDoor) {
             strncpy(o.wallTexTypeLeft, doorWallTexNames[s->doorWallTexLeft], sizeof(o.wallTexTypeLeft) - 1);
             strncpy(o.wallTexTypeRight, doorWallTexNames[s->doorWallTexRight], sizeof(o.wallTexTypeRight) - 1);
@@ -486,6 +505,7 @@ static void SelectAtCrosshair(EditorState *s) {
     FindClosest(s, hit, 8.0f * 8.0f, type, idx);
     s->selectedObjIdx = -1;
     s->selectedEnemyIdx = -1;
+    s->editingKeyId = false;
     if (type == 0 && idx >= 0) {
         s->selectedObjIdx = idx;
         EditorObject &o = s->objects[idx];
@@ -505,6 +525,7 @@ static void SelectAtCrosshair(EditorState *s) {
 static void Deselect(EditorState *s) {
     s->selectedObjIdx = -1;
     s->selectedEnemyIdx = -1;
+    s->editingKeyId = false;
 }
 
 static void DeleteSelected(EditorState *s) {
@@ -547,6 +568,49 @@ static void PaintTerrain(EditorState *s, char ch);
 static void DrawTerrainHighlight(EditorState *s);
 
 static void HandleInput(EditorState *s, int lvl) {
+    if (IsKeyPressed(KEY_TAB)) {
+        s->category = (s->category + 1) % CAT_COUNT;
+        s->selection = 0;
+        s->previewRotation = 0;
+        s->previewYOffset = 0;
+        s->previewScale = 1.0f;
+    }
+
+    if (s->editingKeyId) {
+        int ch;
+        while ((ch = GetCharPressed()) > 0) {
+            if (ch >= '0' && ch <= '9') {
+                int len = (int)strlen(s->keyIdInput);
+                if (len < 2) {
+                    s->keyIdInput[len] = (char)ch;
+                    s->keyIdInput[len + 1] = '\0';
+                }
+            }
+        }
+        if (IsKeyPressed(KEY_BACKSPACE)) {
+            int len = (int)strlen(s->keyIdInput);
+            if (len > 0) s->keyIdInput[len - 1] = '\0';
+        }
+        if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) {
+            int val = atoi(s->keyIdInput);
+            if (val < 1) val = 1;
+            if (val > 9) val = 9;
+            if (s->selectedObjIdx >= 0)
+                s->objects[s->selectedObjIdx].keyId = val;
+            s->editingKeyId = false;
+            DisableCursor();
+            strcpy(s->statusMsg, TextFormat("keyId = %d", val));
+            s->statusTimer = 1.5f;
+        }
+        if (IsKeyPressed(KEY_ESCAPE)) {
+            s->editingKeyId = false;
+            DisableCursor();
+            strcpy(s->statusMsg, "Cancelled keyId edit");
+            s->statusTimer = 1.0f;
+        }
+        return;
+    }
+
     bool hasSelection = (s->selectedObjIdx >= 0 || s->selectedEnemyIdx >= 0);
 
     if (hasSelection) {
@@ -597,6 +661,18 @@ static void HandleInput(EditorState *s, int lvl) {
                 }
             }
         }
+        if (s->selectedObjIdx >= 0 && IsKeyPressed(KEY_K)) {
+            EditorObject &sel = s->objects[s->selectedObjIdx];
+            bool isKeyObj = (strcmp(sel.type, "key") == 0);
+            if (isKeyObj || sel.isLocked) {
+                s->editingKeyId = true;
+                EnableCursor();
+                ShowCursor();
+                snprintf(s->keyIdInput, sizeof(s->keyIdInput), "%d", sel.keyId);
+                strcpy(s->statusMsg, "Enter keyId (1-9), Enter to confirm, Esc to cancel");
+                s->statusTimer = 3.0f;
+            }
+        }
         if (IsKeyPressed(KEY_ENTER)) {
             Deselect(s);
             strcpy(s->statusMsg, "Confirmed");
@@ -613,26 +689,28 @@ static void HandleInput(EditorState *s, int lvl) {
         s->previewScale = 1.0f;
     }
 
-    if ((s->category == CAT_DOORS || s->category == CAT_KEYDOOR)) {
-        for (int i = 0; i < DOOR_WALL_TEX_COUNT; i++) {
-            if (IsKeyPressed(KEY_ONE + i)) {
-                if (IsKeyDown(KEY_LEFT_SHIFT)) {
-                    s->doorWallTexRight = i;
-                    strcpy(s->statusMsg, TextFormat("Right wall: %s", doorWallTexNames[i]));
-                } else {
-                    s->doorWallTexLeft = i;
-                    strcpy(s->statusMsg, TextFormat("Left wall: %s", doorWallTexNames[i]));
+    if (!s->editingKeyId) {
+        if ((s->category == CAT_DOORS || s->category == CAT_KEYDOOR)) {
+            for (int i = 0; i < DOOR_WALL_TEX_COUNT; i++) {
+                if (IsKeyPressed(KEY_ONE + i)) {
+                    if (IsKeyDown(KEY_LEFT_SHIFT)) {
+                        s->doorWallTexRight = i;
+                        strcpy(s->statusMsg, TextFormat("Right wall: %s", doorWallTexNames[i]));
+                    } else {
+                        s->doorWallTexLeft = i;
+                        strcpy(s->statusMsg, TextFormat("Left wall: %s", doorWallTexNames[i]));
+                    }
+                    s->statusTimer = 1.5f;
                 }
-                s->statusTimer = 1.5f;
             }
-        }
-    } else {
-        for (int i = 0; i < 9; i++) {
-            if (IsKeyPressed(KEY_ONE + i) && i < categoryCount[s->category]) {
-                s->selection = i;
-                s->previewRotation = 0;
-                s->previewYOffset = 0;
-                s->previewScale = 1.0f;
+        } else {
+            for (int i = 0; i < 9; i++) {
+                if (IsKeyPressed(KEY_ONE + i) && i < categoryCount[s->category]) {
+                    s->selection = i;
+                    s->previewRotation = 0;
+                    s->previewYOffset = 0;
+                    s->previewScale = 1.0f;
+                }
             }
         }
     }
@@ -666,7 +744,44 @@ static void HandleInput(EditorState *s, int lvl) {
         s->previewRotation += wheel * 15.0f;
     }
     if (IsKeyPressed(KEY_E)) SelectAtCrosshair(s);
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) PlaceObject(s);
+    if (s->selectedObjIdx >= 0) {
+        EditorObject &sel = s->objects[s->selectedObjIdx];
+        bool isKeyObj = (strcmp(sel.type, "key") == 0);
+        if ((isKeyObj || sel.isLocked) && IsKeyPressed(KEY_K)) {
+            s->editingKeyId = true;
+            EnableCursor();
+            ShowCursor();
+            snprintf(s->keyIdInput, sizeof(s->keyIdInput), "%d", sel.keyId);
+            strcpy(s->statusMsg, "Enter keyId (1-9), Enter to confirm, Esc to cancel");
+            s->statusTimer = 3.0f;
+        }
+    } else if (IsKeyPressed(KEY_K)) {
+        Vector3 hit;
+        if (GetFloorHit(s->camera, &hit)) {
+            int type, idx;
+            FindClosest(s, hit, 8.0f * 8.0f, type, idx);
+            if (type == 0 && idx >= 0) {
+                EditorObject &o = s->objects[idx];
+                bool isKeyObj = (strcmp(o.type, "key") == 0);
+                if (isKeyObj || o.isLocked) {
+                    s->selectedObjIdx = idx;
+                    s->editingKeyId = true;
+                    EnableCursor();
+                    ShowCursor();
+                    snprintf(s->keyIdInput, sizeof(s->keyIdInput), "%d", o.keyId);
+                    strcpy(s->statusMsg, "Enter keyId (1-9), Enter to confirm, Esc to cancel");
+                    s->statusTimer = 3.0f;
+                } else {
+                    strcpy(s->statusMsg, "Not a key/locked door");
+                    s->statusTimer = 1.5f;
+                }
+            } else {
+                strcpy(s->statusMsg, "Nothing under crosshair");
+                s->statusTimer = 1.5f;
+            }
+        }
+    }
+    if (!s->editingKeyId && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) PlaceObject(s);
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
         int type, idx;
         Vector3 hit;
@@ -808,9 +923,13 @@ static void DrawEditorObjects(EditorState *s) {
             DrawModelEx(s->models.doorBox, pos, {0,1,0}, o.rotation, {5.0f, 15.0f, 1.0f}, dc);
             DrawDoorCaps(s, pos, o.rotation, o.wallTexTypeLeft, o.wallTexTypeRight, WHITE);
         } else {
-            Model *mdl = GetModel(s->models, o.type);
-            if (mdl) DrawModelEx(*mdl, pos, {0, 1, 0}, o.rotation,
-                                 {o.scale, o.scale, o.scale}, tint);
+            if (strcmp(o.type, "key") == 0) {
+                DrawEditorBillboard(s->camera, pos, s->texKey, ZOMBIE_BILLBOARD_SIZE, tint);
+            } else {
+                Model *mdl = GetModel(s->models, o.type);
+                if (mdl) DrawModelEx(*mdl, pos, {0, 1, 0}, o.rotation,
+                                     {o.scale, o.scale, o.scale}, tint);
+            }
         }
         if (IsSelectedObj(s, i)) {
             DrawModelEx(s->models.doorBox, pos, {0,1,0}, o.rotation, {6.0f, 16.0f, 2.0f}, YELLOW);
@@ -853,6 +972,8 @@ static void DrawGhost(EditorState *s) {
             Texture2D tex = GetEnemyTexture(s, item->enemyChar);
             DrawEditorBillboard(s->camera, pos, tex, ZOMBIE_BILLBOARD_SIZE, ColorAlpha(WHITE, 0.7f));
         }
+    } else if (strcmp(item->name, "key") == 0) {
+        DrawEditorBillboard(s->camera, pos, s->texKey, ZOMBIE_BILLBOARD_SIZE, ColorAlpha(GOLD, 0.7f));
     } else if (item->isDoor) {
         DrawModelEx(s->models.doorBox, pos, {0,1,0}, s->previewRotation, {5.0f, 15.0f, 1.0f}, tint);
         const char *lName = doorWallTexNames[s->doorWallTexLeft];
@@ -873,11 +994,25 @@ static void DrawHUD(EditorState *s) {
 
     DrawText("RED HORIZON - LEVEL EDITOR", x, y, 20, WHITE); y += lh + 10;
 
-    if (hasSel) {
+    if (s->editingKeyId) {
+        DrawText("[ EDIT KEY ID ]", x, y, 18, GOLD); y += lh;
+        DrawText("Type digits, Enter to confirm, Esc to cancel", x, y, 14, LIGHTGRAY); y += lh + 10;
+        DrawRectangle(x, y, 200, 36, ColorAlpha(BLACK, 0.8f));
+        DrawRectangleLines(x, y, 200, 36, GOLD);
+        DrawText(TextFormat("keyId: %s_", s->keyIdInput), x + 8, y + 8, 20, GOLD);
+        y += 50;
+    } else if (hasSel) {
         DrawText("[ MOVING MODE ]", x, y, 18, YELLOW); y += lh;
         DrawText("Object follows crosshair", x, y, 14, LIGHTGRAY); y += lh - 2;
         DrawText("Wheel - rotate | Shift+Wheel - Y | Ctrl+Wheel - scale", x, y, 14, LIGHTGRAY); y += lh - 2;
-        DrawText("Enter - confirm | Esc - cancel | Del - delete", x, y, 14, LIGHTGRAY); y += lh + 10;
+        DrawText("Enter - confirm | Esc - cancel | Del - delete", x, y, 14, LIGHTGRAY); y += lh - 2;
+        if (s->selectedObjIdx >= 0) {
+            EditorObject &sel = s->objects[s->selectedObjIdx];
+            bool isKeyObj = (strcmp(sel.type, "key") == 0);
+            if (isKeyObj || sel.isLocked) {
+                DrawText(TextFormat("keyId: %d  [K to edit]", sel.keyId), x, y, 16, GOLD); y += lh;
+            }
+        }
     } else if (s->category == CAT_TERRAIN) {
         DrawText(TextFormat("Category: %s", categoryNames[s->category]), x, y, 16, YELLOW); y += lh;
         PaletteItem *item = CurrentItem(s);
@@ -909,6 +1044,9 @@ static void DrawHUD(EditorState *s) {
         DrawText("Left Click - Place new object", x, y, 14, LIGHTGRAY); y += lh - 2;
         DrawText("Right Click - Delete under crosshair", x, y, 14, LIGHTGRAY); y += lh - 2;
         DrawText("Wheel - rotate | Shift+Wheel - Y | Ctrl+Wheel - scale", x, y, 14, LIGHTGRAY); y += lh - 2;
+        if (s->category == CAT_KEYDOOR || s->category == CAT_BONUSES) {
+            DrawText("K - Edit keyId (for key/locked door)", x, y, 14, GOLD); y += lh - 2;
+        }
         if ((s->category == CAT_DOORS || s->category == CAT_KEYDOOR)) {
             DrawText("Alt+Wheel - left wall | Alt+Shift+Wheel - right wall", x, y, 14, SKYBLUE); y += lh - 2;
         }

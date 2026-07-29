@@ -30,8 +30,9 @@ void LoadDecor(Scene &scene, const char *decorPath, Shader shader, Texture2D gre
         } else if (strncmp(line, "door", 4) == 0) {
             float col, row, rot;
             int locked, exit;
+            int keyId = 0;
             char wl[16] = "brick", wr[16] = "brick";
-            if (sscanf(line, "door %f %f %f %d %d %15s %15s", &col, &row, &rot, &locked, &exit, wl, wr) >= 5) {
+            if (sscanf(line, "door %f %f %f %d %d %15s %15s %d", &col, &row, &rot, &locked, &exit, wl, wr, &keyId) >= 5) {
                 Texture2D capLeftTex, capRightTex;
                 if (strcmp(wl, "green") == 0) capLeftTex = greenTex;
                 else if (strcmp(wl, "white") == 0) capLeftTex = whiteTex;
@@ -39,7 +40,7 @@ void LoadDecor(Scene &scene, const char *decorPath, Shader shader, Texture2D gre
                 if (strcmp(wr, "green") == 0) capRightTex = greenTex;
                 else if (strcmp(wr, "white") == 0) capRightTex = whiteTex;
                 else capRightTex = wallTex;
-                AddDoor(scene, TilePos(col, row), rot, scene.doorTexClosed, scene.doorTexOpen, capLeftTex, capRightTex, shader, shotholeTex, locked != 0, exit != 0);
+                AddDoor(scene, TilePos(col, row), rot, scene.doorTexClosed, scene.doorTexOpen, capLeftTex, capRightTex, shader, shotholeTex, locked != 0, exit != 0, keyId);
             }
         }
     }
@@ -148,12 +149,12 @@ void AddObject(Scene &scene, const char *name, Vector3 pos, float rot, float sc,
     scene.objectCount++;
 }
 
-void AddDoor(Scene &scene, Vector3 pos, float rot, Texture2D closedTex, Texture2D openTex, Texture2D capLeftTex, Texture2D capRightTex, Shader shader, Texture2D shotholeTex, bool isLocked, bool isExit)
+void AddDoor(Scene &scene, Vector3 pos, float rot, Texture2D closedTex, Texture2D openTex, Texture2D capLeftTex, Texture2D capRightTex, Shader shader, Texture2D shotholeTex, bool isLocked, bool isExit, int keyId)
 {
     if (scene.doorCount >= MAX_DOORS) return;
     scene.doors[scene.doorCount++] = CreateDoor(
         pos, (Vector3){0,1,0}, rot,
-        closedTex, openTex, capLeftTex, capRightTex, shader, shotholeTex, isLocked, isExit
+        closedTex, openTex, capLeftTex, capRightTex, shader, shotholeTex, isLocked, isExit, keyId
     );
 }
 

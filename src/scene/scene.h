@@ -49,7 +49,7 @@ struct Scene {
 void LoadScene(Scene &scene, Shader shader, float tileSize, Texture2D greenTex, Texture2D wallTex, Texture2D shotholeTex, Texture2D whiteTex, int levelIndex, Level level);
 void LoadDecor(Scene &scene, const char *decorPath, Shader shader, Texture2D greenTex, Texture2D wallTex, Texture2D shotholeTex, Texture2D whiteTex, Level level);
 void AddObject(Scene &scene, const char *name, Vector3 pos, float rot, float sc, bool addCollision, Shader shader);
-void AddDoor(Scene &scene, Vector3 pos, float rot, Texture2D closedTex, Texture2D openTex, Texture2D capLeftTex, Texture2D capRightTex, Shader shader, Texture2D shotholeTex, bool isLocked = false, bool isExit = false);
+void AddDoor(Scene &scene, Vector3 pos, float rot, Texture2D closedTex, Texture2D openTex, Texture2D capLeftTex, Texture2D capRightTex, Shader shader, Texture2D shotholeTex, bool isLocked = false, bool isExit = false, int keyId = 0);
 void DrawScene(Scene &scene, Camera3D camera, Shader shader, Bonus bonuses[], int bonusCount);
 void UnloadScene(Scene &scene);
 bool CheckBoxCollision(BoxCollider box, float x, float z, float radius);

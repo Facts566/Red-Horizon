@@ -52,9 +52,22 @@ static void SpawnZombies(Game &game, const char *path)
     }
 }
 
-static void SpawnBonuses(Game &game, const char *path)
+static void SpawnBonuses(Game &game, const char *enemyPath, const char *decorPath)
 {
-    game.bonusCount = LoadBonusSpawns(path, game.bonusSpawns, MAX_BONUSES);
+    game.bonusCount = LoadBonusSpawns(enemyPath, game.bonusSpawns, MAX_BONUSES);
+
+    KeySpawn keySpawns[MAX_KEYS];
+    int keyCount = LoadKeySpawns(decorPath, keySpawns, MAX_KEYS);
+    for (int i = 0; i < keyCount && game.bonusCount < MAX_BONUSES; i++) {
+        BonusSpawn &bs = game.bonusSpawns[game.bonusCount];
+        bs.col = keySpawns[i].col;
+        bs.row = keySpawns[i].row;
+        bs.type = BONUS_KEY;
+        bs.weaponIndex = 0;
+        bs.keyId = keySpawns[i].keyId;
+        game.bonusCount++;
+    }
+
     InitBonuses(game.bonuses, game.bonusSpawns, game.bonusCount, game.medicTex, game.keyTex, game.weaponTex, TILE_SIZE);
 }
 
@@ -394,7 +407,7 @@ void InitGame(Game &game)
     game.touchTimer = 0.0f;
     game.gameOver = false;
     game.showWeaponPanel = false;
-    game.hasKey = false;
+    for (int i = 0; i < MAX_KEYS; i++) game.hasKeys[i] = false;
     game.paused = false;
     game.transPhase = TRANS_NONE;
     game.transTimer = 0.0f;
@@ -422,8 +435,10 @@ void LoadLevelByIndex(Game &game, int levelIndex)
 {
     char mapPath[64];
     char enemyPath[64];
+    char decorPath[64];
     snprintf(mapPath, sizeof(mapPath), "map/level_%d/map.txt", levelIndex);
     snprintf(enemyPath, sizeof(enemyPath), "map/level_%d/enemy.txt", levelIndex);
+    snprintf(decorPath, sizeof(decorPath), "map/level_%d/decor.txt", levelIndex);
 
     UnloadLevel(game.level);
     UnloadScene(game.scene);
@@ -439,10 +454,10 @@ void LoadLevelByIndex(Game &game, int levelIndex)
               game.greenTex, game.wallTex, game.shotholeTex, game.whiteWallTex, levelIndex, game.level);
 
     SpawnZombies(game, enemyPath);
-    SpawnBonuses(game, enemyPath);
+    SpawnBonuses(game, enemyPath, decorPath);
 
     game.wallHoles.clear();
-    game.hasKey = false;
+    for (int i = 0; i < MAX_KEYS; i++) game.hasKeys[i] = false;
     game.currentLevel = levelIndex;
     UpdateWeaponUnlocks(game);
 
@@ -548,7 +563,7 @@ void UpdateGame(Game &game)
         if (game.scene.zombies[i].active)
             doorPositions[doorPosCount++] = game.scene.zombies[i].position;
     }
-    UpdateDoors(game.scene.doors, game.scene.doorCount, doorPositions, doorPosCount, game.hasKey);
+    UpdateDoors(game.scene.doors, game.scene.doorCount, doorPositions, doorPosCount, game.hasKeys);
 
     if (CheckExitDoorTrigger(game.scene.doors, game.scene.doorCount, game.camera.position))
     {
@@ -575,7 +590,7 @@ void UpdateGame(Game &game)
                      game.scene, game.camera.position, dt);
 
     ProcessZombieTouchDamage(game, dt);
-    UpdateBonuses(game.bonuses, game.bonusCount, game.camera.position, game.health, game.maxHealth, game.hasKey, game.weapons, WEAPON_COUNT, game.itemSound);
+    UpdateBonuses(game.bonuses, game.bonusCount, game.camera.position, game.health, game.maxHealth, game.hasKeys, game.weapons, WEAPON_COUNT, game.itemSound);
     UpdateParticles(game.scene, dt);
     UpdateLighting(game);
 }

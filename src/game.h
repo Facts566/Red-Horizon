@@ -30,7 +30,7 @@ struct Game {
     Bonus bonuses[MAX_BONUSES];
     int bonusCount;
 
-    bool hasKey;
+    bool hasKeys[MAX_KEYS];
     int currentLevel;
     TransitionPhase transPhase;
     float transTimer;

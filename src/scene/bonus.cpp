@@ -20,10 +20,11 @@ void InitBonuses(Bonus bonuses[], BonusSpawn spawns[], int count, Texture2D medi
         bonuses[i].bobTimer = (float)GetRandomValue(0, 100) * 0.1f;
         bonuses[i].type = spawns[i].type;
         bonuses[i].weaponIndex = spawns[i].weaponIndex;
+        bonuses[i].keyId = spawns[i].keyId;
     }
 }
 
-void UpdateBonuses(Bonus bonuses[], int count, Vector3 playerPos, float &health, int maxHealth, bool &hasKey, WeaponState weapons[], int weaponCount, Sound itemSound)
+void UpdateBonuses(Bonus bonuses[], int count, Vector3 playerPos, float &health, int maxHealth, bool hasKeys[], WeaponState weapons[], int weaponCount, Sound itemSound)
 {
     float dt = GetFrameTime();
     for (int i = 0; i < count; i++) {
@@ -33,10 +34,13 @@ void UpdateBonuses(Bonus bonuses[], int count, Vector3 playerPos, float &health,
         float dz = playerPos.z - bonuses[i].position.z;
         if (dx * dx + dz * dz < BONUS_PICKUP_RADIUS * BONUS_PICKUP_RADIUS) {
             if (bonuses[i].type == BONUS_KEY) {
-                bonuses[i].active = false;
-                if (itemSound.frameCount > 0)
-                    PlaySound(itemSound);
-                hasKey = true;
+                int kid = bonuses[i].keyId;
+                if (kid >= 0 && kid < MAX_KEYS && !hasKeys[kid]) {
+                    bonuses[i].active = false;
+                    if (itemSound.frameCount > 0)
+                        PlaySound(itemSound);
+                    hasKeys[kid] = true;
+                }
             } else if (bonuses[i].type == BONUS_WEAPON) {
                 if (bonuses[i].weaponIndex >= 0 && bonuses[i].weaponIndex < weaponCount && !weapons[bonuses[i].weaponIndex].unlocked) {
                     bonuses[i].active = false;

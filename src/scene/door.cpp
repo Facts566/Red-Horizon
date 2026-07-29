@@ -10,7 +10,7 @@ static Model doorCapRight = { 0 };
 static Model doorDecalModel = { 0 };
 static bool doorModelsLoaded = false;
 
-Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Texture2D closedTex, Texture2D openTex, Texture2D capLeftTex, Texture2D capRightTex, Shader shader, Texture2D shotholeTex, bool isLocked, bool isExit)
+Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Texture2D closedTex, Texture2D openTex, Texture2D capLeftTex, Texture2D capRightTex, Shader shader, Texture2D shotholeTex, bool isLocked, bool isExit, int keyId)
 {
     if (!doorModelsLoaded)
     {
@@ -43,6 +43,7 @@ Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Tex
     door.isOpen = false;
     door.isLocked = isLocked;
     door.isExit = isExit;
+    door.requiredKeyId = keyId;
     door.triggerRadius = DOOR_TRIGGER_RADIUS;
     door.closedTex = closedTex;
     door.openTex = openTex;
@@ -51,7 +52,7 @@ Door CreateDoor(Vector3 position, Vector3 rotationAxis, float rotationAngle, Tex
     return door;
 }
 
-void UpdateDoors(Door doors[], int count, Vector3 positions[], int posCount, bool hasKey)
+void UpdateDoors(Door doors[], int count, Vector3 positions[], int posCount, bool hasKeys[])
 {
     for (int i = 0; i < count; i++)
     {
@@ -63,8 +64,11 @@ void UpdateDoors(Door doors[], int count, Vector3 positions[], int posCount, boo
             float dist = sqrtf(dx * dx + dz * dz);
             if (dist < doors[i].triggerRadius) { open = true; break; }
         }
-        if (doors[i].isLocked && open && !hasKey)
-            open = false;
+        if (doors[i].isLocked && open) {
+            int kid = doors[i].requiredKeyId;
+            if (kid < 0 || kid >= MAX_KEYS || !hasKeys[kid])
+                open = false;
+        }
         doors[i].isOpen = open;
     }
 }
