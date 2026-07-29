@@ -425,14 +425,17 @@ static void FindClosest(EditorState *s, Vector3 hit, float maxDist2, int &outTyp
     outIdx = -1;
     float best = maxDist2;
     for (int i = 0; i < s->objectCount; i++) {
-        Vector3 pos = TilePos(s->objects[i].col, s->objects[i].row, s->objects[i].y);
-        float d = Vector3DistanceSqr(pos, hit);
+        Vector3 pos = TilePos(s->objects[i].col, s->objects[i].row, 0.0f);
+        float dx = pos.x - hit.x;
+        float dz = pos.z - hit.z;
+        float d = dx * dx + dz * dz;
         if (d < best) { best = d; outType = 0; outIdx = i; }
     }
     for (int i = 0; i < s->enemyCount; i++) {
         EnemyPlacement &e = s->enemies[i];
-        Vector3 pos = {(float)e.col * TILE_SIZE + TILE_SIZE / 2.0f, ZOMBIE_SPAWN_Y, (float)e.row * TILE_SIZE + TILE_SIZE / 2.0f};
-        float d = Vector3DistanceSqr(pos, hit);
+        float dx = (float)e.col * TILE_SIZE + TILE_SIZE / 2.0f - hit.x;
+        float dz = (float)e.row * TILE_SIZE + TILE_SIZE / 2.0f - hit.z;
+        float d = dx * dx + dz * dz;
         if (d < best) { best = d; outType = 1; outIdx = i; }
     }
 }
