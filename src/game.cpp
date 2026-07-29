@@ -435,7 +435,7 @@ void LoadLevelByIndex(Game &game, int levelIndex)
     game.yaw = 0.0f;
 
     LoadScene(game.scene, game.shader, TILE_SIZE,
-              game.greenTex, game.wallTex, game.shotholeTex, game.whiteWallTex, levelIndex);
+              game.greenTex, game.wallTex, game.shotholeTex, game.whiteWallTex, levelIndex, game.level);
 
     SpawnZombies(game, enemyPath);
     SpawnBonuses(game, enemyPath);

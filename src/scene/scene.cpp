@@ -11,7 +11,7 @@ static Vector3 TilePos(float col, float row, float y = 0.0f) {
     return {col * TILE_SIZE + TILE_SIZE / 2.0f, y, row * TILE_SIZE + TILE_SIZE / 2.0f};
 }
 
-void LoadDecor(Scene &scene, const char *decorPath, Shader shader, Texture2D greenTex, Texture2D wallTex, Texture2D shotholeTex, Texture2D whiteTex)
+void LoadDecor(Scene &scene, const char *decorPath, Shader shader, Texture2D greenTex, Texture2D wallTex, Texture2D shotholeTex, Texture2D whiteTex, Level level)
 {
     FILE *f = fopen(decorPath, "r");
     if (!f) return;
@@ -31,15 +31,34 @@ void LoadDecor(Scene &scene, const char *decorPath, Shader shader, Texture2D gre
             float col, row, rot;
             int locked, exit;
             if (sscanf(line, "door %f %f %f %d %d", &col, &row, &rot, &locked, &exit) == 5) {
-                Texture2D capTex = exit ? whiteTex : greenTex;
-                AddDoor(scene, TilePos(col, row), rot, scene.doorTexClosed, scene.doorTexOpen, capTex, wallTex, shader, shotholeTex, locked != 0, exit != 0);
+                float rad = rot * 3.14159f / 180.0f;
+                float sx = sinf(rad);
+                float sz = cosf(rad);
+                int c = (int)roundf(col);
+                int r = (int)roundf(row);
+                int dcLeft = c - (int)roundf(sx);
+                int drLeft = r - (int)roundf(sz);
+                int dcRight = c + (int)roundf(sx);
+                int drRight = r + (int)roundf(sz);
+
+                auto getWallTex = [&](int tc, int tr) -> Texture2D {
+                    if (tc < 0 || tc >= level.width || tr < 0 || tr >= level.height) return wallTex;
+                    char ch = level.data[tr * level.width + tc];
+                    if (ch == '#') return whiteTex;
+                    if (ch == '@') return greenTex;
+                    return wallTex;
+                };
+
+                Texture2D capLeft = getWallTex(dcLeft, drLeft);
+                Texture2D capRight = getWallTex(dcRight, drRight);
+                AddDoor(scene, TilePos(col, row), rot, scene.doorTexClosed, scene.doorTexOpen, capLeft, capRight, shader, shotholeTex, locked != 0, exit != 0);
             }
         }
     }
     fclose(f);
 }
 
-void LoadScene(Scene &scene, Shader shader, float tileSize, Texture2D greenTex, Texture2D wallTex, Texture2D shotholeTex, Texture2D whiteTex, int levelIndex)
+void LoadScene(Scene &scene, Shader shader, float tileSize, Texture2D greenTex, Texture2D wallTex, Texture2D shotholeTex, Texture2D whiteTex, int levelIndex, Level level)
 {
     scene.tileSize = tileSize;
     scene.objectCount = 0;
@@ -62,7 +81,7 @@ void LoadScene(Scene &scene, Shader shader, float tileSize, Texture2D greenTex, 
 
     char decorPath[256];
     sprintf(decorPath, "map/level_%d/decor.txt", levelIndex);
-    LoadDecor(scene, decorPath, shader, greenTex, wallTex, shotholeTex, whiteTex);
+    LoadDecor(scene, decorPath, shader, greenTex, wallTex, shotholeTex, whiteTex, level);
 }
 
 static void LoadObjectModel(SceneObject &obj, const char *name, Shader shader)
