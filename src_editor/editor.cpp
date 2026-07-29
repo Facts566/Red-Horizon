@@ -542,7 +542,6 @@ static void HandleInput(EditorState *s, int lvl) {
         if (IsKeyPressed(KEY_ENTER)) {
             SaveDecorFile(s, lvl);
             SaveEnemyFile(s, lvl);
-            SaveMapFile(s, lvl);
             strcpy(s->statusMsg, "SAVED!");
             s->statusTimer = 2.0f;
         }
