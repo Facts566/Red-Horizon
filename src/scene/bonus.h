@@ -14,6 +14,6 @@ struct Bonus {
     int keyId;
 };
 
-void InitBonuses(Bonus bonuses[], BonusSpawn spawns[], int count, Texture2D medicTex, Texture2D keyTex, Texture2D weaponTex, float tileSize);
+void InitBonuses(Bonus bonuses[], BonusSpawn spawns[], int count, Texture2D medicTex, Texture2D keyTex, Texture2D weaponTex, Texture2D weaponTex2, float tileSize);
 void UpdateBonuses(Bonus bonuses[], int count, Vector3 playerPos, float &health, int maxHealth, bool hasKeys[], WeaponState weapons[], int weaponCount, Sound itemSound);
 void DrawBonuses(Bonus bonuses[], int count, Camera3D camera);

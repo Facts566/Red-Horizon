@@ -4,7 +4,7 @@
 #include <raymath.h>
 #include <cmath>
 
-void InitBonuses(Bonus bonuses[], BonusSpawn spawns[], int count, Texture2D medicTex, Texture2D keyTex, Texture2D weaponTex, float tileSize)
+void InitBonuses(Bonus bonuses[], BonusSpawn spawns[], int count, Texture2D medicTex, Texture2D keyTex, Texture2D weaponTex, Texture2D weaponTex2, float tileSize)
 {
     for (int i = 0; i < count; i++) {
         bonuses[i].position.x = (float)spawns[i].col * tileSize + tileSize / 2.0f;
@@ -13,7 +13,7 @@ void InitBonuses(Bonus bonuses[], BonusSpawn spawns[], int count, Texture2D medi
         if (spawns[i].type == BONUS_KEY)
             bonuses[i].texture = keyTex;
         else if (spawns[i].type == BONUS_WEAPON)
-            bonuses[i].texture = weaponTex;
+            bonuses[i].texture = (spawns[i].weaponIndex == 2) ? weaponTex2 : weaponTex;
         else
             bonuses[i].texture = medicTex;
         bonuses[i].active = true;

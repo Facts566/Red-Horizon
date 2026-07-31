@@ -53,6 +53,7 @@ int main()
                     if (IsKeyPressed(KEY_ESCAPE)) {
                         EnableCursor();
                         game.state = GAME_MENU;
+                        game.menuSelection = 0;
                     }
 
                     BeginDrawing();

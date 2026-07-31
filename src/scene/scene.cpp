@@ -22,6 +22,7 @@ void LoadDecor(Scene &scene, const char *decorPath, Shader shader, Texture2D gre
 
         char type[32];
         if (sscanf(line, "obj %31s", type) == 1) {
+            if (strcmp(type, "key") == 0) continue;
             float col, row, y, rot, scale;
             int collision;
             if (sscanf(line, "obj %31s %f %f %f %f %f %d", type, &col, &row, &y, &rot, &scale, &collision) == 7) {

@@ -68,7 +68,7 @@ static void SpawnBonuses(Game &game, const char *enemyPath, const char *decorPat
         game.bonusCount++;
     }
 
-    InitBonuses(game.bonuses, game.bonusSpawns, game.bonusCount, game.medicTex, game.keyTex, game.weaponTex, TILE_SIZE);
+    InitBonuses(game.bonuses, game.bonusSpawns, game.bonusCount, game.medicTex, game.keyTex, game.weaponTex, game.weaponTex2, TILE_SIZE);
 }
 
 static void ProcessShot(Game &game)
@@ -257,6 +257,11 @@ void DrawMenu(Game &game)
     int titleW = MeasureText(title, titleSize);
     DrawText(title, sw/2 - titleW/2, sh/2 - 120, titleSize, RED);
 
+    if (IsKeyPressed(KEY_UP))   game.menuSelection--;
+    if (IsKeyPressed(KEY_DOWN)) game.menuSelection++;
+    if (game.menuSelection < 0) game.menuSelection = 1;
+    if (game.menuSelection > 1) game.menuSelection = 0;
+
     Rectangle playBtn = {(float)sw/2 - 120, (float)sh/2, 240, 60};
     Rectangle exitBtn = {(float)sw/2 - 120, (float)sh/2 + 80, 240, 60};
 
@@ -264,27 +269,38 @@ void DrawMenu(Game &game)
     bool playHover = CheckCollisionPointRec(mouse, playBtn);
     bool exitHover = CheckCollisionPointRec(mouse, exitBtn);
 
-    Color playColor = playHover ? DARKBLUE : DARKGRAY;
-    Color exitColor = exitHover ? (Color){150, 30, 30, 255} : DARKGRAY;
+    if (GetMouseDelta().x != 0 || GetMouseDelta().y != 0) {
+        if (playHover) game.menuSelection = 0;
+        if (exitHover) game.menuSelection = 1;
+    }
+
+    bool playSelected = (game.menuSelection == 0);
+    bool exitSelected = (game.menuSelection == 1);
+
+    Color playColor = playSelected ? DARKBLUE : DARKGRAY;
+    Color exitColor = exitSelected ? (Color){150, 30, 30, 255} : DARKGRAY;
 
     DrawRectangleRec(playBtn, playColor);
-    DrawRectangleLinesEx(playBtn, 2, playHover ? YELLOW : WHITE);
+    DrawRectangleLinesEx(playBtn, 2, playSelected ? YELLOW : WHITE);
     const char *playText = "PLAY";
     int playTextW = MeasureText(playText, 30);
     DrawText(playText, sw/2 - playTextW/2, sh/2 + 18, 30, WHITE);
 
     DrawRectangleRec(exitBtn, exitColor);
-    DrawRectangleLinesEx(exitBtn, 2, exitHover ? YELLOW : WHITE);
+    DrawRectangleLinesEx(exitBtn, 2, exitSelected ? YELLOW : WHITE);
     const char *exitText = "EXIT";
     int exitTextW = MeasureText(exitText, 30);
     DrawText(exitText, sw/2 - exitTextW/2, sh/2 + 98, 30, WHITE);
 
-    if (playHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+    if ((playSelected && (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_ENTER))) ||
+        (playHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))) {
         EnableCursor();
         game.state = GAME_LEVEL_SELECT;
+        game.menuSelection = 0;
     }
 
-    if (exitHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+    if ((exitSelected && (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_ENTER))) ||
+        (exitHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))) {
         game.exitGame = true;
     }
 
@@ -317,19 +333,29 @@ void DrawLevelSelect(Game &game)
         }
     }
 
+    int totalButtons = levelCount + 1;
+    if (IsKeyPressed(KEY_UP))   game.menuSelection--;
+    if (IsKeyPressed(KEY_DOWN)) game.menuSelection++;
+    if (game.menuSelection < 0) game.menuSelection = totalButtons - 1;
+    if (game.menuSelection >= totalButtons) game.menuSelection = 0;
+
     Vector2 mouse = GetMousePosition();
+    bool mouseMoved = GetMouseDelta().x != 0 || GetMouseDelta().y != 0;
     for (int i = 0; i < levelCount; i++) {
         Rectangle btn = {(float)sw/2 - 120, (float)sh/2 - 80 + i * 70, 240, 55};
         bool hover = CheckCollisionPointRec(mouse, btn);
-        Color btnColor = hover ? DARKBLUE : DARKGRAY;
+        if (mouseMoved && hover) game.menuSelection = i;
+        bool selected = (game.menuSelection == i);
+        Color btnColor = selected ? DARKBLUE : DARKGRAY;
         DrawRectangleRec(btn, btnColor);
-        DrawRectangleLinesEx(btn, 2, hover ? YELLOW : WHITE);
+        DrawRectangleLinesEx(btn, 2, selected ? YELLOW : WHITE);
         char label[32];
         snprintf(label, sizeof(label), "Level %d", i + 1);
         int labelW = MeasureText(label, 30);
         DrawText(label, sw/2 - labelW/2, (int)btn.y + 16, 30, WHITE);
 
-        if (hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        if ((selected && (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_ENTER))) ||
+            (hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))) {
             game.currentLevel = i + 1;
             game.state = GAME_PLAYING;
         }
@@ -337,15 +363,19 @@ void DrawLevelSelect(Game &game)
 
     Rectangle backBtn = {(float)sw/2 - 120, (float)sh/2 - 80 + levelCount * 70 + 20, 240, 55};
     bool backHover = CheckCollisionPointRec(mouse, backBtn);
-    Color backColor = backHover ? (Color){150, 30, 30, 255} : DARKGRAY;
+    if (mouseMoved && backHover) game.menuSelection = levelCount;
+    bool backSelected = (game.menuSelection == levelCount);
+    Color backColor = backSelected ? (Color){150, 30, 30, 255} : DARKGRAY;
     DrawRectangleRec(backBtn, backColor);
-    DrawRectangleLinesEx(backBtn, 2, backHover ? YELLOW : WHITE);
+    DrawRectangleLinesEx(backBtn, 2, backSelected ? YELLOW : WHITE);
     const char *backText = "BACK";
     int backTextW = MeasureText(backText, 30);
     DrawText(backText, sw/2 - backTextW/2, (int)backBtn.y + 16, 30, WHITE);
 
-    if (backHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+    if ((backSelected && (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_ENTER))) ||
+        (backHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))) {
         game.state = GAME_MENU;
+        game.menuSelection = 0;
     }
 
     EndDrawing();
@@ -384,6 +414,7 @@ void InitGame(Game &game)
     game.medicTex    = LoadTexPoint("tex/bonus/medic.png");
     game.keyTex      = LoadTexPoint("tex/bonus/key.png");
     game.weaponTex   = LoadTexPoint("tex/weapons/gun.png");
+    game.weaponTex2  = LoadTexPoint("tex/weapons/gun_1.png");
 
     game.shader = LoadLightShader();
     game.currentLevel = 1;
@@ -409,6 +440,7 @@ void InitGame(Game &game)
     game.showWeaponPanel = false;
     for (int i = 0; i < MAX_KEYS; i++) game.hasKeys[i] = false;
     game.paused = false;
+    game.menuSelection = 0;
     game.transPhase = TRANS_NONE;
     game.transTimer = 0.0f;
     game.transNextLevel = 0;
@@ -519,6 +551,7 @@ void UpdateGame(Game &game)
             game.paused = false;
             EnableCursor();
             game.state = GAME_MENU;
+            game.menuSelection = 0;
         }
         return;
     }
@@ -580,6 +613,7 @@ void UpdateGame(Game &game)
         else
         {
             game.state = GAME_MENU;
+            game.menuSelection = 0;
             EnableCursor();
         }
         return;
@@ -683,6 +717,7 @@ void UnloadGame(Game &game)
     UnloadTexture(game.medicTex);
     UnloadTexture(game.keyTex);
     UnloadTexture(game.weaponTex);
+    UnloadTexture(game.weaponTex2);
     UnloadSound(game.stepSound);
     UnloadSound(game.zombieDeathSound);
     UnloadSound(game.hitSound);
