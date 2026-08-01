@@ -49,68 +49,7 @@ int LoadZombieSpawns(const char *path, ZombieSpawn *spawns, int maxSpawns)
     return count;
 }
 
-int LoadBonusSpawns(const char *path, BonusSpawn *spawns, int maxSpawns)
-{
-    FILE *f = fopen(path, "r");
-    if (!f) return 0;
-
-    fseek(f, 0, SEEK_END);
-    long size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    char *buf = (char *)malloc(size + 1);
-    fread(buf, 1, size, f);
-    buf[size] = '\0';
-    fclose(f);
-
-    int count = 0;
-    int col = 0;
-    int row = 0;
-    bool inToken = false;
-
-    for (long i = 0; i <= size && count < maxSpawns; i++) {
-        char c = buf[i];
-        if (c == '\n' || c == '\0') {
-            row++;
-            col = 0;
-            inToken = false;
-        } else if (c == ' ') {
-            inToken = false;
-        } else {
-            if (!inToken) {
-                if (c == 'H' || c == 'h') {
-                    spawns[count].col = col;
-                    spawns[count].row = row;
-                    spawns[count].type = BONUS_HEALTH;
-                    spawns[count].weaponIndex = 0;
-                    spawns[count].keyId = 0;
-                    count++;
-                } else if (c == 'W' || c == 'w') {
-                    spawns[count].col = col;
-                    spawns[count].row = row;
-                    spawns[count].type = BONUS_WEAPON;
-                    spawns[count].weaponIndex = 1;
-                    spawns[count].keyId = 0;
-                    count++;
-                } else if (c == 'D' || c == 'd') {
-                    spawns[count].col = col;
-                    spawns[count].row = row;
-                    spawns[count].type = BONUS_WEAPON;
-                    spawns[count].weaponIndex = 2;
-                    spawns[count].keyId = 0;
-                    count++;
-                }
-                col++;
-                inToken = true;
-            }
-        }
-    }
-
-    free(buf);
-    return count;
-}
-
-int LoadKeySpawns(const char *path, KeySpawn *spawns, int maxSpawns)
+int LoadBonusFile(const char *path, BonusSpawn *spawns, int maxSpawns)
 {
     FILE *f = fopen(path, "r");
     if (!f) return 0;
@@ -119,18 +58,35 @@ int LoadKeySpawns(const char *path, KeySpawn *spawns, int maxSpawns)
     int count = 0;
     while (fgets(line, sizeof(line), f) && count < maxSpawns) {
         if (line[0] == '#' || line[0] == '\n') continue;
-        char type[32];
-        float col, row, y, rot, scale;
-        int collision, keyId = 0;
-        if (sscanf(line, "obj %31s %f %f %f %f %f %d %d", type, &col, &row, &y, &rot, &scale, &collision, &keyId) >= 7) {
-            if (strcmp(type, "key") == 0) {
-                spawns[count].col = (int)col;
-                spawns[count].row = (int)row;
-                spawns[count].keyId = keyId;
-                count++;
-            }
+        char type[16];
+        float col = 0, row = 0;
+        int p1 = 0;
+        int n = sscanf(line, "%15s %f %f %d", type, &col, &row, &p1);
+        if (n < 3) continue;
+
+        BonusSpawn &bs = spawns[count];
+        bs.col = (int)col;
+        bs.row = (int)row;
+        bs.weaponIndex = 0;
+        bs.keyId = 0;
+        bs.healthAmount = BONUS_HEALTH_AMOUNT;
+
+        if (strcmp(type, "health") == 0) {
+            bs.type = BONUS_HEALTH;
+            if (n >= 4 && p1 > 0) bs.healthAmount = (float)p1;
+            count++;
+        } else if (strcmp(type, "weapon") == 0) {
+            bs.type = BONUS_WEAPON;
+            bs.weaponIndex = (n >= 4 && p1 >= 1 && p1 <= 2) ? p1 : 1;
+            count++;
+        } else if (strcmp(type, "key") == 0) {
+            bs.type = BONUS_KEY;
+            bs.keyId = (n >= 4) ? p1 : 0;
+            if (bs.keyId < 0 || bs.keyId >= MAX_KEYS) bs.keyId = 0;
+            count++;
         }
     }
+
     fclose(f);
     return count;
 }

@@ -81,5 +81,5 @@ constexpr float BOX_PARTICLE_SPEED    = 15.0f;
 constexpr float BOX_PARTICLE_LIFETIME = 0.8f;
 constexpr float BOX_PARTICLE_SIZE     = 1.2f;
 constexpr float BOX_PARTICLE_GRAVITY  = 25.0f;
-constexpr int   MAX_KEYS              = 8;
+constexpr int   MAX_KEYS              = 16;
 constexpr int   MAX_PARTICLES         = 64;

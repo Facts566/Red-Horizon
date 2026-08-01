@@ -42,6 +42,12 @@ struct EnemyPlacement {
     char type;
 };
 
+struct BonusPlacement {
+    int col, row;
+    char type;
+    float param;
+};
+
 struct PaletteItem {
     const char *name;
     const char *modelPath;
@@ -90,6 +96,11 @@ struct EditorState {
     Texture2D texHealth, texKey, texWeapon, texWeapon2;
     bool editingKeyId;
     char keyIdInput[8];
+    BonusPlacement bonuses[MAX_BONUSES];
+    int bonusCount;
+    int selectedBonusIdx;
+    bool editingBonusAmount;
+    char bonusAmountInput[8];
 };
 
 static const char *categoryNames[] = {
@@ -257,7 +268,8 @@ static void LoadDecorFile(EditorState *s, int lvl) {
         if (sscanf(line, "obj %31s %f %f %f %f %f %d %d",
                    obj.type, &obj.col, &obj.row, &obj.y,
                    &obj.rotation, &obj.scale, (int*)&obj.collision, &obj.keyId) >= 7) {
-            if (obj.keyId < 0 || obj.keyId > 9) obj.keyId = 0;
+            if (strcmp(obj.type, "key") == 0) continue;
+            if (obj.keyId < 0 || obj.keyId >= MAX_KEYS) obj.keyId = 0;
             s->objects[s->objectCount++] = obj;
         } else if (strncmp(line, "door", 4) == 0) {
             char wl[16] = "brick", wr[16] = "brick";
@@ -299,13 +311,8 @@ static void SaveDecorFile(EditorState *s, int lvl) {
                         o.wallTexTypeRight[0] ? o.wallTexTypeRight : "brick");
             }
         } else {
-            if (strcmp(o.type, "key") == 0) {
-                fprintf(f, "obj %s %.1f %.1f %.1f %.0f %.1f %d %d\n",
-                        o.type, o.col, o.row, o.y, o.rotation, o.scale, o.collision ? 1 : 0, o.keyId);
-            } else {
-                fprintf(f, "obj %s %.1f %.1f %.1f %.0f %.1f %d\n",
-                        o.type, o.col, o.row, o.y, o.rotation, o.scale, o.collision ? 1 : 0);
-            }
+            fprintf(f, "obj %s %.1f %.1f %.1f %.0f %.1f %d\n",
+                    o.type, o.col, o.row, o.y, o.rotation, o.scale, o.collision ? 1 : 0);
         }
     }
     fclose(f);
@@ -327,8 +334,7 @@ static void LoadEnemyFile(EditorState *s, int lvl) {
             } else {
                 if (!inToken) {
                     char c = line[i];
-                    if ((c == 'Z' || c == 'M' || c == 'F' ||
-                         c == 'H' || c == 'P' || c == 'W' || c == 'D') &&
+                    if ((c == 'Z' || c == 'M' || c == 'F' || c == 'P') &&
                         s->enemyCount < MAX_ENEMIES) {
                         s->enemies[s->enemyCount].col = col;
                         s->enemies[s->enemyCount].row = row;
@@ -374,6 +380,55 @@ static void SaveEnemyFile(EditorState *s, int lvl) {
     }
     for (int r = 0; r < h; r++) free(grid[r]);
     free(grid);
+}
+
+static void LoadBonusFile(EditorState *s, int lvl) {
+    char path[256];
+    sprintf(path, "map/level_%d/bonus.txt", lvl);
+    FILE *f = fopen(path, "r");
+    if (!f) return;
+    char line[256];
+    while (fgets(line, sizeof(line), f) && s->bonusCount < MAX_BONUSES) {
+        if (line[0] == '#' || line[0] == '\n') continue;
+        char type[16];
+        float col = 0, row = 0;
+        int p1 = 0;
+        if (sscanf(line, "%15s %f %f %d", type, &col, &row, &p1) < 3) continue;
+        BonusPlacement &b = s->bonuses[s->bonusCount];
+        b.col = (int)col;
+        b.row = (int)row;
+        if (strcmp(type, "health") == 0) {
+            b.type = 'H';
+            b.param = (p1 > 0) ? (float)p1 : 20.0f;
+        } else if (strcmp(type, "weapon") == 0) {
+            b.type = (p1 == 2) ? 'D' : 'W';
+            b.param = (float)((p1 >= 1 && p1 <= 2) ? p1 : 1);
+        } else if (strcmp(type, "key") == 0) {
+            b.type = 'K';
+            b.param = (float)p1;
+        } else continue;
+        s->bonusCount++;
+    }
+    fclose(f);
+}
+
+static void SaveBonusFile(EditorState *s, int lvl) {
+    char path[256];
+    sprintf(path, "map/level_%d/bonus.txt", lvl);
+    FILE *f = fopen(path, "w");
+    if (!f) return;
+    for (int i = 0; i < s->bonusCount; i++) {
+        BonusPlacement &b = s->bonuses[i];
+        if (b.type == 'H')
+            fprintf(f, "health %d %d %d\n", b.col, b.row, (int)b.param);
+        else if (b.type == 'K')
+            fprintf(f, "key %d %d %d\n", b.col, b.row, (int)b.param);
+        else if (b.type == 'W')
+            fprintf(f, "weapon %d %d 1\n", b.col, b.row);
+        else if (b.type == 'D')
+            fprintf(f, "weapon %d %d 2\n", b.col, b.row);
+    }
+    fclose(f);
 }
 
 static void SaveMapFile(EditorState *s, int lvl) {
@@ -431,7 +486,23 @@ static void PlaceObject(EditorState *s) {
     Vector3 hit;
     if (!GetFloorHit(s->camera, &hit)) return;
     PaletteItem *item = CurrentItem(s);
-    if (item->enemyChar != 0) {
+    if (s->category == CAT_BONUSES) {
+        if (s->bonusCount >= MAX_BONUSES) return;
+        Vector3 pos = SnapToTile(hit);
+        BonusPlacement &b = s->bonuses[s->bonusCount++];
+        b.col = (int)((pos.x - TILE_SIZE / 2.0f) / TILE_SIZE + 0.5f);
+        b.row = (int)((pos.z - TILE_SIZE / 2.0f) / TILE_SIZE + 0.5f);
+        if (strcmp(item->name, "health") == 0) {
+            b.type = 'H'; b.param = 20.0f;
+        } else if (strcmp(item->name, "key") == 0) {
+            b.type = 'K'; b.param = 1.0f;
+        } else if (strcmp(item->name, "weapon") == 0) {
+            b.type = 'W'; b.param = 1.0f;
+        } else if (strcmp(item->name, "double") == 0) {
+            b.type = 'D'; b.param = 2.0f;
+        } else { s->bonusCount--; return; }
+        strcpy(s->statusMsg, TextFormat("Placed %s", item->name));
+    } else if (item->enemyChar != 0) {
         if (s->enemyCount >= MAX_ENEMIES) return;
         Vector3 pos = SnapToTile(hit);
         EnemyPlacement &e = s->enemies[s->enemyCount++];
@@ -457,7 +528,7 @@ static void PlaceObject(EditorState *s) {
         o.isDoor = item->isDoor;
         o.isLocked = item->isLocked;
         o.isExit = item->isExit;
-        o.keyId = (strcmp(item->name, "key") == 0 || o.isLocked) ? 1 : 0;
+        o.keyId = o.isLocked ? 1 : 0;
         if (o.isDoor) {
             strncpy(o.wallTexTypeLeft, doorWallTexNames[s->doorWallTexLeft], sizeof(o.wallTexTypeLeft) - 1);
             strncpy(o.wallTexTypeRight, doorWallTexNames[s->doorWallTexRight], sizeof(o.wallTexTypeRight) - 1);
@@ -488,6 +559,13 @@ static void FindClosest(EditorState *s, Vector3 hit, float maxDist2, int &outTyp
         float d = dx * dx + dz * dz;
         if (d < best) { best = d; outType = 1; outIdx = i; }
     }
+    for (int i = 0; i < s->bonusCount; i++) {
+        BonusPlacement &b = s->bonuses[i];
+        float dx = (float)b.col * TILE_SIZE + TILE_SIZE / 2.0f - hit.x;
+        float dz = (float)b.row * TILE_SIZE + TILE_SIZE / 2.0f - hit.z;
+        float d = dx * dx + dz * dz;
+        if (d < best) { best = d; outType = 2; outIdx = i; }
+    }
 }
 
 static bool IsSelectedObj(EditorState *s, int idx) {
@@ -505,7 +583,9 @@ static void SelectAtCrosshair(EditorState *s) {
     FindClosest(s, hit, 8.0f * 8.0f, type, idx);
     s->selectedObjIdx = -1;
     s->selectedEnemyIdx = -1;
+    s->selectedBonusIdx = -1;
     s->editingKeyId = false;
+    s->editingBonusAmount = false;
     if (type == 0 && idx >= 0) {
         s->selectedObjIdx = idx;
         EditorObject &o = s->objects[idx];
@@ -516,6 +596,11 @@ static void SelectAtCrosshair(EditorState *s) {
         EnemyPlacement &e = s->enemies[idx];
         strcpy(s->statusMsg, TextFormat("Selected: %c (%d, %d)", e.type, e.col, e.row));
         s->statusTimer = 2.0f;
+    } else if (type == 2 && idx >= 0) {
+        s->selectedBonusIdx = idx;
+        BonusPlacement &b = s->bonuses[idx];
+        strcpy(s->statusMsg, TextFormat("Selected: %c bonus (%d, %d)", b.type, b.col, b.row));
+        s->statusTimer = 2.0f;
     } else {
         strcpy(s->statusMsg, "Nothing selected");
         s->statusTimer = 1.0f;
@@ -525,7 +610,9 @@ static void SelectAtCrosshair(EditorState *s) {
 static void Deselect(EditorState *s) {
     s->selectedObjIdx = -1;
     s->selectedEnemyIdx = -1;
+    s->selectedBonusIdx = -1;
     s->editingKeyId = false;
+    s->editingBonusAmount = false;
 }
 
 static void DeleteSelected(EditorState *s) {
@@ -541,6 +628,12 @@ static void DeleteSelected(EditorState *s) {
         strcpy(s->statusMsg, "Deleted enemy");
         s->statusTimer = 1.0f;
         s->selectedEnemyIdx = -1;
+    } else if (s->selectedBonusIdx >= 0) {
+        s->bonuses[s->selectedBonusIdx] = s->bonuses[s->bonusCount - 1];
+        s->bonusCount--;
+        strcpy(s->statusMsg, "Deleted bonus");
+        s->statusTimer = 1.0f;
+        s->selectedBonusIdx = -1;
     }
 }
 
@@ -561,6 +654,11 @@ static void MoveSelectedToCrosshair(EditorState *s) {
         Vector3 pos = SnapToTile(hit);
         e.col = (int)((pos.x - TILE_SIZE / 2.0f) / TILE_SIZE + 0.5f);
         e.row = (int)((pos.z - TILE_SIZE / 2.0f) / TILE_SIZE + 0.5f);
+    } else if (s->selectedBonusIdx >= 0) {
+        BonusPlacement &b = s->bonuses[s->selectedBonusIdx];
+        Vector3 pos = SnapToTile(hit);
+        b.col = (int)((pos.x - TILE_SIZE / 2.0f) / TILE_SIZE + 0.5f);
+        b.row = (int)((pos.z - TILE_SIZE / 2.0f) / TILE_SIZE + 0.5f);
     }
 }
 
@@ -576,42 +674,67 @@ static void HandleInput(EditorState *s, int lvl) {
         s->previewScale = 1.0f;
     }
 
-    if (s->editingKeyId) {
+    if (s->editingKeyId || s->editingBonusAmount) {
         int ch;
         while ((ch = GetCharPressed()) > 0) {
             if (ch >= '0' && ch <= '9') {
-                int len = (int)strlen(s->keyIdInput);
-                if (len < 2) {
-                    s->keyIdInput[len] = (char)ch;
-                    s->keyIdInput[len + 1] = '\0';
+                char *input = s->editingKeyId ? s->keyIdInput : s->bonusAmountInput;
+                int len = (int)strlen(input);
+                if (len < 3) {
+                    input[len] = (char)ch;
+                    input[len + 1] = '\0';
                 }
             }
         }
         if (IsKeyPressed(KEY_BACKSPACE)) {
-            int len = (int)strlen(s->keyIdInput);
-            if (len > 0) s->keyIdInput[len - 1] = '\0';
+            char *input = s->editingKeyId ? s->keyIdInput : s->bonusAmountInput;
+            int len = (int)strlen(input);
+            if (len > 0) input[len - 1] = '\0';
         }
         if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) {
-            int val = atoi(s->keyIdInput);
-            if (val < 1) val = 1;
-            if (val > 9) val = 9;
-            if (s->selectedObjIdx >= 0)
-                s->objects[s->selectedObjIdx].keyId = val;
-            s->editingKeyId = false;
-            DisableCursor();
-            strcpy(s->statusMsg, TextFormat("keyId = %d", val));
-            s->statusTimer = 1.5f;
+            if (s->editingKeyId) {
+                int val = atoi(s->keyIdInput);
+                if (val < 0) val = 0;
+                if (val >= MAX_KEYS) val = MAX_KEYS - 1;
+                if (s->selectedObjIdx >= 0)
+                    s->objects[s->selectedObjIdx].keyId = val;
+                else if (s->selectedBonusIdx >= 0 && s->bonuses[s->selectedBonusIdx].type == 'K')
+                    s->bonuses[s->selectedBonusIdx].param = (float)val;
+                s->editingKeyId = false;
+                DisableCursor();
+                strcpy(s->statusMsg, TextFormat("keyId = %d", val));
+                s->statusTimer = 1.5f;
+            } else {
+                int val = atoi(s->bonusAmountInput);
+                if (val < 1) val = 1;
+                if (s->selectedBonusIdx >= 0) {
+                    BonusPlacement &b = s->bonuses[s->selectedBonusIdx];
+                    if (b.type == 'K') {
+                        if (val >= MAX_KEYS) val = MAX_KEYS - 1;
+                        b.param = (float)val;
+                        strcpy(s->statusMsg, TextFormat("keyId = %d", val));
+                    } else if (b.type == 'H') {
+                        if (val > 999) val = 999;
+                        b.param = (float)val;
+                        strcpy(s->statusMsg, TextFormat("HP = %d", val));
+                    }
+                }
+                s->editingBonusAmount = false;
+                DisableCursor();
+                s->statusTimer = 1.5f;
+            }
         }
         if (IsKeyPressed(KEY_ESCAPE)) {
             s->editingKeyId = false;
+            s->editingBonusAmount = false;
             DisableCursor();
-            strcpy(s->statusMsg, "Cancelled keyId edit");
+            strcpy(s->statusMsg, "Cancelled edit");
             s->statusTimer = 1.0f;
         }
         return;
     }
 
-    bool hasSelection = (s->selectedObjIdx >= 0 || s->selectedEnemyIdx >= 0);
+    bool hasSelection = (s->selectedObjIdx >= 0 || s->selectedEnemyIdx >= 0 || s->selectedBonusIdx >= 0);
 
     if (hasSelection) {
         MoveSelectedToCrosshair(s);
@@ -663,13 +786,30 @@ static void HandleInput(EditorState *s, int lvl) {
         }
         if (s->selectedObjIdx >= 0 && IsKeyPressed(KEY_K)) {
             EditorObject &sel = s->objects[s->selectedObjIdx];
-            bool isKeyObj = (strcmp(sel.type, "key") == 0);
-            if (isKeyObj || sel.isLocked) {
+            if (sel.isLocked) {
                 s->editingKeyId = true;
                 EnableCursor();
                 ShowCursor();
                 snprintf(s->keyIdInput, sizeof(s->keyIdInput), "%d", sel.keyId);
-                strcpy(s->statusMsg, "Enter keyId (1-9), Enter to confirm, Esc to cancel");
+                strcpy(s->statusMsg, "Enter keyId, Enter to confirm, Esc to cancel");
+                s->statusTimer = 3.0f;
+            }
+        }
+        if (s->selectedBonusIdx >= 0 && IsKeyPressed(KEY_K)) {
+            BonusPlacement &b = s->bonuses[s->selectedBonusIdx];
+            if (b.type == 'K') {
+                s->editingBonusAmount = true;
+                EnableCursor();
+                ShowCursor();
+                snprintf(s->bonusAmountInput, sizeof(s->bonusAmountInput), "%d", (int)b.param);
+                strcpy(s->statusMsg, "Enter keyId, Enter to confirm, Esc to cancel");
+                s->statusTimer = 3.0f;
+            } else if (b.type == 'H') {
+                s->editingBonusAmount = true;
+                EnableCursor();
+                ShowCursor();
+                snprintf(s->bonusAmountInput, sizeof(s->bonusAmountInput), "%d", (int)b.param);
+                strcpy(s->statusMsg, "Enter HP amount, Enter to confirm, Esc to cancel");
                 s->statusTimer = 3.0f;
             }
         }
@@ -681,15 +821,7 @@ static void HandleInput(EditorState *s, int lvl) {
         return;
     }
 
-    if (IsKeyPressed(KEY_TAB)) {
-        s->category = (s->category + 1) % CAT_COUNT;
-        s->selection = 0;
-        s->previewRotation = 0;
-        s->previewYOffset = 0;
-        s->previewScale = 1.0f;
-    }
-
-    if (!s->editingKeyId) {
+    if (!s->editingKeyId && !s->editingBonusAmount) {
         if ((s->category == CAT_DOORS || s->category == CAT_KEYDOOR)) {
             for (int i = 0; i < DOOR_WALL_TEX_COUNT; i++) {
                 if (IsKeyPressed(KEY_ONE + i)) {
@@ -727,6 +859,7 @@ static void HandleInput(EditorState *s, int lvl) {
         if (IsKeyPressed(KEY_ENTER)) {
             SaveDecorFile(s, lvl);
             SaveEnemyFile(s, lvl);
+            SaveBonusFile(s, lvl);
             SaveMapFile(s, lvl);
             strcpy(s->statusMsg, "SAVED!");
             s->statusTimer = 2.0f;
@@ -744,44 +877,53 @@ static void HandleInput(EditorState *s, int lvl) {
         s->previewRotation += wheel * 15.0f;
     }
     if (IsKeyPressed(KEY_E)) SelectAtCrosshair(s);
-    if (s->selectedObjIdx >= 0) {
-        EditorObject &sel = s->objects[s->selectedObjIdx];
-        bool isKeyObj = (strcmp(sel.type, "key") == 0);
-        if ((isKeyObj || sel.isLocked) && IsKeyPressed(KEY_K)) {
-            s->editingKeyId = true;
-            EnableCursor();
-            ShowCursor();
-            snprintf(s->keyIdInput, sizeof(s->keyIdInput), "%d", sel.keyId);
-            strcpy(s->statusMsg, "Enter keyId (1-9), Enter to confirm, Esc to cancel");
-            s->statusTimer = 3.0f;
-        }
-    } else if (IsKeyPressed(KEY_K)) {
+    if (IsKeyPressed(KEY_K)) {
         Vector3 hit;
         if (GetFloorHit(s->camera, &hit)) {
             int type, idx;
             FindClosest(s, hit, 8.0f * 8.0f, type, idx);
             if (type == 0 && idx >= 0) {
                 EditorObject &o = s->objects[idx];
-                bool isKeyObj = (strcmp(o.type, "key") == 0);
-                if (isKeyObj || o.isLocked) {
+                if (o.isLocked) {
                     s->selectedObjIdx = idx;
                     s->editingKeyId = true;
                     EnableCursor();
                     ShowCursor();
                     snprintf(s->keyIdInput, sizeof(s->keyIdInput), "%d", o.keyId);
-                    strcpy(s->statusMsg, "Enter keyId (1-9), Enter to confirm, Esc to cancel");
+                    strcpy(s->statusMsg, "Enter keyId, Enter to confirm, Esc to cancel");
                     s->statusTimer = 3.0f;
                 } else {
-                    strcpy(s->statusMsg, "Not a key/locked door");
+                    strcpy(s->statusMsg, "Not a locked door");
+                    s->statusTimer = 1.5f;
+                }
+            } else if (type == 2 && idx >= 0) {
+                BonusPlacement &b = s->bonuses[idx];
+                s->selectedBonusIdx = idx;
+                if (b.type == 'K') {
+                    s->editingBonusAmount = true;
+                    EnableCursor();
+                    ShowCursor();
+                    snprintf(s->bonusAmountInput, sizeof(s->bonusAmountInput), "%d", (int)b.param);
+                    strcpy(s->statusMsg, "Enter keyId, Enter to confirm, Esc to cancel");
+                    s->statusTimer = 3.0f;
+                } else if (b.type == 'H') {
+                    s->editingBonusAmount = true;
+                    EnableCursor();
+                    ShowCursor();
+                    snprintf(s->bonusAmountInput, sizeof(s->bonusAmountInput), "%d", (int)b.param);
+                    strcpy(s->statusMsg, "Enter HP amount, Enter to confirm, Esc to cancel");
+                    s->statusTimer = 3.0f;
+                } else {
+                    strcpy(s->statusMsg, "Only key/health bonuses are editable");
                     s->statusTimer = 1.5f;
                 }
             } else {
-                strcpy(s->statusMsg, "Nothing under crosshair");
+                strcpy(s->statusMsg, "Nothing editable under crosshair");
                 s->statusTimer = 1.5f;
             }
         }
     }
-    if (!s->editingKeyId && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) PlaceObject(s);
+    if (!s->editingKeyId && !s->editingBonusAmount && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) PlaceObject(s);
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
         int type, idx;
         Vector3 hit;
@@ -797,12 +939,18 @@ static void HandleInput(EditorState *s, int lvl) {
                 s->enemyCount--;
                 strcpy(s->statusMsg, "Deleted enemy");
                 s->statusTimer = 1.0f;
+            } else if (type == 2 && idx >= 0) {
+                s->bonuses[idx] = s->bonuses[s->bonusCount - 1];
+                s->bonusCount--;
+                strcpy(s->statusMsg, "Deleted bonus");
+                s->statusTimer = 1.0f;
             }
         }
     }
     if (IsKeyPressed(KEY_ENTER)) {
         SaveDecorFile(s, lvl);
         SaveEnemyFile(s, lvl);
+        SaveBonusFile(s, lvl);
         strcpy(s->statusMsg, "SAVED!");
         s->statusTimer = 2.0f;
     }
@@ -949,6 +1097,24 @@ static void DrawEditorObjects(EditorState *s) {
             DrawSphereWires(pos, 3.0f, 8, 8, YELLOW);
         }
     }
+    for (int i = 0; i < s->bonusCount; i++) {
+        BonusPlacement &b = s->bonuses[i];
+        Vector3 pos = {(float)b.col * TILE_SIZE + TILE_SIZE / 2.0f, BONUS_Y_HEIGHT,
+                       (float)b.row * TILE_SIZE + TILE_SIZE / 2.0f};
+        Texture2D tex;
+        switch (b.type) {
+            case 'H': tex = s->texHealth; break;
+            case 'K': tex = s->texKey; break;
+            case 'W': tex = s->texWeapon; break;
+            case 'D': tex = s->texWeapon2; break;
+            default: tex = s->texHealth; break;
+        }
+        Color tint = (s->selectedBonusIdx == i) ? YELLOW : WHITE;
+        DrawEditorBillboard(s->camera, pos, tex, ZOMBIE_BILLBOARD_SIZE, tint);
+        if (s->selectedBonusIdx == i) {
+            DrawSphereWires(pos, 3.0f, 8, 8, YELLOW);
+        }
+    }
 }
 
 static void DrawGhost(EditorState *s) {
@@ -965,7 +1131,15 @@ static void DrawGhost(EditorState *s) {
         pos = SnapFine(hit, 0.5f);
     pos.y = item->defaultY + s->previewYOffset;
     Color tint = ColorAlpha(item->color, 0.7f);
-    if (item->enemyChar != 0) {
+    if (s->category == CAT_BONUSES) {
+        Texture2D tex;
+        if (strcmp(item->name, "health") == 0) tex = s->texHealth;
+        else if (strcmp(item->name, "key") == 0) tex = s->texKey;
+        else if (strcmp(item->name, "weapon") == 0) tex = s->texWeapon;
+        else if (strcmp(item->name, "double") == 0) tex = s->texWeapon2;
+        else tex = s->texHealth;
+        DrawEditorBillboard(s->camera, pos, tex, ZOMBIE_BILLBOARD_SIZE, ColorAlpha(WHITE, 0.7f));
+    } else if (item->enemyChar != 0) {
         if (item->enemyChar == 'P') {
             DrawSphere(pos, 2.0f, ColorAlpha(GREEN, 0.7f));
         } else {
@@ -990,7 +1164,7 @@ static void DrawGhost(EditorState *s) {
 
 static void DrawHUD(EditorState *s) {
     int x = 10, y = 10, lh = 20;
-    bool hasSel = (s->selectedObjIdx >= 0 || s->selectedEnemyIdx >= 0);
+    bool hasSel = (s->selectedObjIdx >= 0 || s->selectedEnemyIdx >= 0 || s->selectedBonusIdx >= 0);
 
     DrawText("RED HORIZON - LEVEL EDITOR", x, y, 20, WHITE); y += lh + 10;
 
@@ -1001,6 +1175,13 @@ static void DrawHUD(EditorState *s) {
         DrawRectangleLines(x, y, 200, 36, GOLD);
         DrawText(TextFormat("keyId: %s_", s->keyIdInput), x + 8, y + 8, 20, GOLD);
         y += 50;
+    } else if (s->editingBonusAmount) {
+        DrawText("[ EDIT BONUS ]", x, y, 18, GOLD); y += lh;
+        DrawText("Type digits, Enter to confirm, Esc to cancel", x, y, 14, LIGHTGRAY); y += lh + 10;
+        DrawRectangle(x, y, 200, 36, ColorAlpha(BLACK, 0.8f));
+        DrawRectangleLines(x, y, 200, 36, GOLD);
+        DrawText(TextFormat("value: %s_", s->bonusAmountInput), x + 8, y + 8, 20, GOLD);
+        y += 50;
     } else if (hasSel) {
         DrawText("[ MOVING MODE ]", x, y, 18, YELLOW); y += lh;
         DrawText("Object follows crosshair", x, y, 14, LIGHTGRAY); y += lh - 2;
@@ -1008,10 +1189,24 @@ static void DrawHUD(EditorState *s) {
         DrawText("Enter - confirm | Esc - cancel | Del - delete", x, y, 14, LIGHTGRAY); y += lh - 2;
         if (s->selectedObjIdx >= 0) {
             EditorObject &sel = s->objects[s->selectedObjIdx];
-            bool isKeyObj = (strcmp(sel.type, "key") == 0);
-            if (isKeyObj || sel.isLocked) {
+            if (sel.isLocked) {
                 DrawText(TextFormat("keyId: %d  [K to edit]", sel.keyId), x, y, 16, GOLD); y += lh;
             }
+        }
+        if (s->selectedBonusIdx >= 0) {
+            BonusPlacement &b = s->bonuses[s->selectedBonusIdx];
+            const char *typeName = "?";
+            if (b.type == 'H') typeName = "health";
+            else if (b.type == 'K') typeName = "key";
+            else if (b.type == 'W') typeName = "weapon";
+            else if (b.type == 'D') typeName = "double";
+            if (b.type == 'K')
+                DrawText(TextFormat("Bonus: %s keyId=%d  [K to edit]", typeName, (int)b.param), x, y, 16, GOLD);
+            else if (b.type == 'H')
+                DrawText(TextFormat("Bonus: %s HP=%d  [K to edit]", typeName, (int)b.param), x, y, 16, GOLD);
+            else
+                DrawText(TextFormat("Bonus: %s", typeName), x, y, 16, GOLD);
+            y += lh;
         }
     } else if (s->category == CAT_TERRAIN) {
         DrawText(TextFormat("Category: %s", categoryNames[s->category]), x, y, 16, YELLOW); y += lh;
@@ -1034,7 +1229,7 @@ static void DrawHUD(EditorState *s) {
             DrawText(TextFormat("Left wall:  %s (1/2/3)", doorWallTexNames[s->doorWallTexLeft]), x, y, 16, SKYBLUE); y += lh;
             DrawText(TextFormat("Right wall: %s (Shift+1/2/3)", doorWallTexNames[s->doorWallTexRight]), x, y, 16, SKYBLUE); y += lh;
         }
-        DrawText(TextFormat("Objects: %d | Enemies: %d", s->objectCount, s->enemyCount), x, y, 16, LIGHTGRAY); y += lh + 10;
+        DrawText(TextFormat("Objects: %d | Enemies: %d | Bonuses: %d", s->objectCount, s->enemyCount, s->bonusCount), x, y, 16, LIGHTGRAY); y += lh + 10;
         DrawText("CONTROLS:", x, y, 16, WHITE); y += lh;
         DrawText("WASD/Space/Shift - Move camera", x, y, 14, LIGHTGRAY); y += lh - 2;
         DrawText("Mouse - Look around", x, y, 14, LIGHTGRAY); y += lh - 2;
@@ -1108,6 +1303,7 @@ int main(int argc, char *argv[]) {
     LoadEditorModels(state.models, shader);
     LoadDecorFile(&state, levelIndex);
     LoadEnemyFile(&state, levelIndex);
+    LoadBonusFile(&state, levelIndex);
 
     state.camera.position = {level.width * TILE_SIZE / 2.0f, 50.0f, level.height * TILE_SIZE / 2.0f};
     state.camera.up = {0, 1, 0};
@@ -1118,7 +1314,7 @@ int main(int argc, char *argv[]) {
 
     while (true) {
         if (WindowShouldClose()) {
-            if (state.selectedObjIdx >= 0 || state.selectedEnemyIdx >= 0) {
+            if (state.selectedObjIdx >= 0 || state.selectedEnemyIdx >= 0 || state.selectedBonusIdx >= 0) {
                 Deselect(&state);
                 strcpy(state.statusMsg, "Deselected (Esc to quit)");
                 state.statusTimer = 1.0f;
@@ -1141,7 +1337,7 @@ int main(int argc, char *argv[]) {
         DrawEditorObjects(&state);
         if (state.showGrid) DrawGridOverlay(level);
         if (state.category == CAT_TERRAIN) DrawTerrainHighlight(&state);
-        if (state.selectedObjIdx < 0 && state.selectedEnemyIdx < 0)
+        if (state.selectedObjIdx < 0 && state.selectedEnemyIdx < 0 && state.selectedBonusIdx < 0)
             DrawGhost(&state);
         EndMode3D();
 
@@ -1155,6 +1351,7 @@ int main(int argc, char *argv[]) {
 
     SaveDecorFile(&state, levelIndex);
     SaveEnemyFile(&state, levelIndex);
+    SaveBonusFile(&state, levelIndex);
 
     UnloadEditorModels(state.models);
     UnloadTexture(state.texZombie); UnloadTexture(state.texMilitary); UnloadTexture(state.texFast);

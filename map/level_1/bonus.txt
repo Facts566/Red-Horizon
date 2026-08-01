@@ -1,0 +1,7 @@
+health 16 2 20
+health 42 11 20
+health 39 12 20
+health 32 19 20
+health 16 25 20
+health 14 30 20
+key 12 28 0

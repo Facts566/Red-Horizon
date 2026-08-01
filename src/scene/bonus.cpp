@@ -21,6 +21,7 @@ void InitBonuses(Bonus bonuses[], BonusSpawn spawns[], int count, Texture2D medi
         bonuses[i].type = spawns[i].type;
         bonuses[i].weaponIndex = spawns[i].weaponIndex;
         bonuses[i].keyId = spawns[i].keyId;
+        bonuses[i].healthAmount = spawns[i].healthAmount;
     }
 }
 
@@ -52,7 +53,7 @@ void UpdateBonuses(Bonus bonuses[], int count, Vector3 playerPos, float &health,
                 bonuses[i].active = false;
                 if (itemSound.frameCount > 0)
                     PlaySound(itemSound);
-                health += BONUS_HEALTH_AMOUNT;
+                health += bonuses[i].healthAmount;
                 if (health > (float)maxHealth) health = (float)maxHealth;
             }
         }

@@ -52,21 +52,9 @@ static void SpawnZombies(Game &game, const char *path)
     }
 }
 
-static void SpawnBonuses(Game &game, const char *enemyPath, const char *decorPath)
+static void SpawnBonuses(Game &game, const char *bonusPath)
 {
-    game.bonusCount = LoadBonusSpawns(enemyPath, game.bonusSpawns, MAX_BONUSES);
-
-    KeySpawn keySpawns[MAX_KEYS];
-    int keyCount = LoadKeySpawns(decorPath, keySpawns, MAX_KEYS);
-    for (int i = 0; i < keyCount && game.bonusCount < MAX_BONUSES; i++) {
-        BonusSpawn &bs = game.bonusSpawns[game.bonusCount];
-        bs.col = keySpawns[i].col;
-        bs.row = keySpawns[i].row;
-        bs.type = BONUS_KEY;
-        bs.weaponIndex = 0;
-        bs.keyId = keySpawns[i].keyId;
-        game.bonusCount++;
-    }
+    game.bonusCount = LoadBonusFile(bonusPath, game.bonusSpawns, MAX_BONUSES);
 
     InitBonuses(game.bonuses, game.bonusSpawns, game.bonusCount, game.medicTex, game.keyTex, game.weaponTex, game.weaponTex2, TILE_SIZE);
 }
@@ -467,10 +455,10 @@ void LoadLevelByIndex(Game &game, int levelIndex)
 {
     char mapPath[64];
     char enemyPath[64];
-    char decorPath[64];
+    char bonusPath[64];
     snprintf(mapPath, sizeof(mapPath), "map/level_%d/map.txt", levelIndex);
     snprintf(enemyPath, sizeof(enemyPath), "map/level_%d/enemy.txt", levelIndex);
-    snprintf(decorPath, sizeof(decorPath), "map/level_%d/decor.txt", levelIndex);
+    snprintf(bonusPath, sizeof(bonusPath), "map/level_%d/bonus.txt", levelIndex);
 
     UnloadLevel(game.level);
     UnloadScene(game.scene);
@@ -486,7 +474,7 @@ void LoadLevelByIndex(Game &game, int levelIndex)
               game.greenTex, game.wallTex, game.shotholeTex, game.whiteWallTex, levelIndex, game.level);
 
     SpawnZombies(game, enemyPath);
-    SpawnBonuses(game, enemyPath, decorPath);
+    SpawnBonuses(game, bonusPath);
 
     game.wallHoles.clear();
     for (int i = 0; i < MAX_KEYS; i++) game.hasKeys[i] = false;

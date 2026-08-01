@@ -12,6 +12,7 @@ struct Bonus {
     BonusType type;
     int weaponIndex;
     int keyId;
+    float healthAmount;
 };
 
 void InitBonuses(Bonus bonuses[], BonusSpawn spawns[], int count, Texture2D medicTex, Texture2D keyTex, Texture2D weaponTex, Texture2D weaponTex2, float tileSize);

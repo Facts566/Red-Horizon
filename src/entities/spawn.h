@@ -19,16 +19,9 @@ struct BonusSpawn {
     BonusType type;
     int weaponIndex;
     int keyId;
+    float healthAmount;
 };
 
-int LoadBonusSpawns(const char *path, BonusSpawn *spawns, int maxSpawns);
-
-struct KeySpawn {
-    int col;
-    int row;
-    int keyId;
-};
-
-int LoadKeySpawns(const char *path, KeySpawn *spawns, int maxSpawns);
+int LoadBonusFile(const char *path, BonusSpawn *spawns, int maxSpawns);
 
 Vector3 LoadPlayerSpawn(const char *path, float tileSize, float wallHeight);
