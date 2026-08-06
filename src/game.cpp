@@ -238,13 +238,11 @@ static void DrawMenuBackground(Game &game)
     int sw = GetScreenWidth();
     int sh = GetScreenHeight();
     float scale = (float)sw / game.menuBg.width;
-    int drawW = sw;
-    int drawH = (int)(game.menuBg.height * scale);
-    if (drawH < sh) {
+    if (game.menuBg.height * scale > (float)sh)
         scale = (float)sh / game.menuBg.height;
-        drawW = (int)(game.menuBg.width * scale);
-        drawH = sh;
-    }
+    scale *= 2.0f;
+    int drawW = (int)(game.menuBg.width * scale);
+    int drawH = (int)(game.menuBg.height * scale);
     DrawTexturePro(game.menuBg,
                    (Rectangle){0, 0, (float)game.menuBg.width, (float)game.menuBg.height},
                    (Rectangle){(sw - drawW) / 2.0f, (sh - drawH) / 2.0f, (float)drawW, (float)drawH},

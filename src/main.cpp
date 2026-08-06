@@ -14,7 +14,7 @@ int main()
     bool gameLoaded = false;
 
     game.menuBg = LoadTexture("tex/MenuBackground.png");
-    SetTextureFilter(game.menuBg, TEXTURE_FILTER_BILINEAR);
+    SetTextureFilter(game.menuBg, TEXTURE_FILTER_POINT);
 
     while (!WindowShouldClose() && !game.exitGame)
     {
