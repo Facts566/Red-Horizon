@@ -7,6 +7,7 @@
 #include "door.h"
 #include "spawn.h"
 #include "bonus.h"
+#include "ui.h"
 
 enum GameState { GAME_MENU, GAME_LEVEL_SELECT, GAME_PLAYING, GAME_OVER };
 enum TransitionPhase { TRANS_NONE, TRANS_FADE_OUT, TRANS_LOADING, TRANS_FADE_IN };
@@ -46,6 +47,9 @@ struct Game {
     bool showWeaponPanel;
     bool paused;
     int menuSelection;
+    float menuTime;
+    UIButton uiButtons[10];
+    int uiButtonCount;
 
     int lightRangeLoc;
     int lightAmbLoc;

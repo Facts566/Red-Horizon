@@ -239,23 +239,42 @@ void DrawMenu(Game &game)
 
     int sw = GetScreenWidth();
     int sh = GetScreenHeight();
+    float dt = GetFrameTime();
+    game.menuTime += dt;
+
+    // [FRIEND: draw background here]
 
     const char *title = "RED HORIZON";
     int titleSize = 80;
     int titleW = MeasureText(title, titleSize);
-    DrawText(title, sw/2 - titleW/2, sh/2 - 120, titleSize, RED);
+    int titleX = sw/2 - titleW/2;
+    int titleY = sh/2 - 120;
+    float pulse = 0.5f + 0.5f * sinf(game.menuTime * 4.0f);
+    for (int i = 4; i >= 1; i--) {
+        int o = i * 3;
+        Color c = {200, 20, 20, (unsigned char)(30.0f * (1.0f - (float)i / 5.0f) * (0.4f + 0.6f * pulse))};
+        DrawText(title, titleX - o, titleY - o, titleSize, c);
+    }
+    DrawText(title, titleX, titleY, titleSize, (Color){255, 40, 30, 255});
 
     if (IsKeyPressed(KEY_UP))   game.menuSelection--;
     if (IsKeyPressed(KEY_DOWN)) game.menuSelection++;
     if (game.menuSelection < 0) game.menuSelection = 1;
     if (game.menuSelection > 1) game.menuSelection = 0;
 
-    Rectangle playBtn = {(float)sw/2 - 120, (float)sh/2, 240, 60};
-    Rectangle exitBtn = {(float)sw/2 - 120, (float)sh/2 + 80, 240, 60};
+    Rectangle playRect = {(float)sw/2 - 120, (float)sh/2, 240, 60};
+    Rectangle exitRect = {(float)sw/2 - 120, (float)sh/2 + 80, 240, 60};
+
+    if (game.uiButtonCount != 2) {
+        UIButtonReset(&game.uiButtons[0], playRect, "PLAY", (Color){40, 40, 40, 255}, WHITE, WHITE);
+        UIButtonReset(&game.uiButtons[1], exitRect, "EXIT", (Color){40, 40, 40, 255}, WHITE, WHITE);
+        game.uiButtons[1].enterDelay = 0.08f;
+        game.uiButtonCount = 2;
+    }
 
     Vector2 mouse = GetMousePosition();
-    bool playHover = CheckCollisionPointRec(mouse, playBtn);
-    bool exitHover = CheckCollisionPointRec(mouse, exitBtn);
+    bool playHover = CheckCollisionPointRec(mouse, playRect);
+    bool exitHover = CheckCollisionPointRec(mouse, exitRect);
 
     if (GetMouseDelta().x != 0 || GetMouseDelta().y != 0) {
         if (playHover) game.menuSelection = 0;
@@ -265,32 +284,22 @@ void DrawMenu(Game &game)
     bool playSelected = (game.menuSelection == 0);
     bool exitSelected = (game.menuSelection == 1);
 
-    Color playColor = playSelected ? DARKBLUE : DARKGRAY;
-    Color exitColor = exitSelected ? (Color){150, 30, 30, 255} : DARKGRAY;
+    UIButtonUpdate(&game.uiButtons[0], playHover, playSelected, dt);
+    UIButtonUpdate(&game.uiButtons[1], exitHover, exitSelected, dt);
 
-    DrawRectangleRec(playBtn, playColor);
-    DrawRectangleLinesEx(playBtn, 2, playSelected ? YELLOW : WHITE);
-    const char *playText = "PLAY";
-    int playTextW = MeasureText(playText, 30);
-    DrawText(playText, sw/2 - playTextW/2, sh/2 + 18, 30, WHITE);
-
-    DrawRectangleRec(exitBtn, exitColor);
-    DrawRectangleLinesEx(exitBtn, 2, exitSelected ? YELLOW : WHITE);
-    const char *exitText = "EXIT";
-    int exitTextW = MeasureText(exitText, 30);
-    DrawText(exitText, sw/2 - exitTextW/2, sh/2 + 98, 30, WHITE);
-
-    if ((playSelected && (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_ENTER))) ||
-        (playHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))) {
+    if (UIButtonClicked(&game.uiButtons[0], playHover, playSelected)) {
         EnableCursor();
         game.state = GAME_LEVEL_SELECT;
         game.menuSelection = 0;
+        game.uiButtonCount = 0;
     }
 
-    if ((exitSelected && (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_ENTER))) ||
-        (exitHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))) {
+    if (UIButtonClicked(&game.uiButtons[1], exitHover, exitSelected)) {
         game.exitGame = true;
     }
+
+    UIButtonDraw(&game.uiButtons[0], game.menuTime);
+    UIButtonDraw(&game.uiButtons[1], game.menuTime);
 
     EndDrawing();
 }
@@ -302,11 +311,15 @@ void DrawLevelSelect(Game &game)
 
     int sw = GetScreenWidth();
     int sh = GetScreenHeight();
+    float dt = GetFrameTime();
+    game.menuTime += dt;
+
+    // [FRIEND: draw background here]
 
     const char *title = "SELECT LEVEL";
     int titleSize = 60;
     int titleW = MeasureText(title, titleSize);
-    DrawText(title, sw/2 - titleW/2, sh/2 - 200, titleSize, RED);
+    DrawText(title, sw/2 - titleW/2, sh/2 - 200, titleSize, (Color){255, 40, 30, 255});
 
     int levelCount = 0;
     bool levelExists[8] = {};
@@ -327,44 +340,48 @@ void DrawLevelSelect(Game &game)
     if (game.menuSelection < 0) game.menuSelection = totalButtons - 1;
     if (game.menuSelection >= totalButtons) game.menuSelection = 0;
 
+    int needed = levelCount + 1;
+    if (game.uiButtonCount != needed) {
+        for (int i = 0; i < levelCount; i++) {
+            Rectangle btn = {(float)sw/2 - 120, (float)sh/2 - 80 + i * 70, 240, 55};
+            UIButtonReset(&game.uiButtons[i], btn, TextFormat("Level %d", i + 1), (Color){40, 40, 40, 255}, WHITE, WHITE);
+            game.uiButtons[i].enterDelay = i * 0.06f;
+        }
+        Rectangle backBtn = {(float)sw/2 - 120, (float)sh/2 - 80 + levelCount * 70 + 20, 240, 55};
+        UIButtonReset(&game.uiButtons[levelCount], backBtn, "BACK", (Color){40, 40, 40, 255}, WHITE, WHITE);
+        game.uiButtons[levelCount].enterDelay = levelCount * 0.06f;
+        game.uiButtonCount = needed;
+    }
+
     Vector2 mouse = GetMousePosition();
     bool mouseMoved = GetMouseDelta().x != 0 || GetMouseDelta().y != 0;
+
     for (int i = 0; i < levelCount; i++) {
-        Rectangle btn = {(float)sw/2 - 120, (float)sh/2 - 80 + i * 70, 240, 55};
+        Rectangle btn = game.uiButtons[i].rect;
         bool hover = CheckCollisionPointRec(mouse, btn);
         if (mouseMoved && hover) game.menuSelection = i;
         bool selected = (game.menuSelection == i);
-        Color btnColor = selected ? DARKBLUE : DARKGRAY;
-        DrawRectangleRec(btn, btnColor);
-        DrawRectangleLinesEx(btn, 2, selected ? YELLOW : WHITE);
-        char label[32];
-        snprintf(label, sizeof(label), "Level %d", i + 1);
-        int labelW = MeasureText(label, 30);
-        DrawText(label, sw/2 - labelW/2, (int)btn.y + 16, 30, WHITE);
-
-        if ((selected && (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_ENTER))) ||
-            (hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))) {
+        UIButtonUpdate(&game.uiButtons[i], hover, selected, dt);
+        if (UIButtonClicked(&game.uiButtons[i], hover, selected)) {
             game.currentLevel = i + 1;
             game.state = GAME_PLAYING;
         }
     }
 
-    Rectangle backBtn = {(float)sw/2 - 120, (float)sh/2 - 80 + levelCount * 70 + 20, 240, 55};
-    bool backHover = CheckCollisionPointRec(mouse, backBtn);
-    if (mouseMoved && backHover) game.menuSelection = levelCount;
-    bool backSelected = (game.menuSelection == levelCount);
-    Color backColor = backSelected ? (Color){150, 30, 30, 255} : DARKGRAY;
-    DrawRectangleRec(backBtn, backColor);
-    DrawRectangleLinesEx(backBtn, 2, backSelected ? YELLOW : WHITE);
-    const char *backText = "BACK";
-    int backTextW = MeasureText(backText, 30);
-    DrawText(backText, sw/2 - backTextW/2, (int)backBtn.y + 16, 30, WHITE);
-
-    if ((backSelected && (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_ENTER))) ||
-        (backHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))) {
+    int backIdx = levelCount;
+    Rectangle backBtnRect = game.uiButtons[backIdx].rect;
+    bool backHover = CheckCollisionPointRec(mouse, backBtnRect);
+    if (mouseMoved && backHover) game.menuSelection = backIdx;
+    bool backSelected = (game.menuSelection == backIdx);
+    UIButtonUpdate(&game.uiButtons[backIdx], backHover, backSelected, dt);
+    if (UIButtonClicked(&game.uiButtons[backIdx], backHover, backSelected)) {
         game.state = GAME_MENU;
         game.menuSelection = 0;
+        game.uiButtonCount = 0;
     }
+
+    for (int i = 0; i < needed; i++)
+        UIButtonDraw(&game.uiButtons[i], game.menuTime);
 
     EndDrawing();
 }
