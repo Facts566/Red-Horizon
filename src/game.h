@@ -56,6 +56,7 @@ struct Game {
     Texture2D fastIdle, fastWalk1, fastWalk2, fastDead;
     Texture2D shotholeTex, medicTex, keyTex, weaponTex, weaponTex2;
     Texture2D floorTex, wallTex, greenTex, planksTex, whiteWallTex;
+    Texture2D menuBg;
 
     Sound stepSound;
     float stepTimer;

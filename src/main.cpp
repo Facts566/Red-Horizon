@@ -13,6 +13,9 @@ int main()
     game.exitGame = false;
     bool gameLoaded = false;
 
+    game.menuBg = LoadTexture("tex/MenuBackground.png");
+    SetTextureFilter(game.menuBg, TEXTURE_FILTER_BILINEAR);
+
     while (!WindowShouldClose() && !game.exitGame)
     {
         if (game.state == GAME_MENU && IsKeyPressed(KEY_ESCAPE))
@@ -69,6 +72,8 @@ int main()
 
     if (gameLoaded)
         UnloadGame(game);
+    if (game.menuBg.id > 0)
+        UnloadTexture(game.menuBg);
     CloseAudioDevice();
     CloseWindow();
     return 0;

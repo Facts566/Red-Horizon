@@ -232,6 +232,25 @@ static void DrawHitFlash(Game &game)
     if (game.hitFlash < 0.0f) game.hitFlash = 0.0f;
 }
 
+static void DrawMenuBackground(Game &game)
+{
+    if (game.menuBg.id <= 0) return;
+    int sw = GetScreenWidth();
+    int sh = GetScreenHeight();
+    float scale = (float)sw / game.menuBg.width;
+    int drawW = sw;
+    int drawH = (int)(game.menuBg.height * scale);
+    if (drawH < sh) {
+        scale = (float)sh / game.menuBg.height;
+        drawW = (int)(game.menuBg.width * scale);
+        drawH = sh;
+    }
+    DrawTexturePro(game.menuBg,
+                   (Rectangle){0, 0, (float)game.menuBg.width, (float)game.menuBg.height},
+                   (Rectangle){(sw - drawW) / 2.0f, (sh - drawH) / 2.0f, (float)drawW, (float)drawH},
+                   (Vector2){0, 0}, 0.0f, WHITE);
+}
+
 void DrawMenu(Game &game)
 {
     BeginDrawing();
@@ -240,10 +259,18 @@ void DrawMenu(Game &game)
     int sw = GetScreenWidth();
     int sh = GetScreenHeight();
 
+    DrawMenuBackground(game);
+
     const char *title = "RED HORIZON";
-    int titleSize = 80;
+    int titleSize = 120;
     int titleW = MeasureText(title, titleSize);
-    DrawText(title, sw/2 - titleW/2, sh/2 - 120, titleSize, RED);
+    int titleX = sw/2 - titleW/2;
+    int titleY = sh/2 - 180;
+    DrawText(title, titleX - 4, titleY, titleSize, BLACK);
+    DrawText(title, titleX + 4, titleY, titleSize, BLACK);
+    DrawText(title, titleX, titleY - 4, titleSize, BLACK);
+    DrawText(title, titleX, titleY + 4, titleSize, BLACK);
+    DrawText(title, titleX, titleY, titleSize, RED);
 
     if (IsKeyPressed(KEY_UP))   game.menuSelection--;
     if (IsKeyPressed(KEY_DOWN)) game.menuSelection++;
@@ -303,10 +330,18 @@ void DrawLevelSelect(Game &game)
     int sw = GetScreenWidth();
     int sh = GetScreenHeight();
 
+    DrawMenuBackground(game);
+
     const char *title = "SELECT LEVEL";
     int titleSize = 60;
     int titleW = MeasureText(title, titleSize);
-    DrawText(title, sw/2 - titleW/2, sh/2 - 200, titleSize, RED);
+    int titleX = sw/2 - titleW/2;
+    int titleY = sh/2 - 200;
+    DrawText(title, titleX - 4, titleY, titleSize, BLACK);
+    DrawText(title, titleX + 4, titleY, titleSize, BLACK);
+    DrawText(title, titleX, titleY - 4, titleSize, BLACK);
+    DrawText(title, titleX, titleY + 4, titleSize, BLACK);
+    DrawText(title, titleX, titleY, titleSize, RED);
 
     int levelCount = 0;
     bool levelExists[8] = {};
