@@ -16,6 +16,8 @@ int main()
     game.menuBg = LoadTexture("tex/MenuBackground.png");
     SetTextureFilter(game.menuBg, TEXTURE_FILTER_POINT);
 
+    InitMenu3D(game.menu3d);
+
     while (!WindowShouldClose() && !game.exitGame)
     {
         if (game.state == GAME_MENU && IsKeyPressed(KEY_ESCAPE))
@@ -74,6 +76,7 @@ int main()
         UnloadGame(game);
     if (game.menuBg.id > 0)
         UnloadTexture(game.menuBg);
+    UnloadMenu3D(game.menu3d);
     CloseAudioDevice();
     CloseWindow();
     return 0;

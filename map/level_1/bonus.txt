@@ -1,4 +1,4 @@
-health 16 2 20
+health 14 17 20
 health 42 11 20
 health 39 12 20
 health 32 19 20

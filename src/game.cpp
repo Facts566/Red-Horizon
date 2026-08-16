@@ -261,7 +261,8 @@ void DrawMenu(Game &game)
 
     // [FRIEND: draw background here]
 
-    DrawMenuBackground(game);
+    if (game.menu3d.ready) DrawMenu3D(game.menu3d, dt);
+    else DrawMenuBackground(game);
 
     const char *title = "RED HORIZON";
     int titleSize = 120;
@@ -333,7 +334,8 @@ void DrawLevelSelect(Game &game)
 
     // [FRIEND: draw background here]
 
-    DrawMenuBackground(game);
+    if (game.menu3d.ready) DrawMenu3D(game.menu3d, dt);
+    else DrawMenuBackground(game);
 
     const char *title = "SELECT LEVEL";
     int titleSize = 60;
