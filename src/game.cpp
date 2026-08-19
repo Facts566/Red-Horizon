@@ -450,6 +450,7 @@ void InitGame(Game &game)
 
     game.shader = LoadLightShader();
     game.currentLevel = 1;
+    InitPostFX(game.postfx);
 
     LoadPistol(game.weapons[0], game.shader, game.shotholeTex);
     LoadWeapon(game.weapons[1], game.shader, game.shotholeTex, "tex/weapons/gun.png", "sounds/ShotShotgun.mp3", "sounds/ReloadShotgun.mp3");
@@ -668,12 +669,14 @@ void DrawGame(Game &game)
 
     Camera3D shakeCam = ApplyShake(game, game.camera);
 
+    BeginPostFX(game.postfx);
     BeginMode3D(shakeCam);
         DrawLevel(game.level);
         DrawScene(game.scene, shakeCam, game.shader, game.bonuses, game.bonusCount);
         DrawParticles(game.scene, shakeCam);
         DrawWeaponDecals(game.wallHoles, game.weapons[game.currentWeapon].decalModel);
     EndMode3D();
+    EndPostFX(game.postfx);
 
     DrawWeaponHUD(game.weapons[game.currentWeapon], (int)game.health, game.maxHealth);
 
@@ -725,6 +728,7 @@ void UnloadGame(Game &game)
     EnableCursor();
     UnloadLevel(game.level);
     UnloadScene(game.scene);
+    UnloadPostFX(game.postfx);
     for (int i = 0; i < WEAPON_COUNT; i++)
         UnloadWeapon(game.weapons[i]);
     UnloadShader(game.shader);

@@ -1,5 +1,6 @@
 #include "bonus.h"
 #include "config.h"
+#include "billboard.h"
 #include <rlgl.h>
 #include <raymath.h>
 #include <cmath>
@@ -68,24 +69,7 @@ void DrawBonuses(Bonus bonuses[], int count, Camera3D camera)
         Vector3 pos = bonuses[i].position;
         pos.y = BONUS_Y_HEIGHT + sinf(bonuses[i].bobTimer) * BONUS_BOB_AMPLITUDE;
 
-        Vector3 forward = Vector3Normalize(Vector3Subtract(camera.position, pos));
-        Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, (Vector3){0, 1.0f, 0.0f}));
-        Vector3 up = {0, 1.0f, 0};
-
-        Vector3 bl = Vector3Subtract(pos, Vector3Add(Vector3Scale(right, BONUS_SIZE * 0.5f), Vector3Scale(up, BONUS_SIZE * 0.5f)));
-        Vector3 br = Vector3Add(pos, Vector3Subtract(Vector3Scale(right, BONUS_SIZE * 0.5f), Vector3Scale(up, BONUS_SIZE * 0.5f)));
-        Vector3 tr = Vector3Add(pos, Vector3Add(Vector3Scale(right, BONUS_SIZE * 0.5f), Vector3Scale(up, BONUS_SIZE * 0.5f)));
-        Vector3 tl = Vector3Add(pos, Vector3Subtract(Vector3Scale(up, BONUS_SIZE * 0.5f), Vector3Scale(right, BONUS_SIZE * 0.5f)));
-
-        rlSetTexture(bonuses[i].texture.id);
-        rlBegin(RL_QUADS);
-            rlColor4ub(255, 255, 255, 255);
-            rlTexCoord2f(0.0f, 1.0f); rlVertex3f(bl.x, bl.y, bl.z);
-            rlTexCoord2f(1.0f, 1.0f); rlVertex3f(br.x, br.y, br.z);
-            rlTexCoord2f(1.0f, 0.0f); rlVertex3f(tr.x, tr.y, tr.z);
-            rlTexCoord2f(0.0f, 0.0f); rlVertex3f(tl.x, tl.y, tl.z);
-        rlEnd();
-        rlSetTexture(0);
+        DrawSprite3D(bonuses[i].texture, pos, camera.position, (Vector2){BONUS_SIZE, BONUS_SIZE}, WHITE);
     }
     rlEnableDepthTest();
 }

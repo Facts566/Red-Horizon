@@ -9,6 +9,7 @@
 #include "bonus.h"
 #include "ui.h"
 #include "menu3d.h"
+#include "postfx.h"
 
 enum GameState { GAME_MENU, GAME_LEVEL_SELECT, GAME_PLAYING, GAME_OVER };
 enum TransitionPhase { TRANS_NONE, TRANS_FADE_OUT, TRANS_LOADING, TRANS_FADE_IN };
@@ -63,6 +64,7 @@ struct Game {
     Texture2D floorTex, wallTex, greenTex, planksTex, whiteWallTex;
     Texture2D menuBg;
     Menu3D menu3d;
+    PostFX postfx;
 
     Sound stepSound;
     float stepTimer;

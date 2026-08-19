@@ -1,12 +1,14 @@
 #include <raylib.h>
 #include "game.h"
 #include "config.h"
+#include "billboard.h"
 
 int main()
 {
     InitWindow(GetScreenWidth(), GetScreenHeight(), "Red Horizon");
     InitAudioDevice();
     SetExitKey(KEY_NULL);
+    InitBillboards();
 
     Game game = {};
     game.state = GAME_MENU;
@@ -78,6 +80,7 @@ int main()
         UnloadTexture(game.menuBg);
     UnloadMenu3D(game.menu3d);
     CloseAudioDevice();
+    UnloadBillboards();
     CloseWindow();
     return 0;
 }

@@ -3,7 +3,7 @@
 #include "scene.h"
 #include "raycast.h"
 #include "map.h"
-#include <rlgl.h>
+#include "billboard.h"
 #include <raymath.h>
 #include <cmath>
 #include <cstring>
@@ -385,26 +385,10 @@ void DrawZombie(Zombie &zombie, Camera3D camera, Shader shader)
         tex = zombie.textureIdle;
 
     float size = ZOMBIE_BILLBOARD_SIZE;
-    Vector3 forward = Vector3Normalize(Vector3Subtract(camera.position, zombie.position));
-    Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, (Vector3){0, 1.0f, 0.0f}));
-    Vector3 up = {0, 1.0f, 0};
+    Color tint = WHITE;
+    if (zombie.hitTime > 0.0f) tint = (Color){255, 80, 80, 255};
 
-    Vector3 bl = Vector3Subtract(zombie.position, Vector3Add(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
-    Vector3 br = Vector3Add(zombie.position, Vector3Subtract(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
-    Vector3 tr = Vector3Add(zombie.position, Vector3Add(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
-    Vector3 tl = Vector3Add(zombie.position, Vector3Subtract(Vector3Scale(up, size * 0.5f), Vector3Scale(right, size * 0.5f)));
-
-    rlSetTexture(tex.id);
-    rlBegin(RL_QUADS);
-        unsigned char r = 255, g = 255, b = 255;
-        if (zombie.hitTime > 0.0f) { r = 255; g = 80; b = 80; }
-        rlColor4ub(r, g, b, 255);
-        rlTexCoord2f(0.0f, 1.0f); rlVertex3f(bl.x, bl.y, bl.z);
-        rlTexCoord2f(1.0f, 1.0f); rlVertex3f(br.x, br.y, br.z);
-        rlTexCoord2f(1.0f, 0.0f); rlVertex3f(tr.x, tr.y, tr.z);
-        rlTexCoord2f(0.0f, 0.0f); rlVertex3f(tl.x, tl.y, tl.z);
-    rlEnd();
-    rlSetTexture(0);
+    DrawSprite3D(tex, zombie.position, camera.position, (Vector2){size, size}, tint);
 }
 
 void UnloadZombie(Zombie &zombie)

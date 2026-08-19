@@ -1,5 +1,6 @@
 #include "scene.h"
 #include "config.h"
+#include "billboard.h"
 #include <rlgl.h>
 #include <cstring>
 #include <cstdio>
@@ -224,25 +225,7 @@ void DrawScene(Scene &scene, Camera3D camera, Shader shader, Bonus bonuses[], in
             Vector3 pos = b.position;
             pos.y = BONUS_Y_HEIGHT + sinf(b.bobTimer) * BONUS_BOB_AMPLITUDE;
 
-            Vector3 forward = Vector3Normalize(Vector3Subtract(camera.position, pos));
-            Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, (Vector3){0, 1.0f, 0.0f}));
-            Vector3 up = {0, 1.0f, 0};
-            float size = BONUS_SIZE;
-
-            Vector3 bl = Vector3Subtract(pos, Vector3Add(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
-            Vector3 br = Vector3Add(pos, Vector3Subtract(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
-            Vector3 tr = Vector3Add(pos, Vector3Add(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
-            Vector3 tl = Vector3Add(pos, Vector3Subtract(Vector3Scale(up, size * 0.5f), Vector3Scale(right, size * 0.5f)));
-
-            rlSetTexture(b.texture.id);
-            rlBegin(RL_QUADS);
-                rlColor4ub(255, 255, 255, 255);
-                rlTexCoord2f(0.0f, 1.0f); rlVertex3f(bl.x, bl.y, bl.z);
-                rlTexCoord2f(1.0f, 1.0f); rlVertex3f(br.x, br.y, br.z);
-                rlTexCoord2f(1.0f, 0.0f); rlVertex3f(tr.x, tr.y, tr.z);
-                rlTexCoord2f(0.0f, 0.0f); rlVertex3f(tl.x, tl.y, tl.z);
-            rlEnd();
-            rlSetTexture(0);
+            DrawSprite3D(b.texture, pos, camera.position, (Vector2){BONUS_SIZE, BONUS_SIZE}, WHITE);
         }
     }
 
@@ -336,25 +319,9 @@ void DrawParticles(Scene &scene, Camera3D camera)
         Particle &p = scene.particles[i];
         float alpha = p.lifetime / p.maxLifetime;
         float size = BOX_PARTICLE_SIZE * alpha;
+        Color tint = {255, 255, 255, (unsigned char)(alpha * 255)};
 
-        Vector3 forward = Vector3Normalize(Vector3Subtract(camera.position, p.position));
-        Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, (Vector3){0, 1.0f, 0.0f}));
-        Vector3 up = {0, 1.0f, 0};
-
-        Vector3 bl = Vector3Subtract(p.position, Vector3Add(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
-        Vector3 br = Vector3Add(p.position, Vector3Subtract(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
-        Vector3 tr = Vector3Add(p.position, Vector3Add(Vector3Scale(right, size * 0.5f), Vector3Scale(up, size * 0.5f)));
-        Vector3 tl = Vector3Add(p.position, Vector3Subtract(Vector3Scale(up, size * 0.5f), Vector3Scale(right, size * 0.5f)));
-
-        rlSetTexture(p.texture.id);
-        rlBegin(RL_QUADS);
-            rlColor4ub(255, 255, 255, (unsigned char)(alpha * 255));
-            rlTexCoord2f(0.0f, 1.0f); rlVertex3f(bl.x, bl.y, bl.z);
-            rlTexCoord2f(1.0f, 1.0f); rlVertex3f(br.x, br.y, br.z);
-            rlTexCoord2f(1.0f, 0.0f); rlVertex3f(tr.x, tr.y, tr.z);
-            rlTexCoord2f(0.0f, 0.0f); rlVertex3f(tl.x, tl.y, tl.z);
-        rlEnd();
-        rlSetTexture(0);
+        DrawSprite3D(p.texture, p.position, camera.position, (Vector2){size, size}, tint);
     }
     rlEnableDepthMask();
 }
