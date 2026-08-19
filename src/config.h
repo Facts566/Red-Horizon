@@ -83,3 +83,9 @@ constexpr float BOX_PARTICLE_SIZE     = 1.2f;
 constexpr float BOX_PARTICLE_GRAVITY  = 25.0f;
 constexpr int   MAX_KEYS              = 16;
 constexpr int   MAX_PARTICLES         = 64;
+
+constexpr int   MAX_DUST              = 40;
+constexpr float DUST_REGION           = 14.0f;
+constexpr float DUST_SIZE_MIN         = 0.35f;
+constexpr float DUST_SIZE_MAX         = 0.9f;
+constexpr float DUST_ALPHA            = 60.0f;

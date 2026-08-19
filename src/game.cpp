@@ -5,6 +5,7 @@
 #include "light.h"
 #include "raycast.h"
 #include "zombie.h"
+#include "billboard.h"
 #include <rlgl.h>
 #include <raymath.h>
 #include <cmath>
@@ -25,6 +26,138 @@ static Texture2D LoadTexPoint(const char *path)
     Texture2D tex = LoadTexture(path);
     SetTextureFilter(tex, TEXTURE_FILTER_POINT);
     return tex;
+}
+
+static float RandRange(float a, float b)
+{
+    return a + (b - a) * ((float)GetRandomValue(0, 1000) / 1000.0f);
+}
+
+static void SeedDust(Game &game, Vector3 center);
+
+static void InitDust(Game &game)
+{
+    Image img = GenImageGradientRadial(32, 32, 0.42f, (Color){255, 255, 255, 255}, (Color){255, 255, 255, 0});
+    game.dustTex = LoadTextureFromImage(img);
+    UnloadImage(img);
+    SetTextureFilter(game.dustTex, TEXTURE_FILTER_BILINEAR);
+
+    game.dustCount = MAX_DUST;
+    game.dustTime = 0.0f;
+    SeedDust(game, game.camera.position);
+}
+
+static void SeedDust(Game &game, Vector3 center)
+{
+    float r = DUST_REGION;
+    for (int i = 0; i < game.dustCount; i++) {
+        game.dust[i].position = (Vector3){
+            center.x + RandRange(-r, r),
+            center.y + RandRange(-r * 0.5f, r * 0.5f) + 0.5f,
+            center.z + RandRange(-r, r)
+        };
+        game.dust[i].drift = (Vector3){ RandRange(0.2f, 0.8f), RandRange(-0.12f, 0.12f), RandRange(-0.35f, 0.35f) };
+        game.dust[i].size = RandRange(DUST_SIZE_MIN, DUST_SIZE_MAX);
+        game.dust[i].alpha = RandRange(0.4f, 1.0f);
+        game.dust[i].wobblePhase = RandRange(0.0f, 2.0f * PI);
+    }
+}
+
+static void UpdateDust(Game &game, float dt)
+{
+    float r = DUST_REGION;
+    Vector3 cs = game.camera.position;
+    for (int i = 0; i < game.dustCount; i++) {
+        DustParticle &d = game.dust[i];
+        d.wobblePhase += dt * RandRange(0.5f, 1.2f);
+        d.position.x += d.drift.x * dt;
+        d.position.y += d.drift.y * dt + sinf(d.wobblePhase * 0.7f) * 0.18f * dt;
+        d.position.z += d.drift.z * dt;
+
+        if (d.position.x < cs.x - r) d.position.x += 2.0f * r;
+        if (d.position.x > cs.x + r) d.position.x -= 2.0f * r;
+        if (d.position.z < cs.z - r) d.position.z += 2.0f * r;
+        if (d.position.z > cs.z + r) d.position.z -= 2.0f * r;
+        if (d.position.y < cs.y - r * 0.5f) d.position.y += r;
+        if (d.position.y > cs.y + r * 0.5f) d.position.y -= r;
+    }
+}
+
+static void DrawDust(Game &game, Camera3D camera)
+{
+    float r = DUST_REGION;
+    for (int i = 0; i < game.dustCount; i++) {
+        const DustParticle &d = game.dust[i];
+        float dist = Vector3Distance(camera.position, d.position);
+        if (dist > r) continue;
+        float fade = 1.0f - Clamp((dist - 3.0f) / (r - 3.0f), 0.0f, 1.0f);
+        unsigned char alpha = (unsigned char)(d.alpha * DUST_ALPHA * fade);
+        if (alpha < 8) continue;
+        Color tint = {255, 255, 255, alpha};
+        DrawSprite3D(game.dustTex, d.position, camera.position, (Vector2){d.size, d.size}, tint);
+    }
+}
+
+static void DrawPauseMenu(Game &game)
+{
+    int sw = GetScreenWidth();
+    int sh = GetScreenHeight();
+    float dt = GetFrameTime();
+    game.menuTime += dt;
+
+    DrawRectangle(0, 0, sw, sh, ColorAlpha(BLACK, 0.72f));
+
+    static const char *labels[3] = { "RESUME", "RESTART", "MAIN MENU" };
+    Rectangle rects[3] = {
+        {(float)sw / 2 - 120, (float)sh / 2 - 70, 240, 55},
+        {(float)sw / 2 - 120, (float)sh / 2 - 0, 240, 55},
+        {(float)sw / 2 - 120, (float)sh / 2 + 70, 240, 55},
+    };
+
+    if (!game.pauseMenuReady) {
+        for (int i = 0; i < 3; i++) {
+            UIButtonReset(&game.uiButtons[i], rects[i], labels[i], (Color){40, 40, 40, 255}, WHITE, WHITE);
+            game.uiButtons[i].enterDelay = 0.05f + i * 0.05f;
+        }
+        game.uiButtonCount = 3;
+        game.menuSelection = 0;
+        game.pauseMenuReady = true;
+    }
+
+    if (IsKeyPressed(KEY_UP)) game.menuSelection--;
+    if (IsKeyPressed(KEY_DOWN)) game.menuSelection++;
+    if (game.menuSelection < 0) game.menuSelection = 2;
+    if (game.menuSelection > 2) game.menuSelection = 0;
+
+    Vector2 mouse = GetMousePosition();
+    bool mouseMoved = GetMouseDelta().x != 0 || GetMouseDelta().y != 0;
+    for (int i = 0; i < 3; i++) {
+        bool hover = CheckCollisionPointRec(mouse, game.uiButtons[i].rect);
+        if (mouseMoved && hover) game.menuSelection = i;
+        UIButtonUpdate(&game.uiButtons[i], hover, game.menuSelection == i, dt);
+        if (UIButtonClicked(&game.uiButtons[i], hover, game.menuSelection == i)) {
+            if (i == 0) {
+                game.paused = false;
+                game.pauseMenuReady = false;
+                DisableCursor();
+            } else if (i == 1) {
+                ResetGame(game);
+                game.paused = false;
+                game.pauseMenuReady = false;
+                DisableCursor();
+            } else {
+                game.paused = false;
+                game.pauseMenuReady = false;
+                EnableCursor();
+                game.state = GAME_MENU;
+                game.menuSelection = 0;
+            }
+            break;
+        }
+    }
+
+    for (int i = 0; i < 3; i++)
+        UIButtonDraw(&game.uiButtons[i], game.menuTime);
 }
 
 static void SpawnZombies(Game &game, const char *path)
@@ -473,12 +606,15 @@ void InitGame(Game &game)
     game.showWeaponPanel = false;
     for (int i = 0; i < MAX_KEYS; i++) game.hasKeys[i] = false;
     game.paused = false;
+    game.pauseMenuReady = false;
     game.menuSelection = 0;
     game.transPhase = TRANS_NONE;
     game.transTimer = 0.0f;
     game.transNextLevel = 0;
 
     InitZombieModel(game.shader);
+
+    InitDust(game);
 
     SetLightUniforms(game.shader, game.camera.position, {1,1,1}, LIGHT_RANGE, LIGHT_AMBIENT);
     game.lightRangeLoc = GetShaderLocation(game.shader, "lightRange");
@@ -531,6 +667,8 @@ void LoadLevelByIndex(Game &game, int levelIndex)
     game.touchTimer = 0.0f;
     game.gameOver = false;
 
+    SeedDust(game, game.camera.position);
+
     for (int i = 0; i < WEAPON_COUNT; i++) {
         game.weapons[i].currentAmmo = game.weapons[i].maxAmmo;
         game.weapons[i].isReloading = false;
@@ -571,20 +709,16 @@ void UpdateGame(Game &game)
 
     if (IsKeyPressed(KEY_ESCAPE) && !game.paused) {
         game.paused = true;
+        game.pauseMenuReady = false;
         EnableCursor();
         return;
     }
 
     if (game.paused) {
-        if (IsKeyPressed(KEY_E)) {
-            game.paused = false;
-            DisableCursor();
-        }
         if (IsKeyPressed(KEY_ESCAPE)) {
             game.paused = false;
-            EnableCursor();
-            game.state = GAME_MENU;
-            game.menuSelection = 0;
+            game.pauseMenuReady = false;
+            DisableCursor();
         }
         return;
     }
@@ -659,6 +793,7 @@ void UpdateGame(Game &game)
     ProcessZombieTouchDamage(game, dt);
     UpdateBonuses(game.bonuses, game.bonusCount, game.camera.position, game.health, game.maxHealth, game.hasKeys, game.weapons, WEAPON_COUNT, game.itemSound);
     UpdateParticles(game.scene, dt);
+    UpdateDust(game, dt);
     UpdateLighting(game);
 }
 
@@ -674,6 +809,7 @@ void DrawGame(Game &game)
         DrawLevel(game.level);
         DrawScene(game.scene, shakeCam, game.shader, game.bonuses, game.bonusCount);
         DrawParticles(game.scene, shakeCam);
+        DrawDust(game, shakeCam);
         DrawWeaponDecals(game.wallHoles, game.weapons[game.currentWeapon].decalModel);
     EndMode3D();
     EndPostFX(game.postfx);
@@ -685,24 +821,8 @@ void DrawGame(Game &game)
 
     DrawHitFlash(game);
 
-    if (game.paused) {
-        int sw = GetScreenWidth();
-        int sh = GetScreenHeight();
-        DrawRectangle(0, 0, sw, sh, ColorAlpha(BLACK, 0.7f));
-
-        const char *title = "PAUSED";
-        int titleSize = 60;
-        int titleW = MeasureText(title, titleSize);
-        DrawText(title, sw/2 - titleW/2, sh/2 - 100, titleSize, WHITE);
-
-        const char *continueText = "[E] Continue";
-        int continueW = MeasureText(continueText, 30);
-        DrawText(continueText, sw/2 - continueW/2, sh/2, 30, GREEN);
-
-        const char *menuText = "[ESC] Menu";
-        int menuW = MeasureText(menuText, 30);
-        DrawText(menuText, sw/2 - menuW/2, sh/2 + 50, 30, RED);
-    }
+    if (game.paused)
+        DrawPauseMenu(game);
 
     if (game.transPhase != TRANS_NONE)
     {
@@ -754,6 +874,7 @@ void UnloadGame(Game &game)
     UnloadTexture(game.keyTex);
     UnloadTexture(game.weaponTex);
     UnloadTexture(game.weaponTex2);
+    UnloadTexture(game.dustTex);
     UnloadSound(game.stepSound);
     UnloadSound(game.zombieDeathSound);
     UnloadSound(game.hitSound);

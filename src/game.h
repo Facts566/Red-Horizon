@@ -14,6 +14,14 @@
 enum GameState { GAME_MENU, GAME_LEVEL_SELECT, GAME_PLAYING, GAME_OVER };
 enum TransitionPhase { TRANS_NONE, TRANS_FADE_OUT, TRANS_LOADING, TRANS_FADE_IN };
 
+struct DustParticle {
+    Vector3 position;
+    Vector3 drift;
+    float size;
+    float alpha;
+    float wobblePhase;
+};
+
 struct Game {
     GameState state;
     bool exitGame;
@@ -48,6 +56,7 @@ struct Game {
     bool gameOver;
     bool showWeaponPanel;
     bool paused;
+    bool pauseMenuReady;
     int menuSelection;
     float menuTime;
     UIButton uiButtons[10];
@@ -65,6 +74,11 @@ struct Game {
     Texture2D menuBg;
     Menu3D menu3d;
     PostFX postfx;
+
+    DustParticle dust[MAX_DUST];
+    int dustCount;
+    Texture2D dustTex;
+    float dustTime;
 
     Sound stepSound;
     float stepTimer;
