@@ -1,12 +1,22 @@
 #include "menu3d.h"
 #include "config.h"
 #include "light.h"
+#include "billboard.h"
 #include <rlgl.h>
+#include <raymath.h>
 #include <cmath>
 #include <cstdio>
 
 #define MENU_ROOM_W 15
 #define MENU_ROOM_H 15
+#define MENU_ZOMBIE_SIZE 8.0f
+
+static void PickZombieTarget(MenuZombie &z, int roomW, int roomH, float tileSize)
+{
+    int col = GetRandomValue(1, roomW - 2);
+    int row = GetRandomValue(1, roomH - 2);
+    z.target = (Vector3){col * tileSize + tileSize / 2.0f, 0.0f, row * tileSize + tileSize / 2.0f};
+}
 
 static Texture2D LoadMenuTex(const char *path)
 {
@@ -59,6 +69,24 @@ void InitMenu3D(Menu3D &m)
 
     m.level = BuildMenuRoom(m.floorTex, m.planksTex, m.brickTex, m.whiteTex, m.lightShader);
 
+    m.zombiIdle  = LoadMenuTex("tex/zombi/zombi.png");
+    m.zombiWalk1 = LoadMenuTex("tex/zombi/zombi_walk.png");
+    m.zombiWalk2 = LoadMenuTex("tex/zombi/zombi_walk_1.png");
+
+    m.zombieCount = MENU_MAX_ZOMBIES;
+    for (int i = 0; i < m.zombieCount; i++) {
+        MenuZombie &z = m.zombies[i];
+        PickZombieTarget(z, MENU_ROOM_W, MENU_ROOM_H, TILE_SIZE);
+        z.position = z.target;
+        z.position.y = MENU_ZOMBIE_SIZE * 0.5f;
+        z.speed = 0.15f + (float)GetRandomValue(0, 100) * 0.005f;
+        z.animTimer = 0.0f;
+        z.stateTimer = 0.0f;
+        z.animFrame = 0;
+        z.moving = false;
+    }
+    m.time = 0.0f;
+
     m.camera.up = (Vector3){0, 1, 0};
     m.camera.fovy = CAMERA_FOVY;
     m.camera.projection = CAMERA_PERSPECTIVE;
@@ -83,10 +111,47 @@ void DrawMenu3D(Menu3D &m, float dt)
 
     SetLightUniforms(m.lightShader, m.camera.position, (Vector3){1, 1, 1}, 150.0f, 0.32f);
 
+    for (int i = 0; i < m.zombieCount; i++) {
+        MenuZombie &z = m.zombies[i];
+        Vector3 dir = Vector3Subtract(z.target, z.position);
+        dir.y = 0.0f;
+        float dist = Vector3Length(dir);
+        if (dist < 0.6f) {
+            z.moving = false;
+            z.stateTimer += dt;
+            if (z.stateTimer > 2.0f + (float)i * 0.4f) {
+                PickZombieTarget(z, MENU_ROOM_W, MENU_ROOM_H, TILE_SIZE);
+                z.stateTimer = 0.0f;
+            }
+        } else {
+            z.moving = true;
+            z.stateTimer = 0.0f;
+            Vector3 step = Vector3Scale(Vector3Normalize(dir), z.speed * dt);
+            z.position = Vector3Add(z.position, step);
+            z.yaw = atan2f(dir.x, dir.z);
+        }
+
+        if (z.moving) {
+            z.animTimer -= dt;
+            if (z.animTimer <= 0.0f) {
+                z.animTimer = 0.4f;
+                z.animFrame ^= 1;
+            }
+        }
+    }
+
     BeginTextureMode(m.sceneRT);
         ClearBackground(BLACK);
         BeginMode3D(m.camera);
             DrawLevel(m.level);
+            for (int i = 0; i < m.zombieCount; i++) {
+                MenuZombie &z = m.zombies[i];
+                Texture2D tex = (z.moving) ? (z.animFrame ? m.zombiWalk1 : m.zombiWalk2) : m.zombiIdle;
+                float bob = z.moving ? fabsf(sinf(m.time * 8.0f)) * 0.6f : sinf(m.time * 1.2f + (float)i) * 0.3f;
+                Vector3 pos = z.position;
+                pos.y = MENU_ZOMBIE_SIZE * 0.5f + bob;
+                DrawSprite3D(tex, pos, m.camera.position, (Vector2){MENU_ZOMBIE_SIZE, MENU_ZOMBIE_SIZE}, WHITE);
+            }
         EndMode3D();
     EndTextureMode();
 
@@ -99,7 +164,7 @@ void DrawMenu3D(Menu3D &m, float dt)
         BeginShaderMode(m.blurShader);
             SetShaderValue(m.blurShader, m.blurTexelLoc, &texel, SHADER_UNIFORM_VEC2);
             SetShaderValue(m.blurShader, m.blurDirLoc, &dirH, SHADER_UNIFORM_VEC2);
-            DrawTextureRec(m.sceneRT.texture, (Rectangle){0, 0, (float)m.sceneRT.texture.width, (float)m.sceneRT.texture.height}, (Vector2){0, 0}, WHITE);
+            DrawTextureRec(m.sceneRT.texture, (Rectangle){0, 0, (float)m.sceneRT.texture.width, -(float)m.sceneRT.texture.height}, (Vector2){0, 0}, WHITE);
         EndShaderMode();
     EndTextureMode();
 
@@ -123,5 +188,8 @@ void UnloadMenu3D(Menu3D &m)
     UnloadTexture(m.planksTex);
     UnloadTexture(m.brickTex);
     UnloadTexture(m.whiteTex);
+    UnloadTexture(m.zombiIdle);
+    UnloadTexture(m.zombiWalk1);
+    UnloadTexture(m.zombiWalk2);
     m.ready = false;
 }
